@@ -1,0 +1,27 @@
+## .NET / Build outputs
+bin/
+obj/
+artifacts/
+out/
+publish/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Test Results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+
+## App Data / Temp / Local DB
+*.db
+*.db-shm
+*.db-wal
+.desktopnotes-staging/

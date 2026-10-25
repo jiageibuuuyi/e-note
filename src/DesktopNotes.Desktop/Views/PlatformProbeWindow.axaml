@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DesktopNotes.Desktop.Views.PlatformProbeWindow"
+        Width="350" Height="520" Title="平台验证">
+  <StackPanel Margin="16" Spacing="12">
+    <TextBlock Text="桌面嵌入 / 输入 / 拖放探针" FontWeight="SemiBold"/>
+    <TextBox Name="ImeInputBox" PlaceholderText="输入中文并切换窗口" AcceptsReturn="True" Height="120"/>
+    <Border Name="DropTarget" Background="#EEEEEE" Padding="20" DragDrop.AllowDrop="True">
+      <TextBlock Name="DropTargetText" Text="将临时测试文件拖到这里"/>
+    </Border>
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Name="BtnTopmost" Content="始终置顶"/>
+      <Button Name="BtnEmbedded" Content="桌面嵌入模式"/>
+      <Button Name="BtnProbe" Content="重新探测"/>
+    </StackPanel>
+    <TextBlock Name="ProbeStatus" Text="普通窗口基线" TextWrapping="Wrap"/>
+  </StackPanel>
+</Window>

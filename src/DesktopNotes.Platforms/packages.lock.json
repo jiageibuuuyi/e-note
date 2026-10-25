@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "desktopnotes.application": {
+        "type": "Project",
+        "dependencies": {
+          "DesktopNotes.Domain": "[1.0.0, )"
+        }
+      },
+      "desktopnotes.domain": {
+        "type": "Project"
+      }
+    }
+  }
+}
