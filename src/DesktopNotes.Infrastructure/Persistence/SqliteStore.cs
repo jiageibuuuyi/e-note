@@ -8,7 +8,7 @@ using Microsoft.Data.Sqlite;
 
 namespace DesktopNotes.Infrastructure.Persistence;
 
-public sealed class SqliteStore : IRecordRepositoryPort, IDisposable
+public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepositoryPort, IDisposable
 {
     private readonly string _connectionString;
     private readonly object _writeLock = new();
