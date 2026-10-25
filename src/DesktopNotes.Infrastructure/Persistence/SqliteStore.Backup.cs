@@ -52,7 +52,7 @@ public sealed partial class SqliteStore : IBackupDatabasePort
         cmd.Transaction = tx;
         cmd.CommandText = """
             DELETE FROM attachments WHERE trashed_utc_ms IS NOT NULL;
-            DELETE FROM records WHERE status = 'trashed';
+            DELETE FROM records WHERE deleted_utc_ms IS NOT NULL;
             """;
         cmd.ExecuteNonQuery();
         tx.Commit();
@@ -132,7 +132,7 @@ public sealed partial class SqliteStore : IBackupDatabasePort
                      a.state, a.bytes_at_import, a.created_utc_ms, a.trashed_utc_ms
               FROM attachments a
               JOIN records r ON r.id = a.record_id
-              WHERE a.trashed_utc_ms IS NULL AND r.status != 'trashed'
+              WHERE a.trashed_utc_ms IS NULL AND r.deleted_utc_ms IS NULL
               ORDER BY a.created_utc_ms ASC, a.id ASC;
               """;
         using var reader = cmd.ExecuteReader();

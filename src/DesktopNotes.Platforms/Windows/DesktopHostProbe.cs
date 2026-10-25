@@ -73,6 +73,14 @@ public sealed class DesktopHostProbe : IDesktopIntegration
         }
 
         nint progman = FindWindowW("Progman", null);
+        if (progman == nint.Zero)
+        {
+            progman = GetShellWindow();
+        }
+        if (progman == nint.Zero)
+        {
+            progman = GetDesktopWindow();
+        }
         nint defViewParent = nint.Zero;
         nint defView = nint.Zero;
 
@@ -321,4 +329,10 @@ public sealed class DesktopHostProbe : IDesktopIntegration
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern nint GetShellWindow();
+
+    [DllImport("user32.dll")]
+    private static extern nint GetDesktopWindow();
 }

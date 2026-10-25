@@ -4,6 +4,10 @@ using DesktopNotes.Application.Ports;
 
 namespace DesktopNotes.Application.Settings;
 
+public sealed record FirstRunInstallerIntent(
+    string? DefaultAttachmentDirectory,
+    bool LaunchAtLogin);
+
 public sealed record AppPreferences(
     Guid? DefaultStorageRootId,
     bool NotificationsEnabled,
@@ -85,5 +89,53 @@ public sealed class SettingsService
     public Task SetSystemLoginStartupAsync(bool enabled, CancellationToken ct)
     {
         return _desktopIntegration.SetLoginStartupAsync(enabled, ct);
+    }
+
+    public async Task<bool> ImportFirstRunIntentIfPresentAsync(
+        string intentFilePath,
+        IAttachmentRepositoryPort attachmentRepository,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(intentFilePath) || !File.Exists(intentFilePath))
+        {
+            return false;
+        }
+
+        string rawJson = await File.ReadAllTextAsync(intentFilePath, ct);
+        var intent = JsonSerializer.Deserialize<FirstRunInstallerIntent>(
+            rawJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (intent is null)
+        {
+            return false;
+        }
+
+        var prefs = GetPreferences();
+        if (!string.IsNullOrWhiteSpace(intent.DefaultAttachmentDirectory) &&
+            Path.IsPathRooted(intent.DefaultAttachmentDirectory))
+        {
+            string fullRootPath = Path.GetFullPath(intent.DefaultAttachmentDirectory);
+            Directory.CreateDirectory(fullRootPath);
+            string platform = OperatingSystem.IsWindows()
+                ? "windows"
+                : OperatingSystem.IsMacOS() ? "macos" : "linux";
+
+            var rootRecord = attachmentRepository.EnsureDefaultStorageRoot(fullRootPath, platform, DateTimeOffset.UtcNow);
+            prefs = prefs with { DefaultStorageRootId = rootRecord.Id };
+            SavePreferences(prefs);
+        }
+
+        await _desktopIntegration.SetLoginStartupAsync(intent.LaunchAtLogin, ct);
+
+        try
+        {
+            File.Delete(intentFilePath);
+        }
+        catch
+        {
+        }
+
+        return true;
     }
 }
