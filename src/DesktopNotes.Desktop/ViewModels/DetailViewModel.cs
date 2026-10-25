@@ -104,6 +104,29 @@ public sealed class DetailViewModel : ViewModelBase
         _queryService = queryService ?? throw new ArgumentNullException(nameof(queryService));
     }
 
+    public Task LoadNewAsync(RecordKind kind, Guid? parentId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        _recordId = Guid.NewGuid();
+        _parentId = parentId;
+        _kind = kind;
+        _status = RecordStatus.Active;
+        _version = 0;
+        _title = string.Empty;
+        _body = string.Empty;
+        _ownPublisher = null;
+        _ownAssignee = null;
+        _ownPriority = Priority.Normal;
+        _ownStart = null;
+        _ownDue = DueSpec.Empty;
+        _ownAttachmentRootId = null;
+        _inheritMask = parentId.HasValue ? InheritField.All : InheritField.None;
+        _statusMessage = "新建记录";
+        HasConflict = false;
+        RaiseAllProperties();
+        return Task.CompletedTask;
+    }
+
     public async Task LoadAsync(Guid id, CancellationToken ct)
     {
         var rec = await _recordService.GetAsync(id, ct)

@@ -19,7 +19,15 @@ public partial class App : global::Avalonia.Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             _bootstrapper = new Bootstrapper();
-            var panelWindow = new PanelWindow(_bootstrapper.PanelViewModel);
+            _ = _bootstrapper.InitializeAsync();
+            _ = _bootstrapper.PanelViewModel.RefreshAsync(CancellationToken.None);
+
+            var panelWindow = new PanelWindow(
+                _bootstrapper.PanelViewModel,
+                _bootstrapper.CreateDetailViewModel,
+                _bootstrapper.CreateCalendarViewModel,
+                _bootstrapper.CreateSettingsViewModel);
+
             desktop.MainWindow = panelWindow;
             desktop.Exit += (_, _) => _bootstrapper?.Dispose();
         }

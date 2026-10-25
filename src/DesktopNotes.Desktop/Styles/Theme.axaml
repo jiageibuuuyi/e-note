@@ -6,12 +6,16 @@
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="BgWindow" Color="#F8FAFC"/>
           <SolidColorBrush x:Key="BgCard" Color="#FFFFFF"/>
+          <SolidColorBrush x:Key="BgSubtle" Color="#E2E8F0"/>
           <SolidColorBrush x:Key="BgHover" Color="#F1F5F9"/>
           <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
           <SolidColorBrush x:Key="TextSecondary" Color="#475569"/>
           <SolidColorBrush x:Key="TextMuted" Color="#94A3B8"/>
           <SolidColorBrush x:Key="BorderSubtle" Color="#E2E8F0"/>
+          <SolidColorBrush x:Key="BorderStrong" Color="#CBD5E1"/>
           <SolidColorBrush x:Key="AccentPrimary" Color="#2563EB"/>
+          <SolidColorBrush x:Key="AccentPrimaryHover" Color="#1D4ED8"/>
+          <SolidColorBrush x:Key="AccentSubtle" Color="#EFF6FF"/>
           <SolidColorBrush x:Key="StatusDueToday" Color="#D97706"/>
           <SolidColorBrush x:Key="StatusDueTodayBg" Color="#FEF3C7"/>
           <SolidColorBrush x:Key="StatusOverdue" Color="#DC2626"/>
@@ -24,12 +28,16 @@
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="BgWindow" Color="#18181B"/>
           <SolidColorBrush x:Key="BgCard" Color="#27272A"/>
+          <SolidColorBrush x:Key="BgSubtle" Color="#27272A"/>
           <SolidColorBrush x:Key="BgHover" Color="#3F3F46"/>
           <SolidColorBrush x:Key="TextPrimary" Color="#F4F4F5"/>
           <SolidColorBrush x:Key="TextSecondary" Color="#A1A1AA"/>
           <SolidColorBrush x:Key="TextMuted" Color="#71717A"/>
           <SolidColorBrush x:Key="BorderSubtle" Color="#3F3F46"/>
+          <SolidColorBrush x:Key="BorderStrong" Color="#52525B"/>
           <SolidColorBrush x:Key="AccentPrimary" Color="#3B82F6"/>
+          <SolidColorBrush x:Key="AccentPrimaryHover" Color="#2563EB"/>
+          <SolidColorBrush x:Key="AccentSubtle" Color="#1E3A8A"/>
           <SolidColorBrush x:Key="StatusDueToday" Color="#F59E0B"/>
           <SolidColorBrush x:Key="StatusDueTodayBg" Color="#451A03"/>
           <SolidColorBrush x:Key="StatusOverdue" Color="#EF4444"/>
@@ -42,4 +50,139 @@
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </Styles.Resources>
+
+  <!-- Remove default ListBoxItem padding and heavy highlight box -->
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Margin" Value="0"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+
+  <!-- Segmented Pill Switcher Button -->
+  <Style Selector="Button.seg-pill">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="12,5"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.seg-pill:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+  <Style Selector="Button.seg-pill.active">
+    <Setter Property="Background" Value="{DynamicResource BgCard}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="Button.seg-pill.active:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BgCard}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+
+  <!-- Minimalist Icon Ghost Button (28x28) -->
+  <Style Selector="Button.icon-ghost">
+    <Setter Property="Width" Value="28"/>
+    <Setter Property="Height" Value="28"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.icon-ghost:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+
+  <!-- Subtle Inline Ghost Action Link -->
+  <Style Selector="Button.ghost-link">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentPrimary}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="6,2"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.ghost-link:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryHover}"/>
+  </Style>
+
+  <!-- Primary Pill Action Button -->
+  <Style Selector="Button.primary-pill">
+    <Setter Property="Background" Value="{DynamicResource AccentPrimary}"/>
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="14,7"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.primary-pill:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentPrimaryHover}"/>
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+  </Style>
+
+  <!-- Secondary Subtle Pill Button -->
+  <Style Selector="Button.secondary-pill">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="12,6"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.secondary-pill:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+
+  <!-- Clean Borderless TextBox for Embedded Cards -->
+  <Style Selector="TextBox.clean-input">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="TextBox.clean-input:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <Style Selector="TextBox.clean-input:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+
+  <!-- Task Row Card Hover & Expanded Polish -->
+  <Style Selector="Border.task-card">
+    <Setter Property="Background" Value="{DynamicResource BgCard}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="11,9"/>
+    <Setter Property="Margin" Value="0,3"/>
+  </Style>
+  <Style Selector="Border.task-card:pointerover">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
+  </Style>
 </Styles>

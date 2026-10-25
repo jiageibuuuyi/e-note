@@ -4,62 +4,217 @@
         xmlns:controls="using:DesktopNotes.Desktop.Controls"
         x:Class="DesktopNotes.Desktop.Views.PanelWindow"
         x:DataType="vm:PanelViewModel"
-        Width="350" Height="520" MinWidth="280" MinHeight="360"
+        Width="360" Height="540" MinWidth="300" MinHeight="380"
         Background="{DynamicResource BgWindow}"
+        WindowDecorations="BorderOnly"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="-1"
         Title="桌面笔记">
-  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12">
-    <!-- Title Bar -->
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,8">
-      <TextBlock Grid.Column="0" Text="桌面笔记" FontSize="16" FontWeight="SemiBold"
-                 Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-      <Button Name="BtnQuickAdd" Grid.Column="1" Content="新建" Margin="0,0,6,0" Padding="8,4"/>
-      <Button Name="BtnModeToggle" Grid.Column="2" Content="模式" Padding="8,4"/>
-    </Grid>
+  <Border BorderBrush="{DynamicResource BorderSubtle}"
+          BorderThickness="1"
+          Padding="14,12,14,10">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
-    <!-- Tabs & Search -->
-    <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,8">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-        <Button Name="BtnTabTasks" Grid.Column="0" Content="任务" Margin="0,0,6,0" Padding="10,4"/>
-        <Button Name="BtnTabNotes" Grid.Column="1" Content="笔记" Padding="10,4"/>
-        <TextBlock Grid.Column="3" Text="{Binding TotalCount, StringFormat='共 {0} 项'}"
-                   Foreground="{DynamicResource TextMuted}" FontSize="12" VerticalAlignment="Center"/>
+      <!-- 1. Unified Top Bar: Segmented Pill Switcher + 4 Minimalist SVG Icon Ghost Buttons -->
+      <Grid Name="HeaderDragRegion"
+            Grid.Row="0"
+            ColumnDefinitions="Auto,*,Auto"
+            Background="Transparent"
+            Margin="0,0,0,10">
+
+        <!-- Segmented Control: 待办 / 笔记 -->
+        <Border Grid.Column="0"
+                Background="{DynamicResource BgSubtle}"
+                CornerRadius="8"
+                Padding="2.5">
+          <StackPanel Orientation="Horizontal" Spacing="2">
+            <Button Name="BtnTabTasks"
+                    Classes="seg-pill"
+                    Classes.active="{Binding IsTaskTab}">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <TextBlock Text="待办" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding TotalCount}"
+                           IsVisible="{Binding IsTaskTab}"
+                           Foreground="{DynamicResource TextMuted}"
+                           FontSize="11.5"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Name="BtnTabNotes"
+                    Classes="seg-pill"
+                    Classes.active="{Binding IsNoteTab}">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <TextBlock Text="笔记" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding TotalCount}"
+                           IsVisible="{Binding IsNoteTab}"
+                           Foreground="{DynamicResource TextMuted}"
+                           FontSize="11.5"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <!-- Right Subtle Icon Bar -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <Button Name="BtnSearchToggle"
+                  Classes="icon-ghost"
+                  ToolTip.Tip="精准搜索 (Ctrl+F)">
+            <PathIcon Width="14" Height="14"
+                      Foreground="{DynamicResource TextSecondary}"
+                      Data="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </Button>
+
+          <Button Name="BtnCalendar"
+                  Classes="icon-ghost"
+                  ToolTip.Tip="月历、归档与设置">
+            <PathIcon Width="14" Height="14"
+                      Foreground="{DynamicResource TextSecondary}"
+                      Data="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+          </Button>
+
+          <Button Name="BtnThemeToggle"
+                  Classes="icon-ghost"
+                  ToolTip.Tip="切换明暗主题">
+            <PathIcon Width="14" Height="14"
+                      Foreground="{DynamicResource TextSecondary}"
+                      Data="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+          </Button>
+
+          <Button Name="BtnCloseWindow"
+                  Classes="icon-ghost"
+                  ToolTip.Tip="关闭窗口">
+            <PathIcon Width="12" Height="12"
+                      Foreground="{DynamicResource TextMuted}"
+                      Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </Button>
+        </StackPanel>
       </Grid>
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBox Name="SearchBox" Grid.Column="0"
-                 Text="{Binding SearchText}"
-                 PlaceholderText="精准搜索标题/正文/人员..."/>
-        <Button Name="BtnClearSearch" Grid.Column="1" Content="清除" Margin="6,0,0,0" Padding="8,4"/>
+
+      <!-- 2. Collapsible Search Bar (Only visible when toggled or active) -->
+      <Border Grid.Row="1"
+              IsVisible="{Binding IsSearchOpen}"
+              Background="{DynamicResource BgCard}"
+              BorderBrush="{DynamicResource BorderSubtle}"
+              BorderThickness="1"
+              CornerRadius="9"
+              Padding="10,6"
+              Margin="0,0,0,8">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <PathIcon Grid.Column="0"
+                    Width="13" Height="13"
+                    Foreground="{DynamicResource TextMuted}"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Data="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          <TextBox Name="SearchBox"
+                   Grid.Column="1"
+                   Classes="clean-input"
+                   Text="{Binding SearchText}"
+                   FontSize="12.5"
+                   PlaceholderText="字面精准筛选标题、正文或人员... (Esc 关闭)"/>
+          <Button Name="BtnClearSearch"
+                  Grid.Column="2"
+                  Classes="icon-ghost"
+                  Width="20" Height="20"
+                  Content="✕"
+                  FontSize="11"
+                  ToolTip.Tip="清空并关闭搜索"/>
+        </Grid>
+      </Border>
+
+      <!-- 3. Quick Capture Bar (Enter to create directly, no redundant Save button) -->
+      <Border Grid.Row="2"
+              Background="{DynamicResource BgCard}"
+              BorderBrush="{DynamicResource BorderSubtle}"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="12,8"
+              Margin="0,0,0,8">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <TextBlock Grid.Column="0"
+                     Text="+"
+                     Foreground="{DynamicResource AccentPrimary}"
+                     FontSize="16"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     Margin="0,0,8,1"/>
+          <TextBox Name="QuickInputBox"
+                   Grid.Column="1"
+                   Classes="clean-input"
+                   Text="{Binding QuickInputText}"
+                   FontSize="13"
+                   PlaceholderText="{Binding QuickInputPlaceholder}"/>
+          <Button Name="BtnSubmitQuick"
+                  Grid.Column="2"
+                  Classes="ghost-link"
+                  Content="↵"
+                  IsVisible="False"
+                  ToolTip.Tip="按 Enter 直接创建"/>
+        </Grid>
+      </Border>
+
+      <!-- 4. Virtualized Task/Note List & Minimalist Empty State -->
+      <Panel Grid.Row="3">
+        <ListBox Name="RecordListBox"
+                 ItemsSource="{Binding Items}"
+                 IsVisible="{Binding !IsEmpty}"
+                 Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:TaskRowViewModel">
+              <controls:TaskRow/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Calm Empty State -->
+        <StackPanel IsVisible="{Binding IsEmpty}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="6"
+                    Margin="20">
+          <Border Width="40" Height="40"
+                  CornerRadius="20"
+                  Background="{DynamicResource BgHover}"
+                  HorizontalAlignment="Center"
+                  Margin="0,0,0,4">
+            <PathIcon Width="18" Height="18"
+                      Foreground="{DynamicResource TextMuted}"
+                      Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </Border>
+          <TextBlock Text="{Binding EmptyStateTitle}"
+                     Foreground="{DynamicResource TextSecondary}"
+                     FontSize="13.5"
+                     FontWeight="Medium"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="{Binding EmptyStateSubtitle}"
+                     Foreground="{DynamicResource TextMuted}"
+                     FontSize="12"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     MaxWidth="240"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Panel>
+
+      <!-- 5. Whisper-Quiet Footer -->
+      <Grid Grid.Row="4"
+            ColumnDefinitions="*,Auto"
+            Margin="2,8,2,0">
+        <TextBlock Grid.Column="0"
+                   Text="{Binding StatusMessage}"
+                   Foreground="{DynamicResource TextMuted}"
+                   FontSize="11.5"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"/>
+        <Button Name="BtnQuickAdd"
+                Grid.Column="1"
+                Classes="ghost-link"
+                Content="完整新建 ↗"
+                ToolTip.Tip="打开详情窗口新建带日期与优先级的记录"/>
       </Grid>
-    </StackPanel>
 
-    <!-- Quick Create Box -->
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-      <TextBox Name="QuickInputBox" Grid.Column="0"
-               Text="{Binding QuickInputText}"
-               PlaceholderText="快速输入标题或内容..."/>
-      <Button Name="BtnSubmitQuick" Grid.Column="1" Content="保存" Margin="6,0,0,0" Padding="8,4"/>
     </Grid>
-
-    <!-- Virtualized Task/Note List -->
-    <ListBox Name="RecordListBox" Grid.Row="3"
-             ItemsSource="{Binding Items}"
-             Background="Transparent">
-      <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="vm:TaskRowViewModel">
-          <controls:TaskRow/>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
-
-    <!-- Bottom Navigation & Status -->
-    <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,8,0,0">
-      <Button Name="BtnCalendar" Grid.Column="0" Content="日历" Margin="0,0,6,0" Padding="8,4"/>
-      <Button Name="BtnArchive" Grid.Column="1" Content="归档" Margin="0,0,6,0" Padding="8,4"/>
-      <Button Name="BtnSettings" Grid.Column="2" Content="设置" Margin="0,0,6,0" Padding="8,4"/>
-      <TextBlock Grid.Column="3" Text="{Binding StatusMessage}"
-                 Foreground="{DynamicResource TextMuted}" FontSize="12"
-                 VerticalAlignment="Center" HorizontalAlignment="Right"
-                 TextTrimming="CharacterEllipsis"/>
-    </Grid>
-  </Grid>
+  </Border>
 </Window>

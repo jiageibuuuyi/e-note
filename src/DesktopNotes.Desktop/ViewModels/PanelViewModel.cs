@@ -18,24 +18,39 @@ public sealed class TaskRowViewModel : ViewModelBase
     public string? Publisher => Record.Effective.Publisher;
     public Priority Priority => Record.Effective.Priority;
     public bool IsSubtask => Record.ParentId.HasValue;
+    public bool HasBody => !string.IsNullOrWhiteSpace(Body);
+    public bool HasAssignee => !string.IsNullOrWhiteSpace(Assignee);
 
     public string StageLabel => Stage switch
     {
-        DeadlineStage.DueToday => "今日到期",
-        DeadlineStage.Overdue => "已逾期",
+        DeadlineStage.DueToday => "今日",
+        DeadlineStage.Overdue => "逾期",
         DeadlineStage.Completed => "已完成",
         _ => string.Empty
     };
 
+    public bool HasStageLabel => !string.IsNullOrEmpty(StageLabel);
+    public bool IsOverdue => Stage == DeadlineStage.Overdue;
+    public bool IsDueToday => Stage == DeadlineStage.DueToday;
+
+    public string PriorityBadge => Priority switch
+    {
+        Priority.Highest => "P0",
+        Priority.High => "P1",
+        _ => string.Empty
+    };
+
+    public bool HasPriorityBadge => !string.IsNullOrEmpty(PriorityBadge);
+
     public string DueSummary => Record.Effective.Due.Kind switch
     {
         DueKind.Date when Record.Effective.Due.Date is { } d =>
-            string.IsNullOrEmpty(StageLabel) ? d.ToString("yyyy-MM-dd") : $"{d:yyyy-MM-dd} ({StageLabel})",
+            string.IsNullOrEmpty(StageLabel) ? d.ToString("yyyy-MM-dd") : $"{d:yyyy-MM-dd} · {StageLabel}",
         DueKind.Instant when Record.Effective.Due.Instant is { } inst =>
             string.IsNullOrEmpty(StageLabel)
                 ? inst.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
-                : $"{inst.ToLocalTime():yyyy-MM-dd HH:mm} ({StageLabel})",
-        _ => "无截止日期"
+                : $"{inst.ToLocalTime():yyyy-MM-dd HH:mm} · {StageLabel}",
+        _ => "无截止期"
     };
 
     public bool IsExpanded
@@ -60,9 +75,10 @@ public sealed class PanelViewModel : ViewModelBase
     private readonly Func<TimeZoneInfo> _zoneProvider;
     private RecordKind _currentKind = RecordKind.Task;
     private string _searchText = string.Empty;
+    private bool _isSearchOpen;
     private Guid? _expandedRecordId;
     private int _totalCount;
-    private string _statusMessage = string.Empty;
+    private string _statusMessage = "双击任务编辑详情 · 拖入文件自动归档";
     private string _quickInputText = string.Empty;
     private long _querySequence;
     private CancellationTokenSource? _searchDebounceCts;
@@ -77,6 +93,29 @@ public sealed class PanelViewModel : ViewModelBase
     public TaskRowInteraction RowInteraction { get; }
     public event Action<Guid>? OpenDetailRequested;
 
+    public bool IsTaskTab => _currentKind == RecordKind.Task;
+    public bool IsNoteTab => _currentKind == RecordKind.Note;
+    public bool HasSearchText => !string.IsNullOrEmpty(_searchText);
+    public bool IsEmpty => Items.Count == 0;
+
+    public string QuickInputPlaceholder => IsTaskTab
+        ? "添加待办，按 Enter 直接创建..."
+        : "记录灵感或笔记，按 Enter 直接创建...";
+
+    public string EmptyStateTitle => HasSearchText
+        ? "未找到匹配内容"
+        : (IsTaskTab ? "今天还没有待办事项" : "还没有笔记记录");
+
+    public string EmptyStateSubtitle => HasSearchText
+        ? "尝试更换关键词，或按 Esc 清空搜索"
+        : "在上方输入框输入文字并按 Enter 键即可快速添加";
+
+    public bool IsSearchOpen
+    {
+        get => _isSearchOpen || HasSearchText;
+        set => SetProperty(ref _isSearchOpen, value);
+    }
+
     public RecordKind CurrentKind
     {
         get => _currentKind;
@@ -85,6 +124,10 @@ public sealed class PanelViewModel : ViewModelBase
             if (SetProperty(ref _currentKind, value))
             {
                 ExpandedRecordId = null;
+                RaisePropertyChanged(nameof(IsTaskTab));
+                RaisePropertyChanged(nameof(IsNoteTab));
+                RaisePropertyChanged(nameof(QuickInputPlaceholder));
+                RaisePropertyChanged(nameof(EmptyStateTitle));
                 _ = RefreshAsync(CancellationToken.None);
             }
         }
@@ -97,6 +140,10 @@ public sealed class PanelViewModel : ViewModelBase
         {
             if (SetProperty(ref _searchText, value))
             {
+                RaisePropertyChanged(nameof(HasSearchText));
+                RaisePropertyChanged(nameof(IsSearchOpen));
+                RaisePropertyChanged(nameof(EmptyStateTitle));
+                RaisePropertyChanged(nameof(EmptyStateSubtitle));
                 _ = DebouncedSearchAsync(value);
             }
         }
@@ -200,6 +247,9 @@ public sealed class PanelViewModel : ViewModelBase
         }
 
         TotalCount = page.Total;
+        RaisePropertyChanged(nameof(IsEmpty));
+        RaisePropertyChanged(nameof(EmptyStateTitle));
+        RaisePropertyChanged(nameof(EmptyStateSubtitle));
     }
 
     public async Task LoadMoreAsync(CancellationToken ct)
@@ -227,13 +277,19 @@ public sealed class PanelViewModel : ViewModelBase
         }
 
         TotalCount = page.Total;
+        RaisePropertyChanged(nameof(IsEmpty));
     }
 
     public async Task ClearSearchAsync()
     {
         _searchDebounceCts?.Cancel();
         _searchText = string.Empty;
+        _isSearchOpen = false;
         RaisePropertyChanged(nameof(SearchText));
+        RaisePropertyChanged(nameof(HasSearchText));
+        RaisePropertyChanged(nameof(IsSearchOpen));
+        RaisePropertyChanged(nameof(EmptyStateTitle));
+        RaisePropertyChanged(nameof(EmptyStateSubtitle));
         await RefreshAsync(CancellationToken.None);
     }
 
@@ -259,7 +315,7 @@ public sealed class PanelViewModel : ViewModelBase
     {
         if (!RecordRules.HasValidText(titleOrBody, string.Empty))
         {
-            StatusMessage = "标题或内容至少填写一项";
+            StatusMessage = "请输入内容后再按 Enter 创建";
             return null;
         }
 
@@ -275,7 +331,7 @@ public sealed class PanelViewModel : ViewModelBase
 
         var res = await _recordService.SaveAsync(req, ct);
         QuickInputText = string.Empty;
-        StatusMessage = "已保存";
+        StatusMessage = "已创建";
         await RefreshAsync(ct);
         return res.Changed.FirstOrDefault();
     }
