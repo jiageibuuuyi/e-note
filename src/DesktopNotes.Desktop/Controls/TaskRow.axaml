@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
+             x:Class="DesktopNotes.Desktop.Controls.TaskRow"
+             x:DataType="vm:TaskRowViewModel">
+  <Border Name="RowContainer"
+          Background="{DynamicResource BgCard}"
+          BorderBrush="{DynamicResource BorderSubtle}"
+          BorderThickness="3,1,1,1"
+          CornerRadius="4"
+          Padding="10,8"
+          Margin="0,2"
+          MinHeight="36"
+          DragDrop.AllowDrop="True">
+    <StackPanel Spacing="6">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <CheckBox Name="CompleteCheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding DisplayTitle}"
+                   Foreground="{DynamicResource TextPrimary}"
+                   FontSize="14"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"/>
+        <TextBlock Grid.Column="2"
+                   Text="{Binding StageLabel}"
+                   Foreground="{DynamicResource StatusOverdue}"
+                   FontSize="12"
+                   VerticalAlignment="Center"
+                   Margin="6,0,0,0"/>
+      </Grid>
+
+      <Border IsVisible="{Binding IsExpanded}"
+              BorderBrush="{DynamicResource BorderSubtle}"
+              BorderThickness="0,1,0,0"
+              Padding="0,6,0,0"
+              MaxHeight="220">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding Body}"
+                       Foreground="{DynamicResource TextSecondary}"
+                       FontSize="13"
+                       TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding DueSummary}"
+                       Foreground="{DynamicResource TextSecondary}"
+                       FontSize="12"/>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Text="{Binding Assignee, StringFormat='责任人：{0}'}"
+                         Foreground="{DynamicResource TextMuted}"
+                         FontSize="12"/>
+              <Button Name="OpenDetailButton" Content="编辑详情" FontSize="12" Padding="8,2"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DesktopNotes.Infrastructure\DesktopNotes.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\DesktopNotes.Platforms\DesktopNotes.Platforms.csproj" />
+    <ProjectReference Include="..\..\src\DesktopNotes.Desktop\DesktopNotes.Desktop.csproj" />
   </ItemGroup>
 
   <ItemGroup>

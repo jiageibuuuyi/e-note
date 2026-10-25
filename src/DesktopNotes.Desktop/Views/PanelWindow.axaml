@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
+        xmlns:controls="using:DesktopNotes.Desktop.Controls"
+        x:Class="DesktopNotes.Desktop.Views.PanelWindow"
+        x:DataType="vm:PanelViewModel"
+        Width="350" Height="520" MinWidth="280" MinHeight="360"
+        Background="{DynamicResource BgWindow}"
+        Title="桌面笔记">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12">
+    <!-- Title Bar -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,8">
+      <TextBlock Grid.Column="0" Text="桌面笔记" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+      <Button Name="BtnQuickAdd" Grid.Column="1" Content="新建" Margin="0,0,6,0" Padding="8,4"/>
+      <Button Name="BtnModeToggle" Grid.Column="2" Content="模式" Padding="8,4"/>
+    </Grid>
+
+    <!-- Tabs & Search -->
+    <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,8">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+        <Button Name="BtnTabTasks" Grid.Column="0" Content="任务" Margin="0,0,6,0" Padding="10,4"/>
+        <Button Name="BtnTabNotes" Grid.Column="1" Content="笔记" Padding="10,4"/>
+        <TextBlock Grid.Column="3" Text="{Binding TotalCount, StringFormat='共 {0} 项'}"
+                   Foreground="{DynamicResource TextMuted}" FontSize="12" VerticalAlignment="Center"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox Name="SearchBox" Grid.Column="0"
+                 Text="{Binding SearchText}"
+                 PlaceholderText="精准搜索标题/正文/人员..."/>
+        <Button Name="BtnClearSearch" Grid.Column="1" Content="清除" Margin="6,0,0,0" Padding="8,4"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Quick Create Box -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+      <TextBox Name="QuickInputBox" Grid.Column="0"
+               Text="{Binding QuickInputText}"
+               PlaceholderText="快速输入标题或内容..."/>
+      <Button Name="BtnSubmitQuick" Grid.Column="1" Content="保存" Margin="6,0,0,0" Padding="8,4"/>
+    </Grid>
+
+    <!-- Virtualized Task/Note List -->
+    <ListBox Name="RecordListBox" Grid.Row="3"
+             ItemsSource="{Binding Items}"
+             Background="Transparent">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:TaskRowViewModel">
+          <controls:TaskRow/>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <!-- Bottom Navigation & Status -->
+    <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,8,0,0">
+      <Button Name="BtnCalendar" Grid.Column="0" Content="日历" Margin="0,0,6,0" Padding="8,4"/>
+      <Button Name="BtnArchive" Grid.Column="1" Content="归档" Margin="0,0,6,0" Padding="8,4"/>
+      <Button Name="BtnSettings" Grid.Column="2" Content="设置" Margin="0,0,6,0" Padding="8,4"/>
+      <TextBlock Grid.Column="3" Text="{Binding StatusMessage}"
+                 Foreground="{DynamicResource TextMuted}" FontSize="12"
+                 VerticalAlignment="Center" HorizontalAlignment="Right"
+                 TextTrimming="CharacterEllipsis"/>
+    </Grid>
+  </Grid>
+</Window>

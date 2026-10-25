@@ -1,0 +1,45 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="BgWindow" Color="#F8FAFC"/>
+          <SolidColorBrush x:Key="BgCard" Color="#FFFFFF"/>
+          <SolidColorBrush x:Key="BgHover" Color="#F1F5F9"/>
+          <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
+          <SolidColorBrush x:Key="TextSecondary" Color="#475569"/>
+          <SolidColorBrush x:Key="TextMuted" Color="#94A3B8"/>
+          <SolidColorBrush x:Key="BorderSubtle" Color="#E2E8F0"/>
+          <SolidColorBrush x:Key="AccentPrimary" Color="#2563EB"/>
+          <SolidColorBrush x:Key="StatusDueToday" Color="#D97706"/>
+          <SolidColorBrush x:Key="StatusDueTodayBg" Color="#FEF3C7"/>
+          <SolidColorBrush x:Key="StatusOverdue" Color="#DC2626"/>
+          <SolidColorBrush x:Key="StatusOverdueBg" Color="#FEE2E2"/>
+          <SolidColorBrush x:Key="P0_Highest" Color="#DC2626"/>
+          <SolidColorBrush x:Key="P1_High" Color="#EA580C"/>
+          <SolidColorBrush x:Key="P2_Normal" Color="#64748B"/>
+          <SolidColorBrush x:Key="P3_Low" Color="#94A3B8"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="BgWindow" Color="#18181B"/>
+          <SolidColorBrush x:Key="BgCard" Color="#27272A"/>
+          <SolidColorBrush x:Key="BgHover" Color="#3F3F46"/>
+          <SolidColorBrush x:Key="TextPrimary" Color="#F4F4F5"/>
+          <SolidColorBrush x:Key="TextSecondary" Color="#A1A1AA"/>
+          <SolidColorBrush x:Key="TextMuted" Color="#71717A"/>
+          <SolidColorBrush x:Key="BorderSubtle" Color="#3F3F46"/>
+          <SolidColorBrush x:Key="AccentPrimary" Color="#3B82F6"/>
+          <SolidColorBrush x:Key="StatusDueToday" Color="#F59E0B"/>
+          <SolidColorBrush x:Key="StatusDueTodayBg" Color="#451A03"/>
+          <SolidColorBrush x:Key="StatusOverdue" Color="#EF4444"/>
+          <SolidColorBrush x:Key="StatusOverdueBg" Color="#450A0A"/>
+          <SolidColorBrush x:Key="P0_Highest" Color="#F87171"/>
+          <SolidColorBrush x:Key="P1_High" Color="#FB923C"/>
+          <SolidColorBrush x:Key="P2_Normal" Color="#94A3B8"/>
+          <SolidColorBrush x:Key="P3_Low" Color="#52525B"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Styles.Resources>
+</Styles>

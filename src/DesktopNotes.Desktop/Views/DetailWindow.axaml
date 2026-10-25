@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
+        x:Class="DesktopNotes.Desktop.Views.DetailWindow"
+        x:DataType="vm:DetailViewModel"
+        Width="480" Height="620" MinWidth="360" MinHeight="420"
+        Background="{DynamicResource BgWindow}"
+        Title="记录详情">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+    <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+      <TextBox Name="TitleBox" Text="{Binding Title}" PlaceholderText="标题（标题与正文至少填写一项）" FontSize="15"/>
+      <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource StatusDueToday}" FontSize="12"/>
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="10">
+        <TextBox Name="BodyBox" Text="{Binding Body}" PlaceholderText="多行纯文本正文..."
+                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="180" FontSize="14"/>
+        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}"
+                BorderThickness="1" CornerRadius="4" Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding Effective.Assignee, StringFormat='生效责任人：{0}'}" FontSize="13"/>
+            <TextBlock Text="{Binding Effective.Publisher, StringFormat='生效发布人：{0}'}" FontSize="13"/>
+            <TextBlock Text="{Binding Effective.Priority, StringFormat='生效优先级：{0}'}" FontSize="13"/>
+            <Button Name="BtnClearDue" Content="清空截止日期（设为独立无截止）" Padding="8,4"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+      <Button Name="BtnSave" Content="保存" Padding="14,6"/>
+      <Button Name="BtnClose" Content="关闭" Padding="14,6"/>
+    </StackPanel>
+  </Grid>
+</Window>
