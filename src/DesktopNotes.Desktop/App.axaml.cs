@@ -7,6 +7,8 @@ namespace DesktopNotes.Desktop;
 
 public partial class App : global::Avalonia.Application
 {
+    private Bootstrapper? _bootstrapper;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -16,7 +18,10 @@ public partial class App : global::Avalonia.Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new PlatformProbeWindow();
+            _bootstrapper = new Bootstrapper();
+            var panelWindow = new PanelWindow(_bootstrapper.PanelViewModel);
+            desktop.MainWindow = panelWindow;
+            desktop.Exit += (_, _) => _bootstrapper?.Dispose();
         }
 
         base.OnFrameworkInitializationCompleted();

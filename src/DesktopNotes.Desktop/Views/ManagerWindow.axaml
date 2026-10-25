@@ -1,0 +1,35 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DesktopNotes.Desktop.Views.ManagerWindow"
+        Width="760" Height="560" MinWidth="560" MinHeight="420"
+        Background="{DynamicResource BgWindow}"
+        Title="桌面笔记 - 管理与日历">
+  <TabControl Margin="12">
+    <TabItem Header="月历">
+      <Border Background="{DynamicResource BgCard}" CornerRadius="4" Padding="12">
+        <TextBlock Text="月历与历史任务视图（支持截止/计划开始/创建/完成日期四维切换及无日期列表）"
+                   Foreground="{DynamicResource TextPrimary}"/>
+      </Border>
+    </TabItem>
+    <TabItem Header="归档">
+      <Border Background="{DynamicResource BgCard}" CornerRadius="4" Padding="12">
+        <TextBlock Text="已完成任务与已归档笔记" Foreground="{DynamicResource TextPrimary}"/>
+      </Border>
+    </TabItem>
+    <TabItem Header="回收站">
+      <Border Background="{DynamicResource BgCard}" CornerRadius="4" Padding="12">
+        <TextBlock Text="已删除记录与逻辑回收附件" Foreground="{DynamicResource TextPrimary}"/>
+      </Border>
+    </TabItem>
+    <TabItem Header="设置与备份">
+      <Border Background="{DynamicResource BgCard}" CornerRadius="4" Padding="12">
+        <StackPanel Spacing="10">
+          <TextBlock Text="应用设置与完整备份恢复" FontSize="15" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimary}"/>
+          <TextBlock Text="支持默认附件根目录、系统通知开关（默认关闭）、窗口嵌入模式、位置锁定、登录启动与完整导入导出。"
+                     Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+    </TabItem>
+  </TabControl>
+</Window>

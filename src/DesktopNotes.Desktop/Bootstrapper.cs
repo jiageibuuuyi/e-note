@@ -1,7 +1,11 @@
+using DesktopNotes.Application.Attachments;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Queries;
 using DesktopNotes.Application.Records;
+using DesktopNotes.Application.Reminders;
+using DesktopNotes.Application.Settings;
 using DesktopNotes.Desktop.ViewModels;
+using DesktopNotes.Infrastructure.Files;
 using DesktopNotes.Infrastructure.Persistence;
 using DesktopNotes.Platforms.Windows;
 
@@ -13,21 +17,55 @@ public sealed class Bootstrapper : IDisposable
     public IRecordService RecordService { get; }
     public IRecordQueryService QueryService { get; }
     public IDesktopIntegration DesktopIntegration { get; }
+    public WindowsSourceCleanup SourceCleanup { get; }
+    public ManagedFileStore FileStore { get; }
+    public WindowsFileClipboard FileClipboard { get; }
+    public ImportWorker ImportWorker { get; }
+    public RecoveryService RecoveryService { get; }
+    public AttachmentService AttachmentService { get; }
+    public SettingsService SettingsService { get; }
+    public ReminderScheduler ReminderScheduler { get; }
     public PanelViewModel PanelViewModel { get; }
 
-    public Bootstrapper(string? databasePath = null)
+    public Bootstrapper(string? databasePath = null, string? defaultAttachmentRoot = null)
     {
         string dbPath = databasePath ?? GetDefaultDatabasePath();
+        string attachmentRoot = defaultAttachmentRoot ?? GetDefaultAttachmentRootPath();
+
         Store = new SqliteStore(dbPath);
         RecordService = new RecordService(Store);
         QueryService = new RecordQueryService(Store);
         DesktopIntegration = new DesktopHostProbe();
+        SourceCleanup = new WindowsSourceCleanup();
+        FileStore = new ManagedFileStore(SourceCleanup);
+        FileClipboard = new WindowsFileClipboard();
+        ImportWorker = new ImportWorker(Store, FileStore);
+        RecoveryService = new RecoveryService(Store, FileStore, ImportWorker);
+        AttachmentService = new AttachmentService(Store, FileStore, ImportWorker, RecoveryService, attachmentRoot, FileClipboard);
+        SettingsService = new SettingsService(Store, DesktopIntegration);
+        ReminderScheduler = new ReminderScheduler(Store);
         PanelViewModel = new PanelViewModel(RecordService, QueryService);
+    }
+
+    public async Task InitializeAsync(CancellationToken ct = default)
+    {
+        _ = SettingsService.GetPreferences();
+        await RecoveryService.ReconcileIncompleteJobsAsync(ct);
     }
 
     public DetailViewModel CreateDetailViewModel()
     {
         return new DetailViewModel(RecordService, QueryService);
+    }
+
+    public CalendarViewModel CreateCalendarViewModel()
+    {
+        return new CalendarViewModel(QueryService);
+    }
+
+    public SettingsViewModel CreateSettingsViewModel()
+    {
+        return new SettingsViewModel(SettingsService);
     }
 
     public static string GetDefaultDatabasePath()
@@ -38,6 +76,16 @@ public sealed class Bootstrapper : IDisposable
             appData = AppContext.BaseDirectory;
         }
         return Path.Combine(appData, "DesktopNotes", "data", "app.db");
+    }
+
+    public static string GetDefaultAttachmentRootPath()
+    {
+        string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrWhiteSpace(docs))
+        {
+            docs = AppContext.BaseDirectory;
+        }
+        return Path.Combine(docs, "DesktopNotesAttachments");
     }
 
     public void Dispose()
