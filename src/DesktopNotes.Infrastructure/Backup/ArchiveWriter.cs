@@ -231,14 +231,19 @@ public sealed class ArchiveWriter : IArchivePort
             throw new AppException("invalid_archive_path", "备份路径包含非法空字符。");
         }
 
-        if (relativePath.StartsWith('/') || relativePath.StartsWith('\\') || Path.IsPathRooted(relativePath))
+        if (relativePath.StartsWith('/') || relativePath.StartsWith('\\'))
         {
             throw new AppException("invalid_archive_path", $"拒绝绝对路径: {relativePath}");
         }
 
-        if (relativePath.Contains(':'))
+        if (relativePath.Length >= 2 && char.IsLetter(relativePath[0]) && relativePath[1] == ':')
         {
-            throw new AppException("invalid_archive_path", $"拒绝带盘符或协议的路径: {relativePath}");
+            throw new AppException("invalid_archive_path", $"拒绝带盘符的路径: {relativePath}");
+        }
+
+        if (relativePath.Contains("://", StringComparison.Ordinal))
+        {
+            throw new AppException("invalid_archive_path", $"拒绝带协议的路径: {relativePath}");
         }
 
         string[] segments = relativePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);

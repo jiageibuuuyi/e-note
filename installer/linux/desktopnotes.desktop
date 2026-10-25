@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DesktopNotes
+GenericName=Desktop Todo and Notes
+Comment=Lightweight desktop todo list and note manager
+Exec=/opt/desktopnotes/DesktopNotes.Desktop
+Icon=desktopnotes
+Terminal=false
+Categories=Utility;Office;
+StartupNotify=false
