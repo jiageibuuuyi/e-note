@@ -1,10 +1,12 @@
 using DesktopNotes.Application.Attachments;
+using DesktopNotes.Application.Backup;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Queries;
 using DesktopNotes.Application.Records;
 using DesktopNotes.Application.Reminders;
 using DesktopNotes.Application.Settings;
 using DesktopNotes.Desktop.ViewModels;
+using DesktopNotes.Infrastructure.Backup;
 using DesktopNotes.Infrastructure.Files;
 using DesktopNotes.Infrastructure.Persistence;
 using DesktopNotes.Platforms.Windows;
@@ -23,6 +25,7 @@ public sealed class Bootstrapper : IDisposable
     public ImportWorker ImportWorker { get; }
     public RecoveryService RecoveryService { get; }
     public AttachmentService AttachmentService { get; }
+    public BackupService BackupService { get; }
     public SettingsService SettingsService { get; }
     public ReminderScheduler ReminderScheduler { get; }
     public PanelViewModel PanelViewModel { get; }
@@ -42,6 +45,7 @@ public sealed class Bootstrapper : IDisposable
         ImportWorker = new ImportWorker(Store, FileStore);
         RecoveryService = new RecoveryService(Store, FileStore, ImportWorker);
         AttachmentService = new AttachmentService(Store, FileStore, ImportWorker, RecoveryService, attachmentRoot, FileClipboard);
+        BackupService = new BackupService(Store, new ArchiveWriter(), FileStore.CurrentDeviceId);
         SettingsService = new SettingsService(Store, DesktopIntegration);
         ReminderScheduler = new ReminderScheduler(Store);
         PanelViewModel = new PanelViewModel(RecordService, QueryService);
