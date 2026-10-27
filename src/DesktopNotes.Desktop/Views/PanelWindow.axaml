@@ -13,7 +13,7 @@
   <Border BorderBrush="{DynamicResource BorderSubtle}"
           BorderThickness="1"
           Padding="10,8,10,6">
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
       <!-- 1. Ultra-Compact Top Bar: Mode Pill (Left) + Drag Region (Center) + Ghost Icons (Right) -->
       <Grid Name="HeaderDragRegion"
@@ -49,8 +49,17 @@
           </StackPanel>
         </Button>
 
-        <!-- Right Action Icons: Search + Three-dot Menu + Close -->
+        <!-- Right Action Icons: + Add Inline + Search + Three-dot Menu + Close -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <!-- + Add New Blank Row at Bottom of List -->
+          <Button Name="BtnAddInline"
+                  Classes="icon-ghost"
+                  ToolTip.Tip="在列表末尾新增空白输入行 (Ctrl+N)">
+            <PathIcon Width="13" Height="13"
+                      Foreground="{DynamicResource AccentPrimary}"
+                      Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
+          </Button>
+
           <!-- Search Toggle -->
           <Button Name="BtnSearchToggle"
                   Classes="icon-ghost"
@@ -80,7 +89,7 @@
                   </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Name="BtnQuickAdd" Header="➕  详情新建...">
+                <MenuItem Name="BtnQuickAdd" Header="➕  详情窗口新建...">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
                   </MenuItem.Icon>
@@ -142,41 +151,8 @@
         </Grid>
       </Border>
 
-      <!-- 3. Slim Quick Capture Row (Enter to create) -->
-      <Border Grid.Row="2"
-              Background="{DynamicResource BgCard}"
-              BorderBrush="{DynamicResource BorderSubtle}"
-              BorderThickness="1"
-              CornerRadius="6"
-              Padding="8,3"
-              Margin="0,0,0,6">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <PathIcon Grid.Column="0"
-                    Width="10" Height="10"
-                    Foreground="{DynamicResource AccentPrimary}"
-                    Margin="2,0,7,0"
-                    VerticalAlignment="Center"
-                    Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
-          <TextBox Name="QuickInputBox"
-                   Grid.Column="1"
-                   Classes="clean-input"
-                   Text="{Binding QuickInputText}"
-                   FontSize="12"
-                   PlaceholderText="{Binding QuickInputPlaceholder}"/>
-          <TextBlock Grid.Column="2"
-                     Text="↵"
-                     Foreground="{DynamicResource TextMuted}"
-                     FontSize="11"
-                     VerticalAlignment="Center"
-                     Margin="4,0,2,0"/>
-          <Button Name="BtnSubmitQuick"
-                  Grid.Column="2"
-                  IsVisible="False"/>
-        </Grid>
-      </Border>
-
-      <!-- 4. Virtualized Task/Note List & Calm Empty State -->
-      <Panel Grid.Row="3">
+      <!-- 3. Virtualized Task/Note List & Calm Empty State -->
+      <Panel Grid.Row="2">
         <ListBox Name="RecordListBox"
                  ItemsSource="{Binding Items}"
                  IsVisible="{Binding !IsEmpty}"
@@ -189,21 +165,25 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- Calm Empty State View -->
+        <!-- Calm Empty State View with + Action -->
         <StackPanel IsVisible="{Binding IsEmpty}"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center"
-                    Spacing="6"
+                    Spacing="8"
                     Margin="16">
-          <Border Width="38" Height="38"
-                  CornerRadius="19"
+          <Button Name="BtnEmptyAdd"
+                  Width="40" Height="40"
+                  CornerRadius="20"
                   Background="{DynamicResource BgSubtle}"
+                  BorderBrush="{DynamicResource BorderSubtle}"
+                  BorderThickness="1"
                   HorizontalAlignment="Center"
-                  Margin="0,0,0,4">
-            <PathIcon Width="16" Height="16"
-                      Foreground="{DynamicResource TextMuted}"
-                      Data="M 9 16.17 L 4.83 12 L 3.41 13.41 L 9 19 L 21 7 L 19.59 5.59 L 9 16.17 Z"/>
-          </Border>
+                  Cursor="Hand"
+                  ToolTip.Tip="点击新增一项">
+            <PathIcon Width="14" Height="14"
+                      Foreground="{DynamicResource AccentPrimary}"
+                      Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
+          </Button>
           <TextBlock Text="{Binding EmptyStateTitle}"
                      Foreground="{DynamicResource TextSecondary}"
                      FontSize="13"
@@ -219,15 +199,24 @@
         </StackPanel>
       </Panel>
 
-      <!-- 5. Low-Noise Whisper Counter (No explanatory clutter) -->
-      <Border Grid.Row="4"
-              IsVisible="{Binding HasFooterContent}"
-              Margin="2,3,2,0">
-        <TextBlock Text="{Binding WhisperStatus}"
+      <!-- 4. Bottom Strip: Subtle + Add Row Button & Low-Noise Counter -->
+      <Grid Grid.Row="3"
+            ColumnDefinitions="Auto,*,Auto"
+            Margin="2,4,2,0">
+        <Button Name="BtnBottomAdd"
+                Grid.Column="0"
+                Classes="ghost-link"
+                Padding="6,2"
+                FontSize="11.5"
+                Content="+ 新增"
+                ToolTip.Tip="在列表末尾增加空白输入行"/>
+        <TextBlock Grid.Column="2"
+                   IsVisible="{Binding HasFooterContent}"
+                   Text="{Binding WhisperStatus}"
                    Foreground="{DynamicResource TextMuted}"
                    FontSize="11"
-                   HorizontalAlignment="Center"/>
-      </Border>
+                   VerticalAlignment="Center"/>
+      </Grid>
 
     </Grid>
   </Border>

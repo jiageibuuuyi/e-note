@@ -86,6 +86,51 @@ public sealed class DetailViewModel : ViewModelBase
         ? InheritanceResolver.Resolve(Own, _parentEffective, _inheritMask)
         : Own;
 
+    public string RecordKindTitle => _kind == RecordKind.Task ? "任务详情" : "笔记详情";
+
+    public bool IsPriorityP0 => Effective.Priority == Priority.Highest;
+    public bool IsPriorityP1 => Effective.Priority == Priority.High;
+    public bool IsPriorityP2 => Effective.Priority == Priority.Normal;
+    public bool IsPriorityP3 => Effective.Priority == Priority.Low;
+
+    public bool HasDue => Effective.Due.Kind != DueKind.None;
+
+    public string DueDisplayText => Effective.Due.Kind switch
+    {
+        DueKind.Date when Effective.Due.Date is { } d =>
+            IsInheriting(InheritField.Due) ? $"{d:yyyy-MM-dd} (继承)" : d.ToString("yyyy-MM-dd"),
+        DueKind.Instant when Effective.Due.Instant is { } inst =>
+            IsInheriting(InheritField.Due)
+                ? $"{inst.ToLocalTime():yyyy-MM-dd HH:mm} (继承)"
+                : inst.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
+        _ => "无截止期"
+    };
+
+    public DateTime? SelectedDueDate
+    {
+        get => Effective.Due.Kind switch
+        {
+            DueKind.Date when Effective.Due.Date is { } d => d.ToDateTime(TimeOnly.MinValue),
+            DueKind.Instant when Effective.Due.Instant is { } inst => inst.ToLocalTime().Date,
+            _ => null
+        };
+        set
+        {
+            if (value is { } dt)
+            {
+                SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(dt), null, null));
+            }
+            else
+            {
+                ClearDue();
+            }
+        }
+    }
+
+    public void SetDueToday() => SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(DateTime.Now), null, null));
+    public void SetDueTomorrow() => SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(DateTime.Now.AddDays(1)), null, null));
+    public void SetDueNextWeek() => SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(DateTime.Now.AddDays(7)), null, null));
+
     public string StatusMessage
     {
         get => _statusMessage;
@@ -191,6 +236,7 @@ public sealed class DetailViewModel : ViewModelBase
         }
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
+        RaisePriorityProperties();
     }
 
     public void SetOwnStart(DateTimeOffset? start)
@@ -214,6 +260,7 @@ public sealed class DetailViewModel : ViewModelBase
         }
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
+        RaiseDueProperties();
     }
 
     public void ClearDue()
@@ -241,6 +288,8 @@ public sealed class DetailViewModel : ViewModelBase
 
         InheritMask |= (field & InheritField.All);
         RaisePropertyChanged(nameof(Effective));
+        RaisePriorityProperties();
+        RaiseDueProperties();
     }
 
     public bool IsInheriting(InheritField field) => _parentId.HasValue && (_inheritMask & field) != 0;
@@ -327,8 +376,24 @@ public sealed class DetailViewModel : ViewModelBase
         _inheritMask = rec.Inherit;
     }
 
+    private void RaisePriorityProperties()
+    {
+        RaisePropertyChanged(nameof(IsPriorityP0));
+        RaisePropertyChanged(nameof(IsPriorityP1));
+        RaisePropertyChanged(nameof(IsPriorityP2));
+        RaisePropertyChanged(nameof(IsPriorityP3));
+    }
+
+    private void RaiseDueProperties()
+    {
+        RaisePropertyChanged(nameof(HasDue));
+        RaisePropertyChanged(nameof(DueDisplayText));
+        RaisePropertyChanged(nameof(SelectedDueDate));
+    }
+
     private void RaiseAllProperties()
     {
+        RaisePropertyChanged(nameof(RecordKindTitle));
         RaisePropertyChanged(nameof(Title));
         RaisePropertyChanged(nameof(Body));
         RaisePropertyChanged(nameof(Version));
@@ -336,5 +401,7 @@ public sealed class DetailViewModel : ViewModelBase
         RaisePropertyChanged(nameof(Effective));
         RaisePropertyChanged(nameof(InheritMask));
         RaisePropertyChanged(nameof(Status));
+        RaisePriorityProperties();
+        RaiseDueProperties();
     }
 }

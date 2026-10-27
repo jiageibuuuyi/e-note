@@ -21,11 +21,12 @@
 
       <!-- Main Content Area -->
       <StackPanel Grid.Column="1" Spacing="8">
-        <!-- Row Header: Checkbox + Subtask Arrow + Title + Priority + Deadline Pill -->
+        <!-- Row Header: Checkbox + Subtask Arrow + Title/InlineInput + Priority + Deadline Pill -->
         <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
           <CheckBox Name="CompleteCheckBox"
                     Grid.Column="0"
                     Classes="task-check"
+                    IsEnabled="{Binding IsDisplayMode}"
                     VerticalAlignment="Center"
                     Margin="0,0,8,0"
                     ToolTip.Tip="标记完成并归档"/>
@@ -39,14 +40,26 @@
                      VerticalAlignment="Center"
                      Margin="0,0,2,0"/>
 
-          <!-- Display Title -->
+          <!-- Display Title (Normal Mode) -->
           <TextBlock Grid.Column="2"
+                     IsVisible="{Binding IsDisplayMode}"
                      Text="{Binding DisplayTitle}"
                      Foreground="{DynamicResource TextPrimary}"
                      FontSize="13.5"
                      FontWeight="Normal"
                      VerticalAlignment="Center"
                      TextTrimming="CharacterEllipsis"/>
+
+          <!-- Inline Editable Input (When Adding New Blank Row at Bottom) -->
+          <TextBox Name="InlineTitleBox"
+                   Grid.Column="2"
+                   IsVisible="{Binding IsEditingInline}"
+                   Classes="clean-input"
+                   Text="{Binding InlineEditText}"
+                   PlaceholderText="输入内容后按 Enter 保存，Esc 取消..."
+                   FontSize="13.5"
+                   Foreground="{DynamicResource TextPrimary}"
+                   VerticalAlignment="Center"/>
 
           <!-- Priority Indicator Pill -->
           <Border Grid.Column="3"

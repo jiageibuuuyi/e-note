@@ -52,6 +52,21 @@ public partial class DetailWindow : Window
             BtnPrio3.Click += (_, _) => viewModel.SetOwnPriority(Priority.Low);
         }
 
+        if (BtnDueToday is not null)
+        {
+            BtnDueToday.Click += (_, _) => viewModel.SetDueToday();
+        }
+
+        if (BtnDueTomorrow is not null)
+        {
+            BtnDueTomorrow.Click += (_, _) => viewModel.SetDueTomorrow();
+        }
+
+        if (BtnDueNextWeek is not null)
+        {
+            BtnDueNextWeek.Click += (_, _) => viewModel.SetDueNextWeek();
+        }
+
         if (BtnClearDue is not null)
         {
             BtnClearDue.Click += (_, _) => viewModel.ClearDue();

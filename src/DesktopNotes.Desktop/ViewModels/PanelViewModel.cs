@@ -59,6 +59,52 @@ public sealed class TaskRowViewModel : ViewModelBase
         set => SetProperty(ref _isExpanded, value);
     }
 
+    private bool _isEditingInline;
+    private string _inlineEditText = string.Empty;
+
+    public bool IsEditingInline
+    {
+        get => _isEditingInline;
+        set
+        {
+            if (SetProperty(ref _isEditingInline, value))
+            {
+                RaisePropertyChanged(nameof(IsDisplayMode));
+            }
+        }
+    }
+
+    public bool IsDisplayMode => !_isEditingInline;
+
+    public string InlineEditText
+    {
+        get => _inlineEditText;
+        set => SetProperty(ref _inlineEditText, value);
+    }
+
+    public static TaskRowViewModel CreateInlineDraft(RecordKind kind, TimeZoneInfo displayZone, DateTimeOffset nowUtc)
+    {
+        var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
+        var draftRecord = new RecordView(
+            Guid.NewGuid(),
+            null,
+            kind,
+            string.Empty,
+            string.Empty,
+            RecordStatus.Active,
+            emptyFields,
+            emptyFields,
+            InheritField.None,
+            0,
+            nowUtc,
+            null,
+            null);
+        return new TaskRowViewModel(draftRecord, displayZone, nowUtc, false)
+        {
+            IsEditingInline = true
+        };
+    }
+
     public TaskRowViewModel(RecordView record, TimeZoneInfo displayZone, DateTimeOffset nowUtc, bool isExpanded)
     {
         Record = record;
@@ -116,12 +162,55 @@ public sealed class PanelViewModel : ViewModelBase
 
     public string EmptyStateSubtitle => HasSearchText
         ? "尝试更换关键词，或按 Esc 清空搜索"
-        : "在上方输入文字并按 Enter 即可快速添加";
+        : "点击 + 号在列表末尾直接新增一行输入";
 
     public bool IsSearchOpen
     {
         get => _isSearchOpen || HasSearchText;
         set => SetProperty(ref _isSearchOpen, value);
+    }
+
+    public TaskRowViewModel StartInlineCreate()
+    {
+        var existing = Items.FirstOrDefault(x => x.IsEditingInline);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var draft = TaskRowViewModel.CreateInlineDraft(
+            _currentKind,
+            _zoneProvider(),
+            _timeProvider.GetUtcNow());
+        Items.Add(draft);
+        RaisePropertyChanged(nameof(IsEmpty));
+        return draft;
+    }
+
+    public async Task CommitInlineCreateAsync(TaskRowViewModel draft, CancellationToken ct)
+    {
+        if (!draft.IsEditingInline)
+        {
+            return;
+        }
+
+        draft.IsEditingInline = false;
+        string text = draft.InlineEditText?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(text))
+        {
+            Items.Remove(draft);
+            RaisePropertyChanged(nameof(IsEmpty));
+            return;
+        }
+
+        await QuickCreateAsync(text, ct);
+    }
+
+    public void CancelInlineCreate(TaskRowViewModel draft)
+    {
+        draft.IsEditingInline = false;
+        Items.Remove(draft);
+        RaisePropertyChanged(nameof(IsEmpty));
     }
 
     public void ToggleKind()

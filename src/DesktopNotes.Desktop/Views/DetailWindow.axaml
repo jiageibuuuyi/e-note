@@ -12,7 +12,7 @@
         Title="记录详情">
   <Border BorderBrush="{DynamicResource BorderSubtle}"
           BorderThickness="1"
-          Padding="24,18,24,18">
+          Padding="22,16,22,16">
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
       <!-- 1. Header Drag Bar with Draft Status & Close -->
@@ -26,7 +26,7 @@
           <Border Background="{DynamicResource AccentSubtle}"
                   CornerRadius="5"
                   Padding="7,2.5">
-            <TextBlock Text="任务详情"
+            <TextBlock Text="{Binding RecordKindTitle}"
                        Foreground="{DynamicResource AccentPrimary}"
                        FontSize="11.5"
                        FontWeight="SemiBold"/>
@@ -45,11 +45,11 @@
                 ToolTip.Tip="关闭 (Esc)">
           <PathIcon Width="11" Height="11"
                     Foreground="{DynamicResource TextMuted}"
-                    Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    Data="M 19 6.41 L 17.59 5 L 12 10.59 L 6.41 5 L 5 6.41 L 10.59 12 L 5 17.59 L 6.41 19 L 12 13.41 L 17.59 19 L 19 17.59 L 13.41 12 L 19 6.41 Z"/>
         </Button>
       </Grid>
 
-      <!-- 2. Document Title Input -->
+      <!-- 2. Document Title Input & Properties -->
       <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,14">
         <TextBox Name="TitleBox"
                  Classes="clean-input"
@@ -73,33 +73,65 @@
                        Foreground="{DynamicResource TextMuted}"
                        FontSize="12"
                        VerticalAlignment="Center"
-                       Width="64"/>
+                       Width="56"/>
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <Button Name="BtnPrio0" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P0 紧急" ToolTip.Tip="设置为最高优先级"/>
-              <Button Name="BtnPrio1" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P1 高" ToolTip.Tip="设置高优先级"/>
-              <Button Name="BtnPrio2" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P2 普通" ToolTip.Tip="设置普通优先级"/>
-              <Button Name="BtnPrio3" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P3 低" ToolTip.Tip="设置低优先级"/>
+              <Button Name="BtnPrio0" Classes="seg-pill" Classes.active="{Binding IsPriorityP0}" Padding="8,3" FontSize="11.5" Content="● P0 紧急" ToolTip.Tip="设置为最高优先级"/>
+              <Button Name="BtnPrio1" Classes="seg-pill" Classes.active="{Binding IsPriorityP1}" Padding="8,3" FontSize="11.5" Content="● P1 高" ToolTip.Tip="设置高优先级"/>
+              <Button Name="BtnPrio2" Classes="seg-pill" Classes.active="{Binding IsPriorityP2}" Padding="8,3" FontSize="11.5" Content="● P2 普通" ToolTip.Tip="设置普通优先级"/>
+              <Button Name="BtnPrio3" Classes="seg-pill" Classes.active="{Binding IsPriorityP3}" Padding="8,3" FontSize="11.5" Content="● P3 低" ToolTip.Tip="设置低优先级"/>
             </StackPanel>
 
-            <!-- Row 2: Due Date & Metadata -->
+            <!-- Row 2: Due Date Display & Quick Picker -->
             <TextBlock Grid.Row="1" Grid.Column="0"
                        Text="截止期"
                        Foreground="{DynamicResource TextMuted}"
                        FontSize="12"
                        VerticalAlignment="Center"/>
-            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
               <Border Background="{DynamicResource BgSubtle}"
                       CornerRadius="5"
-                      Padding="8,3">
-                <TextBlock Text="{Binding Effective.Due, StringFormat='截止: {0}'}"
-                           Foreground="{DynamicResource TextSecondary}"
-                           FontSize="12"/>
+                      Padding="8,3.5"
+                      Margin="0,0,6,0"
+                      VerticalAlignment="Center">
+                <TextBlock Text="{Binding DueDisplayText}"
+                           Foreground="{DynamicResource TextPrimary}"
+                           FontSize="12"
+                           FontWeight="Medium"/>
               </Border>
+              <Button Name="BtnDueToday"
+                      Classes="seg-pill"
+                      Padding="7,3"
+                      Margin="0,0,4,0"
+                      FontSize="11.5"
+                      Content="今日"/>
+              <Button Name="BtnDueTomorrow"
+                      Classes="seg-pill"
+                      Padding="7,3"
+                      Margin="0,0,4,0"
+                      FontSize="11.5"
+                      Content="明日"/>
+              <Button Name="BtnDueNextWeek"
+                      Classes="seg-pill"
+                      Padding="7,3"
+                      Margin="0,0,6,0"
+                      FontSize="11.5"
+                      Content="下周"/>
+              <CalendarDatePicker Name="DueDatePicker"
+                                  SelectedDate="{Binding SelectedDueDate}"
+                                  SelectedDateFormat="Custom"
+                                  CustomDateFormatString="yyyy-MM-dd"
+                                  PlaceholderText="指定日期..."
+                                  FontSize="11.5"
+                                  MinWidth="112"
+                                  Margin="0,0,6,0"
+                                  VerticalAlignment="Center"/>
               <Button Name="BtnClearDue"
+                      IsVisible="{Binding HasDue}"
                       Classes="ghost-link"
-                      Content="清空截止 (独立无截止)"
-                      FontSize="11.5"/>
-            </StackPanel>
+                      Content="清空"
+                      FontSize="11.5"
+                      VerticalAlignment="Center"/>
+            </WrapPanel>
           </Grid>
         </Border>
       </StackPanel>
@@ -125,9 +157,9 @@
       </Border>
 
       <!-- 4. Bottom Action Bar -->
-      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
         <TextBlock Grid.Column="0"
-                   Text="修改自动暂存 · Ctrl+S 立即保存 · Esc 关闭"
+                   Text="Ctrl+S 保存 · Esc 关闭"
                    Foreground="{DynamicResource TextMuted}"
                    FontSize="11.5"
                    VerticalAlignment="Center"/>

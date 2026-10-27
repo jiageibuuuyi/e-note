@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesktopNotes.Desktop.ViewModels;
 
@@ -30,6 +32,71 @@ public partial class TaskRow : UserControl
         {
             OpenDetailButton.Click += OnOpenDetailButtonClick;
         }
+
+        if (InlineTitleBox is not null)
+        {
+            InlineTitleBox.KeyDown += OnInlineTitleBoxKeyDown;
+            InlineTitleBox.LostFocus += OnInlineTitleBoxLostFocus;
+        }
+
+        DataContextChanged += OnTaskRowDataContextChanged;
+        AttachedToVisualTree += OnTaskRowAttachedToVisualTree;
+    }
+
+    private void OnTaskRowDataContextChanged(object? sender, EventArgs e)
+    {
+        TryFocusInlineBox();
+    }
+
+    private void OnTaskRowAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        TryFocusInlineBox();
+    }
+
+    private void TryFocusInlineBox()
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: true } && InlineTitleBox is not null)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                InlineTitleBox.Focus();
+                InlineTitleBox.CaretIndex = InlineTitleBox.Text?.Length ?? 0;
+            }, DispatcherPriority.Input);
+        }
+    }
+
+    private async void OnInlineTitleBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not TaskRowViewModel { IsEditingInline: true } vm)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            if (FindParentPanelViewModel() is { } panelVm)
+            {
+                await panelVm.CommitInlineCreateAsync(vm, CancellationToken.None);
+            }
+        }
+        else if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            if (FindParentPanelViewModel() is { } panelVm)
+            {
+                panelVm.CancelInlineCreate(vm);
+            }
+        }
+    }
+
+    private async void OnInlineTitleBoxLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: true } vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            await panelVm.CommitInlineCreateAsync(vm, CancellationToken.None);
+        }
     }
 
     private PanelViewModel? FindParentPanelViewModel()
@@ -42,6 +109,11 @@ public partial class TaskRow : UserControl
     {
         if (DataContext is TaskRowViewModel vm)
         {
+            if (vm.IsEditingInline)
+            {
+                return;
+            }
+
             RowClicked?.Invoke(vm.Id, e.ClickCount);
             if (FindParentPanelViewModel() is { } panelVm)
             {
@@ -53,7 +125,7 @@ public partial class TaskRow : UserControl
 
     private void OnCompleteCheckBoxClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is TaskRowViewModel vm)
+        if (DataContext is TaskRowViewModel { IsEditingInline: false } vm)
         {
             CompleteRequested?.Invoke(vm.Id);
             if (FindParentPanelViewModel() is { } panelVm)
@@ -66,7 +138,7 @@ public partial class TaskRow : UserControl
 
     private void OnOpenDetailButtonClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is TaskRowViewModel vm)
+        if (DataContext is TaskRowViewModel { IsEditingInline: false } vm)
         {
             OpenDetailClicked?.Invoke(vm.Id);
             if (FindParentPanelViewModel() is { } panelVm)
