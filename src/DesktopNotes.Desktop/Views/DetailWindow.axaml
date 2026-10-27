@@ -3,7 +3,7 @@
         xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
         x:Class="DesktopNotes.Desktop.Views.DetailWindow"
         x:DataType="vm:DetailViewModel"
-        Width="480" Height="560" MinWidth="360" MinHeight="420"
+        Width="520" Height="640" MinWidth="380" MinHeight="460"
         Background="{DynamicResource BgWindow}"
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
@@ -12,93 +12,126 @@
         Title="记录详情">
   <Border BorderBrush="{DynamicResource BorderSubtle}"
           BorderThickness="1"
-          Padding="22,18,22,16">
+          Padding="24,18,24,18">
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-      <!-- 1. Draggable Sheet Header & Document-Style Title Input -->
+      <!-- 1. Header Drag Bar with Draft Status & Close -->
       <Grid Name="DetailHeaderRegion"
             Grid.Row="0"
-            ColumnDefinitions="*,Auto"
+            ColumnDefinitions="*,Auto,Auto"
             Background="Transparent"
-            Margin="0,0,0,10">
+            Margin="0,0,0,12">
+        <!-- Record Type & Status Label -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Border Background="{DynamicResource AccentSubtle}"
+                  CornerRadius="5"
+                  Padding="7,2.5">
+            <TextBlock Text="任务详情"
+                       Foreground="{DynamicResource AccentPrimary}"
+                       FontSize="11.5"
+                       FontWeight="SemiBold"/>
+          </Border>
+          <TextBlock Text="{Binding StatusMessage}"
+                     Foreground="{DynamicResource TextMuted}"
+                     FontSize="11.5"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Close Ghost Button -->
+        <Button Name="BtnHeaderClose"
+                Grid.Column="2"
+                Classes="icon-ghost"
+                Width="26" Height="26"
+                ToolTip.Tip="关闭 (Esc)">
+          <PathIcon Width="11" Height="11"
+                    Foreground="{DynamicResource TextMuted}"
+                    Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </Button>
+      </Grid>
+
+      <!-- 2. Document Title Input -->
+      <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,14">
         <TextBox Name="TitleBox"
-                 Grid.Column="0"
                  Classes="clean-input"
                  Text="{Binding Title}"
                  PlaceholderText="无标题记录..."
-                 FontSize="17"
+                 FontSize="18"
                  FontWeight="SemiBold"
                  Foreground="{DynamicResource TextPrimary}"/>
-        <TextBlock Grid.Column="1"
-                   Text="{Binding StatusMessage}"
-                   Foreground="{DynamicResource TextMuted}"
-                   FontSize="11.5"
-                   VerticalAlignment="Center"
-                   Margin="10,0,0,0"/>
-      </Grid>
 
-      <!-- 2. Metadata Pill Strip -->
-      <Border Grid.Row="1"
-              BorderBrush="{DynamicResource BorderSubtle}"
-              BorderThickness="0,0,0,1"
-              Padding="0,0,0,12"
-              Margin="0,0,0,12">
-        <WrapPanel Orientation="Horizontal">
-          <Border Background="{DynamicResource BgCard}"
-                  BorderBrush="{DynamicResource BorderSubtle}"
-                  BorderThickness="1"
-                  CornerRadius="6"
-                  Padding="8,4"
-                  Margin="0,0,6,6">
-            <TextBlock Text="{Binding Effective.Priority, StringFormat='优先级 · {0}'}"
-                       Foreground="{DynamicResource TextSecondary}"
-                       FontSize="12"/>
-          </Border>
+        <!-- Structured Properties Panel -->
+        <Border Background="{DynamicResource BgCard}"
+                BorderBrush="{DynamicResource BorderSubtle}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12,10"
+                BoxShadow="{DynamicResource CardShadow}">
+          <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="10">
+            <!-- Row 1: Priority Selector -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="优先级"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Width="64"/>
+            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <Button Name="BtnPrio0" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P0 紧急" ToolTip.Tip="设置为最高优先级"/>
+              <Button Name="BtnPrio1" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P1 高" ToolTip.Tip="设置高优先级"/>
+              <Button Name="BtnPrio2" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P2 普通" ToolTip.Tip="设置普通优先级"/>
+              <Button Name="BtnPrio3" Classes="seg-pill" Padding="8,3" FontSize="11.5" Content="● P3 低" ToolTip.Tip="设置低优先级"/>
+            </StackPanel>
 
-          <Border Background="{DynamicResource BgCard}"
-                  BorderBrush="{DynamicResource BorderSubtle}"
-                  BorderThickness="1"
-                  CornerRadius="6"
-                  Padding="8,4"
-                  Margin="0,0,6,6">
-            <TextBlock Text="{Binding Effective.Assignee, StringFormat='责任人 · {0}', TargetNullValue='责任人 · 未指定'}"
-                       Foreground="{DynamicResource TextSecondary}"
-                       FontSize="12"/>
-          </Border>
+            <!-- Row 2: Due Date & Metadata -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="截止期"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <Border Background="{DynamicResource BgSubtle}"
+                      CornerRadius="5"
+                      Padding="8,3">
+                <TextBlock Text="{Binding Effective.Due, StringFormat='截止: {0}'}"
+                           Foreground="{DynamicResource TextSecondary}"
+                           FontSize="12"/>
+              </Border>
+              <Button Name="BtnClearDue"
+                      Classes="ghost-link"
+                      Content="清空截止 (独立无截止)"
+                      FontSize="11.5"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </StackPanel>
 
-          <Button Name="BtnClearDue"
-                  Classes="ghost-link"
-                  Content="设为无截止 ×"
-                  Margin="0,0,0,6"/>
-        </WrapPanel>
-      </Border>
-
-      <!-- 3. Clean Document Body Editor -->
+      <!-- 3. Document Body Multi-line Editor -->
       <Border Grid.Row="2"
               Background="{DynamicResource BgCard}"
               BorderBrush="{DynamicResource BorderSubtle}"
               BorderThickness="1"
               CornerRadius="10"
-              Padding="14,12">
+              Padding="14,12"
+              BoxShadow="{DynamicResource CardShadow}">
         <TextBox Name="BodyBox"
                  Classes="clean-input"
                  Text="{Binding Body}"
-                 PlaceholderText="输入详细描述、会议纪要或子步骤..."
+                 PlaceholderText="输入详细描述、待办步骤或笔记正文..."
                  AcceptsReturn="True"
                  TextWrapping="Wrap"
                  VerticalAlignment="Stretch"
                  VerticalContentAlignment="Top"
-                 FontSize="13.5"/>
+                 FontSize="13.5"
+                 LineHeight="22"/>
       </Border>
 
       <!-- 4. Bottom Action Bar -->
-      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
         <TextBlock Grid.Column="0"
-                   Text="修改停止 500ms 自动暂存草稿 · Esc 关闭"
+                   Text="修改自动暂存 · Ctrl+S 立即保存 · Esc 关闭"
                    Foreground="{DynamicResource TextMuted}"
                    FontSize="11.5"
                    VerticalAlignment="Center"/>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
           <Button Name="BtnClose"
                   Classes="secondary-pill"
                   Content="关闭"/>

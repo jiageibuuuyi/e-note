@@ -5,12 +5,12 @@
              x:DataType="vm:TaskRowViewModel">
   <Border Name="RowContainer"
           Classes="task-card"
-          MinHeight="40"
+          MinHeight="44"
           Cursor="Hand"
           DragDrop.AllowDrop="True">
     <Grid ColumnDefinitions="Auto,*">
-      <!-- Left Semantic Accent Pill Bar (Overdue or DueToday) -->
-      <Panel Grid.Column="0" VerticalAlignment="Stretch" Margin="0,1,8,1">
+      <!-- Left Vertical Accent Pill for Overdue / Today -->
+      <Panel Grid.Column="0" VerticalAlignment="Stretch" Margin="0,2,10,2">
         <Border Width="3.5" CornerRadius="2"
                 Background="{DynamicResource StatusOverdue}"
                 IsVisible="{Binding IsOverdue}"/>
@@ -19,40 +19,42 @@
                 IsVisible="{Binding IsDueToday}"/>
       </Panel>
 
-      <!-- Main Card Content -->
-      <StackPanel Grid.Column="1" Spacing="7">
+      <!-- Main Content Area -->
+      <StackPanel Grid.Column="1" Spacing="8">
+        <!-- Row Header: Checkbox + Subtask Arrow + Title + Priority + Deadline Pill -->
         <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
           <CheckBox Name="CompleteCheckBox"
                     Grid.Column="0"
-                    MinWidth="20"
+                    Classes="task-check"
                     VerticalAlignment="Center"
-                    Margin="0,0,6,0"
+                    Margin="0,0,8,0"
                     ToolTip.Tip="标记完成并归档"/>
 
-          <!-- Subtask Indicator -->
+          <!-- Subtask Branch Indicator -->
           <TextBlock Grid.Column="1"
                      Text="↳ "
                      IsVisible="{Binding IsSubtask}"
                      Foreground="{DynamicResource TextMuted}"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+                     FontSize="13.5"
+                     VerticalAlignment="Center"
+                     Margin="0,0,2,0"/>
 
-          <!-- Task/Note Display Title -->
+          <!-- Display Title -->
           <TextBlock Grid.Column="2"
                      Text="{Binding DisplayTitle}"
                      Foreground="{DynamicResource TextPrimary}"
                      FontSize="13.5"
-                     FontWeight="Medium"
+                     FontWeight="Normal"
                      VerticalAlignment="Center"
                      TextTrimming="CharacterEllipsis"/>
 
-          <!-- Priority Pill (P0 / P1) -->
+          <!-- Priority Indicator Pill -->
           <Border Grid.Column="3"
                   IsVisible="{Binding HasPriorityBadge}"
-                  Background="{DynamicResource BgHover}"
-                  CornerRadius="4"
-                  Padding="5,1.5"
-                  Margin="6,0,0,0"
+                  Background="{DynamicResource P0_Bg}"
+                  CornerRadius="5"
+                  Padding="6,2"
+                  Margin="8,0,0,0"
                   VerticalAlignment="Center">
             <TextBlock Text="{Binding PriorityBadge}"
                        Foreground="{DynamicResource P0_Highest}"
@@ -60,63 +62,87 @@
                        FontWeight="SemiBold"/>
           </Border>
 
-          <!-- Due Today / Overdue Semantic Pill -->
+          <!-- Deadline Status Pill (今日 / 逾期) -->
           <Panel Grid.Column="4"
                  IsVisible="{Binding HasStageLabel}"
-                 Margin="6,0,0,0"
+                 Margin="8,0,0,0"
                  VerticalAlignment="Center">
             <Border IsVisible="{Binding IsOverdue}"
                     Background="{DynamicResource StatusOverdueBg}"
                     CornerRadius="5"
-                    Padding="6,2">
+                    Padding="7,2.5">
               <TextBlock Text="{Binding StageLabel}"
                          Foreground="{DynamicResource StatusOverdue}"
-                         FontSize="11.5"
+                         FontSize="11"
                          FontWeight="SemiBold"/>
             </Border>
             <Border IsVisible="{Binding IsDueToday}"
                     Background="{DynamicResource StatusDueTodayBg}"
                     CornerRadius="5"
-                    Padding="6,2">
+                    Padding="7,2.5">
               <TextBlock Text="{Binding StageLabel}"
                          Foreground="{DynamicResource StatusDueToday}"
-                         FontSize="11.5"
+                         FontSize="11"
                          FontWeight="SemiBold"/>
             </Border>
           </Panel>
         </Grid>
 
-        <!-- Expanded Summary Drawer -->
+        <!-- Expanded Drawer with Smooth Layout -->
         <Border IsVisible="{Binding IsExpanded}"
                 BorderBrush="{DynamicResource BorderSubtle}"
                 BorderThickness="0,1,0,0"
-                Padding="24,8,0,2"
-                MaxHeight="200">
+                Padding="26,10,2,2"
+                MaxHeight="220">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6">
+            <StackPanel Spacing="8">
+              <!-- Body Preview -->
               <TextBlock Text="{Binding Body}"
                          IsVisible="{Binding HasBody}"
                          Foreground="{DynamicResource TextSecondary}"
                          FontSize="12.5"
-                         LineHeight="19"
+                         LineHeight="20"
                          TextWrapping="Wrap"/>
 
+              <!-- Meta Footer Strip -->
               <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding DueSummary}"
-                             Foreground="{DynamicResource TextMuted}"
-                             FontSize="12"/>
-                  <TextBlock Text="{Binding Assignee}"
-                             IsVisible="{Binding HasAssignee}"
-                             Foreground="{DynamicResource TextMuted}"
-                             FontSize="12"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                  <!-- Due Date Pill -->
+                  <Border Background="{DynamicResource BgSubtle}"
+                          CornerRadius="5"
+                          Padding="6,2.5">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <PathIcon Width="11" Height="11"
+                                Foreground="{DynamicResource TextMuted}"
+                                Data="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+                      <TextBlock Text="{Binding DueSummary}"
+                                 Foreground="{DynamicResource TextSecondary}"
+                                 FontSize="11.5"/>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Assignee Pill -->
+                  <Border IsVisible="{Binding HasAssignee}"
+                          Background="{DynamicResource BgSubtle}"
+                          CornerRadius="5"
+                          Padding="6,2.5">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <PathIcon Width="11" Height="11"
+                                Foreground="{DynamicResource TextMuted}"
+                                Data="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      <TextBlock Text="{Binding Assignee}"
+                                 Foreground="{DynamicResource TextSecondary}"
+                                 FontSize="11.5"/>
+                    </StackPanel>
+                  </Border>
                 </StackPanel>
 
+                <!-- Open Detail Link -->
                 <Button Name="OpenDetailButton"
                         Grid.Column="1"
                         Classes="ghost-link"
-                        Content="详情 ↗"
-                        ToolTip.Tip="打开完整编辑窗口"/>
+                        Content="查看完整详情 ↗"
+                        ToolTip.Tip="打开编辑弹窗"/>
               </Grid>
             </StackPanel>
           </ScrollViewer>

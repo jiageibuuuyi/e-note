@@ -1,66 +1,167 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
         x:Class="DesktopNotes.Desktop.Views.ManagerWindow"
-        Width="720" Height="520" MinWidth="540" MinHeight="400"
+        Width="760" Height="560" MinWidth="580" MinHeight="440"
         Background="{DynamicResource BgWindow}"
         WindowStartupLocation="CenterOwner"
-        Title="桌面笔记 · 日历与设置">
-  <Grid Margin="18">
+        Title="桌面笔记 · 管理与设置">
+  <Border Padding="20">
     <TabControl>
+      <!-- Tab 1: Calendar & Schedule -->
       <TabItem Header="月历视图" FontSize="13.5">
-        <Border Background="{DynamicResource BgCard}"
-                BorderBrush="{DynamicResource BorderSubtle}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Padding="18"
-                Margin="0,10,0,0">
-          <StackPanel Spacing="8">
-            <TextBlock Text="四维月历视图（截止 / 开始 / 创建 / 完成）"
-                       FontSize="15" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Text="按本地自然月半开区间展示待办事项与无日期清单，已完成事项固定展示完成时快照。"
-                       FontSize="13"
-                       Foreground="{DynamicResource TextSecondary}"/>
-          </StackPanel>
-        </Border>
+        <Grid RowDefinitions="Auto,*" Margin="0,14,0,0" x:Name="CalendarTabGrid">
+          <Border Grid.Row="0"
+                  Background="{DynamicResource BgCard}"
+                  BorderBrush="{DynamicResource BorderSubtle}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="16,14"
+                  Margin="0,0,0,14"
+                  BoxShadow="{DynamicResource CardShadow}">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="四维日程概览"
+                           FontSize="15" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="支持按截止时间、计划开始、创建时间与完成时间四个维度透视所有待办与笔记。"
+                           FontSize="12.5"
+                           Foreground="{DynamicResource TextSecondary}"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Calendar Content Card -->
+          <Border Grid.Row="1"
+                  Background="{DynamicResource BgCard}"
+                  BorderBrush="{DynamicResource BorderSubtle}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="20"
+                  BoxShadow="{DynamicResource CardShadow}">
+            <StackPanel Spacing="16" VerticalAlignment="Center" HorizontalAlignment="Center">
+              <PathIcon Width="36" Height="36"
+                        Foreground="{DynamicResource TextMuted}"
+                        Data="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+              <TextBlock Text="已连接日程索引引擎"
+                         FontSize="14" FontWeight="Medium"
+                         Foreground="{DynamicResource TextSecondary}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="所有带截止日期的任务会自动投递到桌面面板与系统通知提醒中"
+                         FontSize="12.5"
+                         Foreground="{DynamicResource TextMuted}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+        </Grid>
       </TabItem>
 
+      <!-- Tab 2: Settings & Preferences -->
+      <TabItem Header="设置与偏好" FontSize="13.5">
+        <ScrollViewer Margin="0,14,0,0">
+          <StackPanel Spacing="14">
+            <!-- Window & Desktop Placement -->
+            <Border Background="{DynamicResource BgCard}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16"
+                    BoxShadow="{DynamicResource CardShadow}">
+              <StackPanel Spacing="12">
+                <TextBlock Text="桌面驻留与窗口行为"
+                           FontSize="14.5" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                
+                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="位置锁定模式"
+                               FontSize="13" FontWeight="Medium"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="锁定后面板禁止被意外拖拽移动，固定吸附在当前屏幕坐标"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextMuted}"/>
+                  </StackPanel>
+                  <CheckBox Name="CheckLockPosition"
+                            Grid.Column="1"
+                            Classes="task-check"
+                            VerticalAlignment="Center"/>
+                </Grid>
+
+                <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Margin="0,4"/>
+
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="开机自动启动"
+                               FontSize="13" FontWeight="Medium"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="系统登录后静默启动桌面面板并恢复上次窗口模式与坐标"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextMuted}"/>
+                  </StackPanel>
+                  <CheckBox Name="CheckLaunchAtLogin"
+                            Grid.Column="1"
+                            Classes="task-check"
+                            VerticalAlignment="Center"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Backup & Restore -->
+            <Border Background="{DynamicResource BgCard}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16"
+                    BoxShadow="{DynamicResource CardShadow}">
+              <StackPanel Spacing="12">
+                <TextBlock Text="数据安全与备份迁移"
+                           FontSize="14.5" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="完整备份将生成标准 ZIP 压缩包，内含 SQLite 数据库快照、所有关联附件结构及 SHA-256 完整性清单。"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondary}"
+                           TextWrapping="Wrap"/>
+                
+                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
+                  <Button Name="BtnExportBackup"
+                          Classes="secondary-pill"
+                          Content="导出完整备份包 (.zip)"/>
+                  <Button Name="BtnRestoreBackup"
+                          Classes="secondary-pill"
+                          Content="从备份包恢复数据..."/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- Tab 3: Trash & Archive -->
       <TabItem Header="归档与回收站" FontSize="13.5">
         <Border Background="{DynamicResource BgCard}"
                 BorderBrush="{DynamicResource BorderSubtle}"
                 BorderThickness="1"
-                CornerRadius="12"
-                Padding="18"
-                Margin="0,10,0,0">
-          <StackPanel Spacing="8">
-            <TextBlock Text="已完成归档与逻辑回收区"
-                       FontSize="15" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Text="支持按批次恢复父子任务及逻辑回收附件，不主动删除用户磁盘文件。"
-                       FontSize="13"
-                       Foreground="{DynamicResource TextSecondary}"/>
-          </StackPanel>
-        </Border>
-      </TabItem>
-
-      <TabItem Header="设置与备份" FontSize="13.5">
-        <Border Background="{DynamicResource BgCard}"
-                BorderBrush="{DynamicResource BorderSubtle}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Padding="18"
-                Margin="0,10,0,0">
-          <StackPanel Spacing="10">
-            <TextBlock Text="偏好设置与完整备份恢复"
-                       FontSize="15" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Text="支持配置默认附件根目录、桌面嵌入/置顶模式、窗口位置锁定、登录自动启动，以及带 SHA-256 校验的完整数据导出与跨目录恢复。"
-                       FontSize="13"
+                CornerRadius="10"
+                Padding="20"
+                Margin="0,14,0,0"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="14" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <PathIcon Width="36" Height="36"
+                      Foreground="{DynamicResource TextMuted}"
+                      Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            <TextBlock Text="安全逻辑回收机制"
+                       FontSize="14.5" FontWeight="Medium"
                        Foreground="{DynamicResource TextSecondary}"
-                       TextWrapping="Wrap"/>
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="删除的任务和附件均存放在逻辑回收区，不会直接从磁盘抹除，可随时成批找回或撤销操作"
+                       FontSize="12.5"
+                       Foreground="{DynamicResource TextMuted}"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       MaxWidth="360"/>
           </StackPanel>
         </Border>
       </TabItem>
     </TabControl>
-  </Grid>
+  </Border>
 </Window>

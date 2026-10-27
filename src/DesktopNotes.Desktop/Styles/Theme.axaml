@@ -4,54 +4,105 @@
     <ResourceDictionary>
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
+          <!-- Canvas & Surfaces -->
           <SolidColorBrush x:Key="BgWindow" Color="#F8FAFC"/>
           <SolidColorBrush x:Key="BgCard" Color="#FFFFFF"/>
-          <SolidColorBrush x:Key="BgSubtle" Color="#E2E8F0"/>
-          <SolidColorBrush x:Key="BgHover" Color="#F1F5F9"/>
+          <SolidColorBrush x:Key="BgCardHover" Color="#F1F5F9"/>
+          <SolidColorBrush x:Key="BgSubtle" Color="#F1F5F9"/>
+          <SolidColorBrush x:Key="BgHover" Color="#E2E8F0"/>
+          
+          <!-- Typography -->
           <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
           <SolidColorBrush x:Key="TextSecondary" Color="#475569"/>
           <SolidColorBrush x:Key="TextMuted" Color="#94A3B8"/>
+          
+          <!-- Borders & Outlines -->
           <SolidColorBrush x:Key="BorderSubtle" Color="#E2E8F0"/>
           <SolidColorBrush x:Key="BorderStrong" Color="#CBD5E1"/>
+          <SolidColorBrush x:Key="BorderFocus" Color="#2563EB"/>
+          
+          <!-- Accents -->
           <SolidColorBrush x:Key="AccentPrimary" Color="#2563EB"/>
           <SolidColorBrush x:Key="AccentPrimaryHover" Color="#1D4ED8"/>
           <SolidColorBrush x:Key="AccentSubtle" Color="#EFF6FF"/>
+          
+          <!-- Deadlines & Status -->
           <SolidColorBrush x:Key="StatusDueToday" Color="#D97706"/>
           <SolidColorBrush x:Key="StatusDueTodayBg" Color="#FEF3C7"/>
           <SolidColorBrush x:Key="StatusOverdue" Color="#DC2626"/>
           <SolidColorBrush x:Key="StatusOverdueBg" Color="#FEE2E2"/>
-          <SolidColorBrush x:Key="P0_Highest" Color="#DC2626"/>
-          <SolidColorBrush x:Key="P1_High" Color="#EA580C"/>
-          <SolidColorBrush x:Key="P2_Normal" Color="#64748B"/>
-          <SolidColorBrush x:Key="P3_Low" Color="#94A3B8"/>
+          
+          <!-- Priorities -->
+          <SolidColorBrush x:Key="P0_Highest" Color="#EF4444"/>
+          <SolidColorBrush x:Key="P0_Bg" Color="#FEE2E2"/>
+          <SolidColorBrush x:Key="P1_High" Color="#F97316"/>
+          <SolidColorBrush x:Key="P1_Bg" Color="#FFEDD5"/>
+          <SolidColorBrush x:Key="P2_Normal" Color="#3B82F6"/>
+          <SolidColorBrush x:Key="P2_Bg" Color="#EFF6FF"/>
+          <SolidColorBrush x:Key="P3_Low" Color="#64748B"/>
+          <SolidColorBrush x:Key="P3_Bg" Color="#F1F5F9"/>
+
+          <!-- Shadow colors (as Brush) -->
+          <BoxShadows x:Key="CardShadow">0 1 3 0 #0D000000, 0 1 2 -1 #0D000000</BoxShadows>
+          <BoxShadows x:Key="CardHoverShadow">0 4 6 -1 #15000000, 0 2 4 -2 #15000000</BoxShadows>
+          <BoxShadows x:Key="WindowShadow">0 10 25 -5 #20000000, 0 8 10 -6 #15000000</BoxShadows>
         </ResourceDictionary>
+
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="BgWindow" Color="#18181B"/>
-          <SolidColorBrush x:Key="BgCard" Color="#27272A"/>
-          <SolidColorBrush x:Key="BgSubtle" Color="#27272A"/>
-          <SolidColorBrush x:Key="BgHover" Color="#3F3F46"/>
-          <SolidColorBrush x:Key="TextPrimary" Color="#F4F4F5"/>
+          <!-- Canvas & Surfaces -->
+          <SolidColorBrush x:Key="BgWindow" Color="#121215"/>
+          <SolidColorBrush x:Key="BgCard" Color="#1A1A1E"/>
+          <SolidColorBrush x:Key="BgCardHover" Color="#242429"/>
+          <SolidColorBrush x:Key="BgSubtle" Color="#202026"/>
+          <SolidColorBrush x:Key="BgHover" Color="#2A2A32"/>
+          
+          <!-- Typography -->
+          <SolidColorBrush x:Key="TextPrimary" Color="#F4F4F6"/>
           <SolidColorBrush x:Key="TextSecondary" Color="#A1A1AA"/>
           <SolidColorBrush x:Key="TextMuted" Color="#71717A"/>
-          <SolidColorBrush x:Key="BorderSubtle" Color="#3F3F46"/>
-          <SolidColorBrush x:Key="BorderStrong" Color="#52525B"/>
+          
+          <!-- Borders & Outlines -->
+          <SolidColorBrush x:Key="BorderSubtle" Color="#2A2A32"/>
+          <SolidColorBrush x:Key="BorderStrong" Color="#3E3E48"/>
+          <SolidColorBrush x:Key="BorderFocus" Color="#3B82F6"/>
+          
+          <!-- Accents -->
           <SolidColorBrush x:Key="AccentPrimary" Color="#3B82F6"/>
-          <SolidColorBrush x:Key="AccentPrimaryHover" Color="#2563EB"/>
-          <SolidColorBrush x:Key="AccentSubtle" Color="#1E3A8A"/>
+          <SolidColorBrush x:Key="AccentPrimaryHover" Color="#60A5FA"/>
+          <SolidColorBrush x:Key="AccentSubtle" Color="#1E293B"/>
+          
+          <!-- Deadlines & Status -->
           <SolidColorBrush x:Key="StatusDueToday" Color="#F59E0B"/>
-          <SolidColorBrush x:Key="StatusDueTodayBg" Color="#451A03"/>
-          <SolidColorBrush x:Key="StatusOverdue" Color="#EF4444"/>
-          <SolidColorBrush x:Key="StatusOverdueBg" Color="#450A0A"/>
+          <SolidColorBrush x:Key="StatusDueTodayBg" Color="#3E2305"/>
+          <SolidColorBrush x:Key="StatusOverdue" Color="#F87171"/>
+          <SolidColorBrush x:Key="StatusOverdueBg" Color="#3B1214"/>
+          
+          <!-- Priorities -->
           <SolidColorBrush x:Key="P0_Highest" Color="#F87171"/>
+          <SolidColorBrush x:Key="P0_Bg" Color="#3B1214"/>
           <SolidColorBrush x:Key="P1_High" Color="#FB923C"/>
-          <SolidColorBrush x:Key="P2_Normal" Color="#94A3B8"/>
-          <SolidColorBrush x:Key="P3_Low" Color="#52525B"/>
+          <SolidColorBrush x:Key="P1_Bg" Color="#3D200A"/>
+          <SolidColorBrush x:Key="P2_Normal" Color="#60A5FA"/>
+          <SolidColorBrush x:Key="P2_Bg" Color="#172554"/>
+          <SolidColorBrush x:Key="P3_Low" Color="#94A3B8"/>
+          <SolidColorBrush x:Key="P3_Bg" Color="#27272A"/>
+
+          <!-- Shadow colors (as Brush) -->
+          <BoxShadows x:Key="CardShadow">0 1 3 0 #30000000</BoxShadows>
+          <BoxShadows x:Key="CardHoverShadow">0 4 8 0 #45000000</BoxShadows>
+          <BoxShadows x:Key="WindowShadow">0 16 32 0 #70000000</BoxShadows>
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </Styles.Resources>
 
-  <!-- Remove default ListBoxItem padding and heavy highlight box -->
+  <!-- Global default font and text rendering -->
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="Segoe UI Variable, Plus Jakarta Sans, Microsoft YaHei UI, -apple-system, sans-serif"/>
+    <Setter Property="FontSize" Value="13"/>
+  </Style>
+
+  <!-- Clean ListBox without blue selection boxes -->
   <Style Selector="ListBoxItem">
     <Setter Property="Padding" Value="0"/>
     <Setter Property="Margin" Value="0"/>
@@ -64,13 +115,52 @@
     <Setter Property="Background" Value="Transparent"/>
   </Style>
 
-  <!-- Segmented Pill Switcher Button -->
+  <!-- Modern Rounded Checkbox Style -->
+  <Style Selector="CheckBox.task-check">
+    <Setter Property="MinWidth" Value="20"/>
+    <Setter Property="MinHeight" Value="20"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="CheckBorder"
+                Width="18" Height="18"
+                CornerRadius="5"
+                BorderThickness="1.5"
+                BorderBrush="{DynamicResource BorderStrong}"
+                Background="Transparent"
+                Transitions="{x:Null}">
+          <Path Name="CheckMark"
+                Width="9" Height="7"
+                Stretch="Uniform"
+                Fill="#FFFFFF"
+                IsVisible="False"
+                Data="M3.8 6.6L1.4 4.2L0 5.6L3.8 9.4L12 1.2L10.6 0L3.8 6.6Z"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.task-check:pointerover /template/ Border#CheckBorder">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimary}"/>
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}"/>
+  </Style>
+  <Style Selector="CheckBox.task-check:checked /template/ Border#CheckBorder">
+    <Setter Property="Background" Value="{DynamicResource AccentPrimary}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimary}"/>
+  </Style>
+  <Style Selector="CheckBox.task-check:checked /template/ Path#CheckMark">
+    <Setter Property="IsVisible" Value="True"/>
+  </Style>
+
+  <!-- Segmented Control Button -->
   <Style Selector="Button.seg-pill">
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
     <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="CornerRadius" Value="6"/>
-    <Setter Property="Padding" Value="12,5"/>
+    <Setter Property="CornerRadius" Value="7"/>
+    <Setter Property="Padding" Value="14,6"/>
     <Setter Property="FontSize" Value="12.5"/>
     <Setter Property="FontWeight" Value="Medium"/>
     <Setter Property="Cursor" Value="Hand"/>
@@ -89,21 +179,21 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
   </Style>
 
-  <!-- Minimalist Icon Ghost Button (28x28) -->
+  <!-- Minimalist Icon Ghost Button (30x30) -->
   <Style Selector="Button.icon-ghost">
-    <Setter Property="Width" Value="28"/>
-    <Setter Property="Height" Value="28"/>
+    <Setter Property="Width" Value="30"/>
+    <Setter Property="Height" Value="30"/>
     <Setter Property="Padding" Value="0"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
     <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="CornerRadius" Value="7"/>
     <Setter Property="HorizontalContentAlignment" Value="Center"/>
     <Setter Property="VerticalContentAlignment" Value="Center"/>
     <Setter Property="Cursor" Value="Hand"/>
   </Style>
   <Style Selector="Button.icon-ghost:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="Background" Value="{DynamicResource BgCardHover}"/>
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
   </Style>
 
@@ -129,7 +219,7 @@
     <Setter Property="Foreground" Value="#FFFFFF"/>
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="Padding" Value="14,7"/>
+    <Setter Property="Padding" Value="16,8"/>
     <Setter Property="FontSize" Value="13"/>
     <Setter Property="FontWeight" Value="Medium"/>
     <Setter Property="Cursor" Value="Hand"/>
@@ -139,28 +229,29 @@
     <Setter Property="Foreground" Value="#FFFFFF"/>
   </Style>
 
-  <!-- Secondary Subtle Pill Button -->
+  <!-- Secondary Pill Button -->
   <Style Selector="Button.secondary-pill">
-    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="Background" Value="{DynamicResource BgCard}"/>
     <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="Padding" Value="12,6"/>
-    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="Padding" Value="14,7"/>
+    <Setter Property="FontSize" Value="13"/>
     <Setter Property="Cursor" Value="Hand"/>
   </Style>
   <Style Selector="Button.secondary-pill:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
   </Style>
 
-  <!-- Clean Borderless TextBox for Embedded Cards -->
+  <!-- Clean Borderless TextBox -->
   <Style Selector="TextBox.clean-input">
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="Padding" Value="0"/>
-    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="MinHeight" Value="24"/>
     <Setter Property="VerticalContentAlignment" Value="Center"/>
   </Style>
   <Style Selector="TextBox.clean-input:focus /template/ Border#PART_BorderElement">
@@ -172,17 +263,19 @@
     <Setter Property="BorderThickness" Value="0"/>
   </Style>
 
-  <!-- Task Row Card Hover & Expanded Polish -->
+  <!-- Task Row Card -->
   <Style Selector="Border.task-card">
     <Setter Property="Background" Value="{DynamicResource BgCard}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="10"/>
-    <Setter Property="Padding" Value="11,9"/>
-    <Setter Property="Margin" Value="0,3"/>
+    <Setter Property="Padding" Value="12,10"/>
+    <Setter Property="Margin" Value="0,3.5"/>
+    <Setter Property="BoxShadow" Value="{DynamicResource CardShadow}"/>
   </Style>
   <Style Selector="Border.task-card:pointerover">
-    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="Background" Value="{DynamicResource BgCardHover}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
+    <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
   </Style>
 </Styles>

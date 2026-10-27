@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using DesktopNotes.Desktop.ViewModels;
+using DesktopNotes.Domain;
 
 namespace DesktopNotes.Desktop.Views;
 
@@ -24,6 +25,31 @@ public partial class DetailWindow : Window
                     BeginMoveDrag(e);
                 }
             };
+        }
+
+        if (BtnHeaderClose is not null)
+        {
+            BtnHeaderClose.Click += (_, _) => Close();
+        }
+
+        if (BtnPrio0 is not null)
+        {
+            BtnPrio0.Click += (_, _) => viewModel.SetOwnPriority(Priority.Highest);
+        }
+
+        if (BtnPrio1 is not null)
+        {
+            BtnPrio1.Click += (_, _) => viewModel.SetOwnPriority(Priority.High);
+        }
+
+        if (BtnPrio2 is not null)
+        {
+            BtnPrio2.Click += (_, _) => viewModel.SetOwnPriority(Priority.Normal);
+        }
+
+        if (BtnPrio3 is not null)
+        {
+            BtnPrio3.Click += (_, _) => viewModel.SetOwnPriority(Priority.Low);
         }
 
         if (BtnClearDue is not null)
