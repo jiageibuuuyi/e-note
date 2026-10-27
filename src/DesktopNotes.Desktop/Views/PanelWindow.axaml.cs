@@ -34,6 +34,11 @@ public partial class PanelWindow : Window
             HeaderDragRegion.PointerPressed += OnHeaderPointerPressed;
         }
 
+        if (BtnKindSelector is not null)
+        {
+            BtnKindSelector.Click += (_, _) => viewModel.ToggleKind();
+        }
+
         if (BtnTabTasks is not null)
         {
             BtnTabTasks.Click += (_, _) => viewModel.CurrentKind = RecordKind.Task;

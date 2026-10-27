@@ -95,12 +95,20 @@ public sealed class PanelViewModel : ViewModelBase
 
     public bool IsTaskTab => _currentKind == RecordKind.Task;
     public bool IsNoteTab => _currentKind == RecordKind.Note;
+    public string CurrentKindText => _currentKind == RecordKind.Task ? "待办" : "笔记";
+    public string KindIconData => _currentKind == RecordKind.Task
+        ? "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+        : "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z";
     public bool HasSearchText => !string.IsNullOrEmpty(_searchText);
     public bool IsEmpty => Items.Count == 0;
+    public string WhisperStatus => HasSearchText
+        ? $"搜索到 {TotalCount} 项匹配"
+        : (TotalCount > 0 ? $"{TotalCount} 项{CurrentKindText}" : string.Empty);
+    public bool HasFooterContent => !string.IsNullOrEmpty(WhisperStatus);
 
     public string QuickInputPlaceholder => IsTaskTab
-        ? "添加待办，按 Enter 直接创建..."
-        : "记录灵感或笔记，按 Enter 直接创建...";
+        ? "添加待办，按 Enter 创建..."
+        : "记录灵感或笔记，按 Enter 创建...";
 
     public string EmptyStateTitle => HasSearchText
         ? "未找到匹配内容"
@@ -108,12 +116,17 @@ public sealed class PanelViewModel : ViewModelBase
 
     public string EmptyStateSubtitle => HasSearchText
         ? "尝试更换关键词，或按 Esc 清空搜索"
-        : "在上方输入框输入文字并按 Enter 键即可快速添加";
+        : "在上方输入文字并按 Enter 即可快速添加";
 
     public bool IsSearchOpen
     {
         get => _isSearchOpen || HasSearchText;
         set => SetProperty(ref _isSearchOpen, value);
+    }
+
+    public void ToggleKind()
+    {
+        CurrentKind = _currentKind == RecordKind.Task ? RecordKind.Note : RecordKind.Task;
     }
 
     public RecordKind CurrentKind
@@ -126,6 +139,10 @@ public sealed class PanelViewModel : ViewModelBase
                 ExpandedRecordId = null;
                 RaisePropertyChanged(nameof(IsTaskTab));
                 RaisePropertyChanged(nameof(IsNoteTab));
+                RaisePropertyChanged(nameof(CurrentKindText));
+                RaisePropertyChanged(nameof(KindIconData));
+                RaisePropertyChanged(nameof(WhisperStatus));
+                RaisePropertyChanged(nameof(HasFooterContent));
                 RaisePropertyChanged(nameof(QuickInputPlaceholder));
                 RaisePropertyChanged(nameof(EmptyStateTitle));
                 _ = RefreshAsync(CancellationToken.None);
@@ -144,6 +161,8 @@ public sealed class PanelViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(IsSearchOpen));
                 RaisePropertyChanged(nameof(EmptyStateTitle));
                 RaisePropertyChanged(nameof(EmptyStateSubtitle));
+                RaisePropertyChanged(nameof(WhisperStatus));
+                RaisePropertyChanged(nameof(HasFooterContent));
                 _ = DebouncedSearchAsync(value);
             }
         }
@@ -167,7 +186,14 @@ public sealed class PanelViewModel : ViewModelBase
     public int TotalCount
     {
         get => _totalCount;
-        private set => SetProperty(ref _totalCount, value);
+        private set
+        {
+            if (SetProperty(ref _totalCount, value))
+            {
+                RaisePropertyChanged(nameof(WhisperStatus));
+                RaisePropertyChanged(nameof(HasFooterContent));
+            }
+        }
     }
 
     public string StatusMessage
