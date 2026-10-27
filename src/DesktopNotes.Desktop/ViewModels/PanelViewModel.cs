@@ -97,8 +97,8 @@ public sealed class PanelViewModel : ViewModelBase
     public bool IsNoteTab => _currentKind == RecordKind.Note;
     public string CurrentKindText => _currentKind == RecordKind.Task ? "待办" : "笔记";
     public string KindIconData => _currentKind == RecordKind.Task
-        ? "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
-        : "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z";
+        ? "M 9 16.17 L 4.83 12 L 3.41 13.41 L 9 19 L 21 7 L 19.59 5.59 L 9 16.17 Z"
+        : "M 3 17.25 L 3 21 L 6.75 21 L 17.81 9.94 L 14.06 6.19 L 3 17.25 Z M 20.71 7.04 L 18.37 4.7 L 16.54 6.53 L 20.29 10.28 L 20.71 7.04 Z";
     public bool HasSearchText => !string.IsNullOrEmpty(_searchText);
     public bool IsEmpty => Items.Count == 0;
     public string WhisperStatus => HasSearchText

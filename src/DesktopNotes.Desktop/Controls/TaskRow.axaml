@@ -114,7 +114,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <PathIcon Width="11" Height="11"
                                 Foreground="{DynamicResource TextMuted}"
-                                Data="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+                                Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
                       <TextBlock Text="{Binding DueSummary}"
                                  Foreground="{DynamicResource TextSecondary}"
                                  FontSize="11.5"/>
@@ -129,7 +129,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <PathIcon Width="11" Height="11"
                                 Foreground="{DynamicResource TextMuted}"
-                                Data="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                Data="M 12 12 A 4 4 0 1 0 12 4 A 4 4 0 1 0 12 12 Z M 12 14 C 9.33 14 4 15.34 4 18 L 4 20 L 20 20 L 20 18 C 20 15.34 14.67 14 12 14 Z"/>
                       <TextBlock Text="{Binding Assignee}"
                                  Foreground="{DynamicResource TextSecondary}"
                                  FontSize="11.5"/>

@@ -185,7 +185,6 @@
     <Setter Property="Padding" Value="7,3"/>
     <Setter Property="Height" Value="26"/>
     <Setter Property="Cursor" Value="Hand"/>
-    <Setter Property="Transitions">{x:Null}</Setter>
   </Style>
   <Style Selector="Button.mode-pill:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource BgHover}"/>
