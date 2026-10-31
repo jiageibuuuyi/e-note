@@ -8,7 +8,7 @@
         Background="{DynamicResource BgWindow}"
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaTitleBarHeightHint="-1"
+        ExtendClientAreaTitleBarHeightHint="0"
         Title="桌面笔记">
   <Border BorderBrush="{DynamicResource BorderSubtle}"
           BorderThickness="1"
@@ -21,7 +21,32 @@
             ColumnDefinitions="Auto,*,Auto"
             Background="Transparent"
             Height="28"
-            Margin="0,0,0,6">
+            Margin="0,0,0,6"
+            ToolTip.Tip="左键按住拖动窗口（未锁定时）· 右键打开快捷设置菜单">
+        <Grid.ContextMenu>
+          <ContextMenu Name="HeaderContextMenu">
+            <MenuItem Name="CtxToggleLock" Header="🔒  锁定窗口位置 (禁止拖动)"/>
+            <Separator/>
+            <MenuItem Name="CtxPlaceTopmost" Header="📌  悬浮在所有应用最上层 (置顶)"/>
+            <MenuItem Name="CtxPlaceBottom" Header="🖥️  置于所有应用最下层 (桌面底层)"/>
+            <Separator/>
+            <MenuItem Header="↕️  排列方式">
+              <MenuItem Name="CtxSortDefault" Header="默认综合排序 (优先级 → 截止期 → 创建时间)"/>
+              <MenuItem Name="CtxSortDeadline" Header="按截止时间排序 (最近到期优先)"/>
+              <MenuItem Name="CtxSortPriority" Header="按优先级重要程度排序"/>
+              <MenuItem Name="CtxSortCreated" Header="按创建时间排序 (最新创建优先)"/>
+            </MenuItem>
+            <MenuItem Name="CtxSwitchTasks" Header="📋  切换至待办事项"/>
+            <MenuItem Name="CtxSwitchNotes" Header="📝  切换至随手笔记"/>
+            <MenuItem Name="CtxThemeToggle" Header="🌓  切换外观主题"/>
+            <Separator/>
+            <MenuItem Name="CtxOpenSettings" Header="⚙️  打开设置面板..."/>
+            <MenuItem Name="CtxOpenCalendar" Header="📅  任务日历与历史归档..."/>
+            <Separator/>
+            <MenuItem Name="CtxHideToTray" Header="🔽  隐藏到右下角系统托盘"/>
+            <MenuItem Name="CtxExitApp" Header="🚪  彻底退出桌面笔记"/>
+          </ContextMenu>
+        </Grid.ContextMenu>
 
         <!-- Mode Indicator / Toggle (Left) -->
         <Button Name="BtnKindSelector"
@@ -69,6 +94,16 @@
                       Data="M 15.5 14 L 14.71 14 L 14.43 13.73 A 6.5 6.5 0 1 0 13.73 14.43 L 14 14.71 L 14 15.5 L 19 20.49 L 20.49 19 L 15.5 14 Z M 9.5 14 A 4.5 4.5 0 1 1 14 9.5 A 4.5 4.5 0 0 1 9.5 14 Z"/>
           </Button>
 
+          <!-- Lock / Unlock Position Toggle -->
+          <Button Name="BtnLockToggle"
+                  Classes="icon-ghost"
+                  ToolTip.Tip="锁定 / 解锁窗口位置 (锁定时禁止拖动)">
+            <PathIcon Name="IconLockState"
+                      Width="12" Height="12"
+                      Foreground="{DynamicResource TextSecondary}"
+                      Data="M 18 8 L 17 8 L 17 6 A 5 5 0 0 0 7 6 L 9 6 A 3 3 0 0 1 15 6 L 15 8 L 6 8 A 2 2 0 0 0 4 10 L 4 20 A 2 2 0 0 0 6 22 L 18 22 A 2 2 0 0 0 20 20 L 20 10 A 2 2 0 0 0 18 8 Z"/>
+          </Button>
+
           <!-- Three Dots Menu for Transactions, Sorting, Placement & Settings -->
           <Button Name="BtnMoreOptions"
                   Classes="icon-ghost"
@@ -107,11 +142,12 @@
                     <PathIcon Width="11" Height="11" Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Name="BtnCalendar" Header="📅  任务日历 · 历史归档 · 设置">
+                <MenuItem Name="BtnCalendar" Header="📅  任务日历与历史归档...">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
+                <MenuItem Name="BtnOpenSettings" Header="⚙️  打开设置面板..."/>
                 <MenuItem Name="BtnThemeToggle" Header="🌓  切换外观主题">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 12 3 A 9 9 0 1 0 21 12 A 5.4 5.4 0 0 1 12 3 Z"/>

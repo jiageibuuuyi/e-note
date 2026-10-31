@@ -9,7 +9,7 @@
         WindowStartupLocation="CenterOwner"
         Title="任务日历 · 历史归档 · 设置">
   <Border Padding="20,16">
-    <TabControl Background="Transparent">
+    <TabControl Name="MainTabControl" Background="Transparent">
 
       <!-- Tab 1: Live Task Calendar -->
       <TabItem Header="📅 任务日历" FontSize="13.5">
@@ -298,10 +298,10 @@
 
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Grid.Column="0" Spacing="2">
-                    <TextBlock Text="位置锁定模式"
+                    <TextBlock Text="窗口位置锁定（禁止拖动应用）"
                                FontSize="12.5" FontWeight="Medium"
                                Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBlock Text="锁定后面板固定在指定桌面位置，防止鼠标误触拖拽移动"
+                    <TextBlock Text="开启后锁定面板在桌面上的位置与尺寸，禁止鼠标拖拽移动窗口"
                                FontSize="11.5"
                                Foreground="{DynamicResource TextMuted}"/>
                   </StackPanel>

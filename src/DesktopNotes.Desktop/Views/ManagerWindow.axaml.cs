@@ -14,6 +14,7 @@ public partial class ManagerWindow : Window
     public SettingsViewModel? SettingsViewModel { get; }
     private readonly BackupService? _backupService;
     private readonly Action<AppPlacementMode>? _onPlacementModeChanged;
+    private readonly Action<bool>? _onLockStateChanged;
 
     public ManagerWindow()
     {
@@ -24,14 +25,22 @@ public partial class ManagerWindow : Window
         CalendarViewModel? calendarViewModel,
         SettingsViewModel? settingsViewModel,
         BackupService? backupService = null,
-        Action<AppPlacementMode>? onPlacementModeChanged = null) : this()
+        Action<AppPlacementMode>? onPlacementModeChanged = null,
+        Action<bool>? onLockStateChanged = null,
+        int initialTabIndex = 0) : this()
     {
         CalendarViewModel = calendarViewModel;
         SettingsViewModel = settingsViewModel;
         _backupService = backupService;
         _onPlacementModeChanged = onPlacementModeChanged;
+        _onLockStateChanged = onLockStateChanged;
 
         DataContext = calendarViewModel;
+
+        if (MainTabControl is not null && initialTabIndex >= 0 && initialTabIndex < MainTabControl.ItemCount)
+        {
+            MainTabControl.SelectedIndex = initialTabIndex;
+        }
 
         if (CalendarViewModel is not null)
         {
@@ -114,7 +123,13 @@ public partial class ManagerWindow : Window
                 CheckLockPosition.IsChecked = SettingsViewModel.PositionLocked;
                 CheckLockPosition.Click += (_, _) =>
                 {
-                    SettingsViewModel.PositionLocked = CheckLockPosition.IsChecked ?? false;
+                    bool locked = CheckLockPosition.IsChecked ?? false;
+                    SettingsViewModel.PositionLocked = locked;
+                    _onLockStateChanged?.Invoke(locked);
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = locked ? "🔒 已锁定窗口位置（禁止拖动）" : "🔓 已解锁窗口位置（允许拖动）";
+                    }
                 };
             }
 

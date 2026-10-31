@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using DesktopNotes.Application.Backup;
@@ -14,6 +16,9 @@ namespace DesktopNotes.Desktop.Views;
 
 public partial class PanelWindow : Window
 {
+    private const string LockedIconPath = "M 18 8 L 17 8 L 17 6 A 5 5 0 0 0 7 6 L 7 8 L 6 8 A 2 2 0 0 0 4 10 L 4 20 A 2 2 0 0 0 6 22 L 18 22 A 2 2 0 0 0 20 20 L 20 10 A 2 2 0 0 0 18 8 Z M 9 6 A 3 3 0 0 1 15 6 L 15 8 L 9 8 L 9 6 Z";
+    private const string UnlockedIconPath = "M 18 8 L 17 8 L 17 6 A 5 5 0 0 0 7 6 L 9 6 A 3 3 0 0 1 15 6 L 15 8 L 6 8 A 2 2 0 0 0 4 10 L 4 20 A 2 2 0 0 0 6 22 L 18 22 A 2 2 0 0 0 20 20 L 20 10 A 2 2 0 0 0 18 8 Z";
+
     private readonly Func<DetailViewModel>? _detailFactory;
     private readonly Func<CalendarViewModel>? _calendarFactory;
     private readonly Func<SettingsViewModel>? _settingsFactory;
@@ -22,6 +27,9 @@ public partial class PanelWindow : Window
     private readonly BackupService? _backupService;
     private readonly DispatcherTimer _deadlineRefreshTimer;
     private CancellationTokenSource? _placementSaveCts;
+    private bool _isPositionLocked;
+    private PixelPoint _lockedPosition;
+    private bool _isRestoringLockedPosition;
 
     public bool AllowExit { get; set; }
 
@@ -32,6 +40,10 @@ public partial class PanelWindow : Window
         {
             Interval = TimeSpan.FromSeconds(60)
         };
+        if (OperatingSystem.IsWindows())
+        {
+            Win32Properties.AddWndProcHookCallback(this, OnWndProc);
+        }
     }
 
     public PanelWindow(
@@ -54,6 +66,16 @@ public partial class PanelWindow : Window
         if (HeaderDragRegion is not null)
         {
             HeaderDragRegion.PointerPressed += OnHeaderPointerPressed;
+            HeaderDragRegion.AddHandler(
+                InputElement.PointerReleasedEvent,
+                OnHeaderPointerReleased,
+                RoutingStrategies.Tunnel | RoutingStrategies.Bubble,
+                handledEventsToo: true);
+        }
+
+        if (HeaderContextMenu is not null)
+        {
+            HeaderContextMenu.Opening += (_, _) => UpdateMenuStatusIndicators();
         }
 
         if (BtnKindSelector is not null)
@@ -74,6 +96,11 @@ public partial class PanelWindow : Window
         if (BtnBottomAdd is not null)
         {
             BtnBottomAdd.Click += (_, _) => TriggerInlineAdd(viewModel);
+        }
+
+        if (BtnLockToggle is not null)
+        {
+            BtnLockToggle.Click += (_, _) => TogglePositionLock(viewModel);
         }
 
         if (BtnTabTasks is not null)
@@ -126,16 +153,86 @@ public partial class PanelWindow : Window
 
         if (MenuToggleLock is not null)
         {
-            MenuToggleLock.Click += (_, _) =>
+            MenuToggleLock.Click += (_, _) => TogglePositionLock(viewModel);
+        }
+
+        // Top Bar Right-Click ContextMenu Bindings
+        if (CtxToggleLock is not null)
+        {
+            CtxToggleLock.Click += (_, _) => TogglePositionLock(viewModel);
+        }
+
+        if (CtxPlaceTopmost is not null)
+        {
+            CtxPlaceTopmost.Click += (_, _) =>
             {
-                if (_settingsService is not null)
-                {
-                    var prefs = _settingsService.GetPreferences();
-                    bool newLock = !prefs.PositionLocked;
-                    _settingsService.SavePreferences(prefs with { PositionLocked = newLock });
-                    viewModel.SetTransientNotice(newLock ? "🔒 已锁定当前桌面位置" : "🔓 已解锁桌面位置");
-                }
+                ApplyPlacementMode(AppPlacementMode.Topmost);
+                viewModel.SetTransientNotice("已切换至: 悬浮在所有应用最上层 (置顶)");
             };
+        }
+
+        if (CtxPlaceBottom is not null)
+        {
+            CtxPlaceBottom.Click += (_, _) =>
+            {
+                ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
+                viewModel.SetTransientNotice("已切换至: 置于所有应用最下层 (桌面底层)");
+            };
+        }
+
+        if (CtxSortDefault is not null)
+        {
+            CtxSortDefault.Click += (_, _) => viewModel.SetSortDefault();
+        }
+
+        if (CtxSortDeadline is not null)
+        {
+            CtxSortDeadline.Click += (_, _) => viewModel.SetSortByDeadline();
+        }
+
+        if (CtxSortPriority is not null)
+        {
+            CtxSortPriority.Click += (_, _) => viewModel.SetSortByPriority();
+        }
+
+        if (CtxSortCreated is not null)
+        {
+            CtxSortCreated.Click += (_, _) => viewModel.SetSortByCreatedDesc();
+        }
+
+        if (CtxSwitchTasks is not null)
+        {
+            CtxSwitchTasks.Click += (_, _) => viewModel.CurrentKind = RecordKind.Task;
+        }
+
+        if (CtxSwitchNotes is not null)
+        {
+            CtxSwitchNotes.Click += (_, _) => viewModel.CurrentKind = RecordKind.Note;
+        }
+
+        if (CtxThemeToggle is not null)
+        {
+            CtxThemeToggle.Click += (_, _) => ToggleTheme();
+        }
+
+        if (CtxOpenSettings is not null)
+        {
+            CtxOpenSettings.Click += (_, _) => OpenManagerWindow(initialTabIndex: 2);
+        }
+
+        if (CtxOpenCalendar is not null)
+        {
+            CtxOpenCalendar.Click += (_, _) => OpenManagerWindow(initialTabIndex: 0);
+        }
+
+        if (CtxHideToTray is not null)
+        {
+            CtxHideToTray.Click += (_, _) => HideToTray();
+        }
+
+        if (CtxExitApp is not null)
+        {
+            CtxExitApp.Click += (_, _) => ExitApplication();
         }
 
         if (BtnSearchToggle is not null)
@@ -174,7 +271,12 @@ public partial class PanelWindow : Window
 
         if (BtnCalendar is not null)
         {
-            BtnCalendar.Click += (_, _) => OpenManagerWindow();
+            BtnCalendar.Click += (_, _) => OpenManagerWindow(initialTabIndex: 0);
+        }
+
+        if (BtnOpenSettings is not null)
+        {
+            BtnOpenSettings.Click += (_, _) => OpenManagerWindow(initialTabIndex: 2);
         }
 
         if (BtnThemeToggle is not null)
@@ -225,6 +327,27 @@ public partial class PanelWindow : Window
         viewModel.OpenDetailRequested += async id => await OpenDetailWindowAsync(id);
     }
 
+    private nint OnWndProc(nint hWnd, uint msg, nint wParam, nint lParam, ref bool handled)
+    {
+        if (!_isPositionLocked)
+        {
+            return nint.Zero;
+        }
+
+        // WM_SYSCOMMAND = 0x0112, SC_MOVE = 0xF010, SC_SIZE = 0xF000
+        if (msg == 0x0112)
+        {
+            long cmd = wParam.ToInt64() & 0xFFF0;
+            if (cmd == 0xF010 || cmd == 0xF000)
+            {
+                handled = true;
+                return nint.Zero;
+            }
+        }
+
+        return nint.Zero;
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         if (!AllowExit && _settingsService is not null)
@@ -256,7 +379,9 @@ public partial class PanelWindow : Window
         Activate();
         if (_settingsService is not null)
         {
-            ApplyPlacementMode(_settingsService.GetPreferences().PlacementMode, savePreference: false);
+            var prefs = _settingsService.GetPreferences();
+            ApplyPlacementMode(prefs.PlacementMode, savePreference: false);
+            ApplyLockState(prefs.PositionLocked, savePreference: false);
         }
     }
 
@@ -265,6 +390,30 @@ public partial class PanelWindow : Window
         AllowExit = true;
         _deadlineRefreshTimer.Stop();
         Close();
+    }
+
+    private void TogglePositionLock(PanelViewModel viewModel)
+    {
+        bool newLock = !_isPositionLocked;
+        ApplyLockState(newLock, savePreference: true);
+        viewModel.SetTransientNotice(newLock
+            ? "🔒 已锁定窗口位置 (禁止拖动)"
+            : "🔓 已解锁窗口位置 (可按住顶端拖动)");
+    }
+
+    public void ApplyLockState(bool locked, bool savePreference = true)
+    {
+        _isPositionLocked = locked;
+        _lockedPosition = Position;
+        CanResize = !locked;
+
+        if (_settingsService is not null && savePreference)
+        {
+            var prefs = _settingsService.GetPreferences();
+            _settingsService.SavePreferences(prefs with { PositionLocked = locked });
+        }
+
+        UpdateMenuStatusIndicators();
     }
 
     public void ApplyPlacementMode(AppPlacementMode mode, bool savePreference = true)
@@ -288,6 +437,77 @@ public partial class PanelWindow : Window
                 // Fallback if desktop host attachment is unavailable
             }
         }
+
+        UpdateMenuStatusIndicators();
+    }
+
+    private void UpdateMenuStatusIndicators()
+    {
+        if (_settingsService is not null)
+        {
+            var prefs = _settingsService.GetPreferences();
+            _isPositionLocked = prefs.PositionLocked;
+            bool isTopmost = prefs.PlacementMode == AppPlacementMode.Topmost;
+
+            if (CtxPlaceTopmost is not null)
+            {
+                CtxPlaceTopmost.Header = isTopmost
+                    ? "✓ 📌  悬浮在所有应用最上层 (置顶)"
+                    : "📌  悬浮在所有应用最上层 (置顶)";
+            }
+
+            if (CtxPlaceBottom is not null)
+            {
+                CtxPlaceBottom.Header = !isTopmost
+                    ? "✓ 🖥️  置于所有应用最下层 (桌面底层)"
+                    : "🖥️  置于所有应用最下层 (桌面底层)";
+            }
+
+            if (MenuPlaceTopmost is not null)
+            {
+                MenuPlaceTopmost.Header = isTopmost
+                    ? "✓ 📌 悬浮在所有应用最上层 (置顶)"
+                    : "📌 悬浮在所有应用最上层 (置顶)";
+            }
+
+            if (MenuPlaceBottom is not null)
+            {
+                MenuPlaceBottom.Header = !isTopmost
+                    ? "✓ 🖥️ 置于所有应用最下层 (桌面底层)"
+                    : "🖥️ 置于所有应用最下层 (桌面底层)";
+            }
+        }
+
+        string lockHeader = _isPositionLocked
+            ? "✓ 🔒  已锁定窗口位置 (点击解锁)"
+            : "🔒  锁定窗口位置 (禁止拖动)";
+
+        if (CtxToggleLock is not null)
+        {
+            CtxToggleLock.Header = lockHeader;
+        }
+
+        if (MenuToggleLock is not null)
+        {
+            MenuToggleLock.Header = lockHeader;
+        }
+
+        if (IconLockState is not null)
+        {
+            IconLockState.Data = StreamGeometry.Parse(_isPositionLocked ? LockedIconPath : UnlockedIconPath);
+            if (this.TryFindResource(_isPositionLocked ? "AccentPrimary" : "TextSecondary", ActualThemeVariant, out var brushObj)
+                && brushObj is IBrush brush)
+            {
+                IconLockState.Foreground = brush;
+            }
+        }
+
+        if (BtnLockToggle is not null)
+        {
+            ToolTip.SetTip(BtnLockToggle, _isPositionLocked
+                ? "当前已锁定窗口位置 (不可拖动) · 点击解锁"
+                : "点击锁定窗口位置 (锁定时禁止拖动)");
+        }
     }
 
     private void OnWindowOpened(object? sender, EventArgs e)
@@ -301,10 +521,12 @@ public partial class PanelWindow : Window
 
             var prefs = _settingsService.GetPreferences();
             ApplyPlacementMode(prefs.PlacementMode, savePreference: false);
+            ApplyLockState(prefs.PositionLocked, savePreference: false);
         }
         else
         {
             Topmost = true;
+            UpdateMenuStatusIndicators();
         }
     }
 
@@ -314,6 +536,19 @@ public partial class PanelWindow : Window
         {
             return;
         }
+
+        if (_isPositionLocked)
+        {
+            if (!_isRestoringLockedPosition && Position != _lockedPosition)
+            {
+                _isRestoringLockedPosition = true;
+                Position = _lockedPosition;
+                _isRestoringLockedPosition = false;
+            }
+            return;
+        }
+
+        _lockedPosition = Position;
 
         _placementSaveCts?.Cancel();
         _placementSaveCts?.Dispose();
@@ -357,18 +592,33 @@ public partial class PanelWindow : Window
 
     private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_settingsService is not null && _settingsService.GetPreferences().PositionLocked)
+        var point = e.GetCurrentPoint(this);
+        if (!point.Properties.IsLeftButtonPressed)
         {
-            if (DataContext is PanelViewModel vm)
-            {
-                vm.SetTransientNotice("🔒 窗口位置已锁定 (可在 ⋯ 菜单中解锁)");
-            }
             return;
         }
 
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        if (_isPositionLocked || (_settingsService is not null && _settingsService.GetPreferences().PositionLocked))
         {
-            BeginMoveDrag(e);
+            _isPositionLocked = true;
+            if (DataContext is PanelViewModel vm)
+            {
+                vm.SetTransientNotice("🔒 窗口已锁定，不可拖动 (右键顶端可设置解锁)");
+            }
+            e.Handled = true;
+            return;
+        }
+
+        BeginMoveDrag(e);
+    }
+
+    private void OnHeaderPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton == MouseButton.Right && HeaderContextMenu is not null && HeaderDragRegion is not null)
+        {
+            UpdateMenuStatusIndicators();
+            HeaderContextMenu.Open(HeaderDragRegion);
+            e.Handled = true;
         }
     }
 
@@ -404,7 +654,7 @@ public partial class PanelWindow : Window
         await panelVm.RefreshAsync(CancellationToken.None);
     }
 
-    public void OpenManagerWindow()
+    public void OpenManagerWindow(int initialTabIndex = 0)
     {
         if (_calendarFactory is null || _settingsFactory is null)
         {
@@ -418,7 +668,9 @@ public partial class PanelWindow : Window
             calVm,
             setVm,
             _backupService,
-            mode => ApplyPlacementMode(mode));
+            mode => ApplyPlacementMode(mode),
+            locked => ApplyLockState(locked, savePreference: false),
+            initialTabIndex);
         mgrWin.Show(this);
     }
 }
