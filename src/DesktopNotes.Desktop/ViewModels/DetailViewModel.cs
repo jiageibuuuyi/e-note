@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Application.Ports;
 using DesktopNotes.Domain;
 
 namespace DesktopNotes.Desktop.ViewModels;
@@ -8,6 +10,10 @@ public sealed class DetailViewModel : ViewModelBase
 {
     private readonly IRecordService _recordService;
     private readonly IRecordQueryService _queryService;
+    private readonly IAttachmentService? _attachmentService;
+    private readonly IAttachmentRepositoryPort? _attachmentRepository;
+    private readonly string? _defaultAttachmentRootPath;
+
     private Guid _recordId;
     private Guid? _parentId;
     private RecordKind _kind = RecordKind.Task;
@@ -28,6 +34,7 @@ public sealed class DetailViewModel : ViewModelBase
     private CancellationTokenSource? _draftDebounceCts;
 
     public ObservableCollection<RecordView> Subtasks { get; } = new();
+    public ObservableCollection<AttachmentView> Attachments { get; } = new();
 
     public Guid RecordId => _recordId;
     public Guid? ParentId => _parentId;
@@ -58,6 +65,32 @@ public sealed class DetailViewModel : ViewModelBase
             if (SetProperty(ref _body, value))
             {
                 ScheduleDraftSave();
+            }
+        }
+    }
+
+    public string AssigneeText
+    {
+        get => Effective.Assignee ?? string.Empty;
+        set
+        {
+            string? cleaned = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            if (Effective.Assignee != cleaned)
+            {
+                SetOwnAssignee(cleaned);
+            }
+        }
+    }
+
+    public string PublisherText
+    {
+        get => Effective.Publisher ?? string.Empty;
+        set
+        {
+            string? cleaned = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            if (Effective.Publisher != cleaned)
+            {
+                SetOwnPublisher(cleaned);
             }
         }
     }
@@ -127,9 +160,64 @@ public sealed class DetailViewModel : ViewModelBase
         }
     }
 
+    public bool HasStart => Effective.Start.HasValue;
+
+    public string StartDisplayText => Effective.Start switch
+    {
+        { } s => IsInheriting(InheritField.Start)
+            ? $"{s.ToLocalTime():yyyy-MM-dd} (继承)"
+            : s.ToLocalTime().ToString("yyyy-MM-dd"),
+        _ => "未设置"
+    };
+
+    public DateTime? SelectedStartDate
+    {
+        get => Effective.Start?.ToLocalTime().Date;
+        set
+        {
+            if (value is { } dt)
+            {
+                var localOffset = TimeZoneInfo.Local.GetUtcOffset(dt);
+                SetOwnStart(new DateTimeOffset(dt.Year, dt.Month, dt.Day, 9, 0, 0, localOffset));
+            }
+            else
+            {
+                SetOwnStart(null);
+            }
+        }
+    }
+
+    public string AttachmentRootPathText
+    {
+        get
+        {
+            if (Effective.AttachmentRootId is { } rid && _attachmentRepository is not null)
+            {
+                var root = _attachmentRepository.GetStorageRoot(rid);
+                if (root is not null)
+                {
+                    return IsInheriting(InheritField.AttachmentRoot)
+                        ? $"{root.AbsolutePath} (继承)"
+                        : root.AbsolutePath;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(_defaultAttachmentRootPath))
+            {
+                return $"默认路径: {_defaultAttachmentRootPath}";
+            }
+
+            return "使用系统默认附件目录";
+        }
+    }
+
+    public bool HasAttachments => Attachments.Count > 0;
+
     public void SetDueToday() => SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(DateTime.Now), null, null));
     public void SetDueTomorrow() => SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(DateTime.Now.AddDays(1)), null, null));
     public void SetDueNextWeek() => SetOwnDue(new DueSpec(DueKind.Date, DateOnly.FromDateTime(DateTime.Now.AddDays(7)), null, null));
+    public void SetStartToday() => SelectedStartDate = DateTime.Now.Date;
+    public void ClearStart() => SetOwnStart(null);
 
     public string StatusMessage
     {
@@ -143,10 +231,18 @@ public sealed class DetailViewModel : ViewModelBase
         private set => SetProperty(ref _hasConflict, value);
     }
 
-    public DetailViewModel(IRecordService recordService, IRecordQueryService queryService)
+    public DetailViewModel(
+        IRecordService recordService,
+        IRecordQueryService queryService,
+        IAttachmentService? attachmentService = null,
+        IAttachmentRepositoryPort? attachmentRepository = null,
+        string? defaultAttachmentRootPath = null)
     {
         _recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         _queryService = queryService ?? throw new ArgumentNullException(nameof(queryService));
+        _attachmentService = attachmentService;
+        _attachmentRepository = attachmentRepository;
+        _defaultAttachmentRootPath = defaultAttachmentRootPath;
     }
 
     public Task LoadNewAsync(RecordKind kind, Guid? parentId, CancellationToken ct)
@@ -162,12 +258,13 @@ public sealed class DetailViewModel : ViewModelBase
         _ownPublisher = null;
         _ownAssignee = null;
         _ownPriority = Priority.Normal;
-        _ownStart = null;
+        _ownStart = DateTimeOffset.Now;
         _ownDue = DueSpec.Empty;
         _ownAttachmentRootId = null;
         _inheritMask = parentId.HasValue ? InheritField.All : InheritField.None;
         _statusMessage = "新建记录";
         HasConflict = false;
+        Attachments.Clear();
         RaiseAllProperties();
         return Task.CompletedTask;
     }
@@ -202,7 +299,136 @@ public sealed class DetailViewModel : ViewModelBase
         }
 
         HasConflict = false;
+        await RefreshAttachmentsAsync(ct);
         RaiseAllProperties();
+    }
+
+    public async Task RefreshAttachmentsAsync(CancellationToken ct)
+    {
+        Attachments.Clear();
+        if (_attachmentService is not null && _version > 0)
+        {
+            var list = await _attachmentService.ListForRecordAsync(_recordId, includeTrashed: false, ct);
+            foreach (var item in list)
+            {
+                Attachments.Add(item);
+            }
+        }
+        RaisePropertyChanged(nameof(HasAttachments));
+    }
+
+    public void SetCustomAttachmentDirectory(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath) || _attachmentRepository is null)
+        {
+            return;
+        }
+
+        string fullPath = Path.GetFullPath(folderPath);
+        Directory.CreateDirectory(fullPath);
+        var existing = _attachmentRepository.ListStorageRoots()
+            .FirstOrDefault(r => string.Equals(r.AbsolutePath, fullPath, StringComparison.OrdinalIgnoreCase));
+        var root = existing ?? _attachmentRepository.RegisterStorageRoot(
+            Guid.NewGuid(),
+            fullPath,
+            "windows",
+            DateTimeOffset.UtcNow);
+        SetOwnAttachmentRoot(root.Id);
+        StatusMessage = "已设置任务专属附件目录";
+    }
+
+    public async Task ImportFilesAsync(IReadOnlyList<string> filePaths, ImportOrigin origin, CancellationToken ct)
+    {
+        if (_attachmentService is null || filePaths.Count == 0)
+        {
+            return;
+        }
+
+        // Ensure record exists in DB before linking attachments
+        if (_version == 0)
+        {
+            if (string.IsNullOrWhiteSpace(_title) && string.IsNullOrWhiteSpace(_body))
+            {
+                _title = Path.GetFileNameWithoutExtension(filePaths[0]);
+            }
+            bool saved = await SaveAsync(ct);
+            if (!saved)
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            var req = new ImportRequest(
+                Guid.NewGuid(),
+                _recordId,
+                filePaths,
+                origin == ImportOrigin.Drag ? ImportIntent.Move : ImportIntent.Copy,
+                origin);
+            await _attachmentService.EnqueueAsync(req, ct);
+            await RefreshAttachmentsAsync(ct);
+            StatusMessage = $"已关联 {filePaths.Count} 个附件";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"附件导入失败: {ex.Message}";
+        }
+    }
+
+    public async Task OpenAttachmentAsync(Guid attachmentId, CancellationToken ct)
+    {
+        if (_attachmentService is null) return;
+        try
+        {
+            await _attachmentService.OpenAsync(attachmentId, ct);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"无法打开附件: {ex.Message}";
+        }
+    }
+
+    public async Task RemoveAttachmentAsync(Guid attachmentId, CancellationToken ct)
+    {
+        if (_attachmentService is null) return;
+        try
+        {
+            await _attachmentService.TrashAttachmentAsync(attachmentId, ct);
+            await RefreshAttachmentsAsync(ct);
+            StatusMessage = "已移除附件";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"移除附件失败: {ex.Message}";
+        }
+    }
+
+    public void OpenAttachmentRootDirectory()
+    {
+        try
+        {
+            string? targetDir = null;
+            if (Effective.AttachmentRootId is { } rid && _attachmentRepository is not null)
+            {
+                targetDir = _attachmentRepository.GetStorageRoot(rid)?.AbsolutePath;
+            }
+            targetDir ??= _defaultAttachmentRootPath;
+
+            if (!string.IsNullOrWhiteSpace(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = targetDir,
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"打开目录失败: {ex.Message}";
+        }
     }
 
     public void SetOwnAssignee(string? assignee)
@@ -214,6 +440,7 @@ public sealed class DetailViewModel : ViewModelBase
         }
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
+        RaisePropertyChanged(nameof(AssigneeText));
     }
 
     public void SetOwnPublisher(string? publisher)
@@ -225,6 +452,7 @@ public sealed class DetailViewModel : ViewModelBase
         }
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
+        RaisePropertyChanged(nameof(PublisherText));
     }
 
     public void SetOwnPriority(Priority priority)
@@ -248,6 +476,7 @@ public sealed class DetailViewModel : ViewModelBase
         }
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
+        RaiseStartProperties();
     }
 
     public void SetOwnDue(DueSpec due)
@@ -277,6 +506,7 @@ public sealed class DetailViewModel : ViewModelBase
         }
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
+        RaisePropertyChanged(nameof(AttachmentRootPathText));
     }
 
     public void RestoreFieldInheritance(InheritField field)
@@ -288,8 +518,12 @@ public sealed class DetailViewModel : ViewModelBase
 
         InheritMask |= (field & InheritField.All);
         RaisePropertyChanged(nameof(Effective));
+        RaisePropertyChanged(nameof(AssigneeText));
+        RaisePropertyChanged(nameof(PublisherText));
+        RaisePropertyChanged(nameof(AttachmentRootPathText));
         RaisePriorityProperties();
         RaiseDueProperties();
+        RaiseStartProperties();
     }
 
     public bool IsInheriting(InheritField field) => _parentId.HasValue && (_inheritMask & field) != 0;
@@ -391,11 +625,22 @@ public sealed class DetailViewModel : ViewModelBase
         RaisePropertyChanged(nameof(SelectedDueDate));
     }
 
+    private void RaiseStartProperties()
+    {
+        RaisePropertyChanged(nameof(HasStart));
+        RaisePropertyChanged(nameof(StartDisplayText));
+        RaisePropertyChanged(nameof(SelectedStartDate));
+    }
+
     private void RaiseAllProperties()
     {
         RaisePropertyChanged(nameof(RecordKindTitle));
         RaisePropertyChanged(nameof(Title));
         RaisePropertyChanged(nameof(Body));
+        RaisePropertyChanged(nameof(AssigneeText));
+        RaisePropertyChanged(nameof(PublisherText));
+        RaisePropertyChanged(nameof(AttachmentRootPathText));
+        RaisePropertyChanged(nameof(HasAttachments));
         RaisePropertyChanged(nameof(Version));
         RaisePropertyChanged(nameof(Own));
         RaisePropertyChanged(nameof(Effective));
@@ -403,5 +648,6 @@ public sealed class DetailViewModel : ViewModelBase
         RaisePropertyChanged(nameof(Status));
         RaisePriorityProperties();
         RaiseDueProperties();
+        RaiseStartProperties();
     }
 }

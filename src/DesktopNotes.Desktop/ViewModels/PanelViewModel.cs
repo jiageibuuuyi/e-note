@@ -125,6 +125,7 @@ public sealed class PanelViewModel : ViewModelBase
     private Guid? _expandedRecordId;
     private int _totalCount;
     private string _statusMessage = "双击任务编辑详情 · 拖入文件自动归档";
+    private string? _transientNotice;
     private string _quickInputText = string.Empty;
     private long _querySequence;
     private CancellationTokenSource? _searchDebounceCts;
@@ -135,6 +136,7 @@ public sealed class PanelViewModel : ViewModelBase
         new SortTerm(SortKey.Created, false)
     };
 
+    public IAttachmentService? AttachmentService { get; set; }
     public ObservableCollection<TaskRowViewModel> Items { get; } = new();
     public TaskRowInteraction RowInteraction { get; }
     public event Action<Guid>? OpenDetailRequested;
@@ -147,9 +149,11 @@ public sealed class PanelViewModel : ViewModelBase
         : "M 3 17.25 L 3 21 L 6.75 21 L 17.81 9.94 L 14.06 6.19 L 3 17.25 Z M 20.71 7.04 L 18.37 4.7 L 16.54 6.53 L 20.29 10.28 L 20.71 7.04 Z";
     public bool HasSearchText => !string.IsNullOrEmpty(_searchText);
     public bool IsEmpty => Items.Count == 0;
-    public string WhisperStatus => HasSearchText
-        ? $"搜索到 {TotalCount} 项匹配"
-        : (TotalCount > 0 ? $"{TotalCount} 项{CurrentKindText}" : string.Empty);
+    public string WhisperStatus => !string.IsNullOrEmpty(_transientNotice)
+        ? _transientNotice
+        : (HasSearchText
+            ? $"搜索到 {TotalCount} 项匹配"
+            : (TotalCount > 0 ? $"{TotalCount} 项{CurrentKindText}" : string.Empty));
     public bool HasFooterContent => !string.IsNullOrEmpty(WhisperStatus);
 
     public string QuickInputPlaceholder => IsTaskTab
@@ -306,6 +310,89 @@ public sealed class PanelViewModel : ViewModelBase
             RaisePropertyChanged();
             _ = RefreshAsync(CancellationToken.None);
         }
+    }
+
+    public void SetSortDefault()
+    {
+        SetTransientNotice("排序: 默认 (优先级 → 截止期 → 创建时间)");
+        CurrentSort = new[]
+        {
+            new SortTerm(SortKey.Priority, false),
+            new SortTerm(SortKey.Deadline, false),
+            new SortTerm(SortKey.Created, false)
+        };
+    }
+
+    public void SetSortByDeadline()
+    {
+        SetTransientNotice("排序: 截止期优先 (最近到期在前)");
+        CurrentSort = new[]
+        {
+            new SortTerm(SortKey.Deadline, false),
+            new SortTerm(SortKey.Priority, false),
+            new SortTerm(SortKey.Created, false)
+        };
+    }
+
+    public void SetSortByPriority()
+    {
+        SetTransientNotice("排序: 优先级优先 (紧急在前)");
+        CurrentSort = new[]
+        {
+            new SortTerm(SortKey.Priority, false),
+            new SortTerm(SortKey.Created, true)
+        };
+    }
+
+    public void SetSortByCreatedDesc()
+    {
+        SetTransientNotice("排序: 最新创建在前");
+        CurrentSort = new[]
+        {
+            new SortTerm(SortKey.Created, true),
+            new SortTerm(SortKey.Priority, false)
+        };
+    }
+
+    public async Task DropFilesOnRecordAsync(Guid recordId, IReadOnlyList<string> filePaths, CancellationToken ct)
+    {
+        if (AttachmentService is null || filePaths.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var req = new ImportRequest(
+                Guid.NewGuid(),
+                recordId,
+                filePaths,
+                ImportIntent.Move,
+                ImportOrigin.Drag);
+            await AttachmentService.EnqueueAsync(req, ct);
+            SetTransientNotice($"已关联 {filePaths.Count} 个附件");
+        }
+        catch (Exception ex)
+        {
+            SetTransientNotice($"拖入失败: {ex.Message}");
+        }
+    }
+
+    public void SetTransientNotice(string message)
+    {
+        _transientNotice = message;
+        RaisePropertyChanged(nameof(WhisperStatus));
+        RaisePropertyChanged(nameof(HasFooterContent));
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3500);
+            if (_transientNotice == message)
+            {
+                _transientNotice = null;
+                RaisePropertyChanged(nameof(WhisperStatus));
+                RaisePropertyChanged(nameof(HasFooterContent));
+            }
+        });
     }
 
     public PanelViewModel(

@@ -1,84 +1,308 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
+        xmlns:contracts="using:DesktopNotes.Application.Contracts"
         x:Class="DesktopNotes.Desktop.Views.ManagerWindow"
-        Width="760" Height="560" MinWidth="580" MinHeight="440"
+        x:DataType="vm:CalendarViewModel"
+        Width="740" Height="560" MinWidth="560" MinHeight="420"
         Background="{DynamicResource BgWindow}"
         WindowStartupLocation="CenterOwner"
-        Title="桌面笔记 · 管理与设置">
-  <Border Padding="20">
-    <TabControl>
-      <!-- Tab 1: Calendar & Schedule -->
-      <TabItem Header="月历视图" FontSize="13.5">
-        <Grid RowDefinitions="Auto,*" Margin="0,14,0,0" x:Name="CalendarTabGrid">
-          <Border Grid.Row="0"
+        Title="任务日历 · 历史归档 · 设置">
+  <Border Padding="20,16">
+    <TabControl Background="Transparent">
+
+      <!-- Tab 1: Live Task Calendar -->
+      <TabItem Header="📅 任务日历" FontSize="13.5">
+        <Grid RowDefinitions="Auto,Auto,*" Margin="0,12,0,0">
+          <!-- Month Switcher Header -->
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Text="{Binding YearMonthTitle}"
+                         FontSize="17" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimary}"
+                         VerticalAlignment="Center"/>
+              <Border Background="{DynamicResource AccentSubtle}"
+                      CornerRadius="5"
+                      Padding="8,2.5"
+                      VerticalAlignment="Center">
+                <TextBlock Text="{Binding MonthEntries.Count, StringFormat='本月 {0} 项记录'}"
+                           Foreground="{DynamicResource AccentPrimary}"
+                           FontSize="11.5"
+                           FontWeight="Medium"/>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <Button Name="BtnPrevMonth" Classes="secondary-pill" Padding="10,4" FontSize="12" Content="◀ 上月"/>
+              <Button Name="BtnTodayMonth" Classes="secondary-pill" Padding="12,4" FontSize="12" Content="回到本月"/>
+              <Button Name="BtnNextMonth" Classes="secondary-pill" Padding="10,4" FontSize="12" Content="下月 ▶"/>
+            </StackPanel>
+          </Grid>
+
+          <!-- Calendar Axis Selector -->
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
+            <TextBlock Text="时间维度:" Foreground="{DynamicResource TextMuted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <Button Name="BtnAxisDue" Classes="seg-pill" Classes.active="{Binding IsAxisDue}" Padding="10,3.5" FontSize="12" Content="按截止期 (Deadline)"/>
+            <Button Name="BtnAxisStart" Classes="seg-pill" Classes.active="{Binding IsAxisStart}" Padding="10,3.5" FontSize="12" Content="按开始时间"/>
+            <Button Name="BtnAxisCreated" Classes="seg-pill" Classes.active="{Binding IsAxisCreated}" Padding="10,3.5" FontSize="12" Content="按创建时间"/>
+            <Button Name="BtnAxisClosed" Classes="seg-pill" Classes.active="{Binding IsAxisClosed}" Padding="10,3.5" FontSize="12" Content="按完成归档时间"/>
+          </StackPanel>
+
+          <!-- Calendar Task Entries List -->
+          <Border Grid.Row="2"
                   Background="{DynamicResource BgCard}"
                   BorderBrush="{DynamicResource BorderSubtle}"
                   BorderThickness="1"
                   CornerRadius="10"
-                  Padding="16,14"
-                  Margin="0,0,0,14"
+                  Padding="12"
                   BoxShadow="{DynamicResource CardShadow}">
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Grid.Column="0" Spacing="4">
-                <TextBlock Text="四维日程概览"
-                           FontSize="15" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Text="支持按截止时间、计划开始、创建时间与完成时间四个维度透视所有待办与笔记。"
-                           FontSize="12.5"
-                           Foreground="{DynamicResource TextSecondary}"/>
-              </StackPanel>
-            </Grid>
-          </Border>
+            <Panel>
+              <ScrollViewer IsVisible="{Binding HasMonthEntries}">
+                <ItemsControl ItemsSource="{Binding MonthEntries}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="contracts:CalendarEntry">
+                      <Border Background="{DynamicResource BgSubtle}"
+                              CornerRadius="7"
+                              Padding="12,8"
+                              Margin="0,3">
+                        <Grid ColumnDefinitions="95,*,Auto,Auto">
+                          <Border Grid.Column="0"
+                                  Background="{DynamicResource BgCard}"
+                                  CornerRadius="5"
+                                  Padding="6,2"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Day, TargetNullValue='无日期'}"
+                                       Foreground="{DynamicResource AccentPrimary}"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"/>
+                          </Border>
 
-          <!-- Calendar Content Card -->
+                          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" Margin="6,0">
+                            <TextBlock Text="{Binding Record.DisplayTitle}"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       FontSize="13"
+                                       FontWeight="Medium"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Record.Body}"
+                                       IsVisible="{Binding Record.Body, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Foreground="{DynamicResource TextMuted}"
+                                       FontSize="11.5"
+                                       MaxLines="1"
+                                       TextTrimming="CharacterEllipsis"/>
+                          </StackPanel>
+
+                          <TextBlock Grid.Column="2"
+                                     Text="{Binding Record.Effective.Assignee, StringFormat='👤 {0}'}"
+                                     IsVisible="{Binding Record.Effective.Assignee, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                     Foreground="{DynamicResource TextSecondary}"
+                                     FontSize="11.5"
+                                     VerticalAlignment="Center"
+                                     Margin="8,0"/>
+
+                          <Border Grid.Column="3"
+                                  Background="{DynamicResource BgHover}"
+                                  CornerRadius="4"
+                                  Padding="6,2"
+                                  VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Record.Status}"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       FontSize="11"/>
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
+              <StackPanel IsVisible="{Binding !HasMonthEntries}"
+                          Spacing="10"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center">
+                <PathIcon Width="32" Height="32"
+                          Foreground="{DynamicResource TextMuted}"
+                          Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
+                <TextBlock Text="当前月份与维度下暂无任务记录"
+                           FontSize="13.5" FontWeight="Medium"
+                           Foreground="{DynamicResource TextSecondary}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="可切换上方月份或时间维度（截止期 / 开始时间 / 创建时间 / 归档时间）查看历史记录"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextMuted}"
+                           HorizontalAlignment="Center"/>
+              </StackPanel>
+            </Panel>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- Tab 2: Historical Archive & Trash -->
+      <TabItem Header="📦 历史归档与回收站" FontSize="13.5">
+        <Grid RowDefinitions="Auto,*" Margin="0,12,0,0">
+          <!-- Filter & Search Bar -->
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,220" Margin="0,0,0,10">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+              <Button Name="BtnShowArchived"
+                      Classes="seg-pill"
+                      Classes.active="{Binding IsArchiveView}"
+                      Padding="12,4"
+                      FontSize="12"
+                      Content="✅ 已完成归档任务"/>
+              <Button Name="BtnShowTrash"
+                      Classes="seg-pill"
+                      Classes.active="{Binding IsTrashView}"
+                      Padding="12,4"
+                      FontSize="12"
+                      Content="🗑️ 回收站"/>
+            </StackPanel>
+
+            <Border Grid.Column="2"
+                    Background="{DynamicResource BgCard}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="8,3">
+              <TextBox Name="HistorySearchBox"
+                       Classes="clean-input"
+                       Text="{Binding HistorySearchText}"
+                       PlaceholderText="搜索历史归档或回收站..."
+                       FontSize="12"/>
+            </Border>
+          </Grid>
+
+          <!-- Historical Records List -->
           <Border Grid.Row="1"
                   Background="{DynamicResource BgCard}"
                   BorderBrush="{DynamicResource BorderSubtle}"
                   BorderThickness="1"
                   CornerRadius="10"
-                  Padding="20"
+                  Padding="12"
                   BoxShadow="{DynamicResource CardShadow}">
-            <StackPanel Spacing="16" VerticalAlignment="Center" HorizontalAlignment="Center">
-              <PathIcon Width="36" Height="36"
-                        Foreground="{DynamicResource TextMuted}"
-                        Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
-              <TextBlock Text="已连接日程索引引擎"
-                         FontSize="14" FontWeight="Medium"
-                         Foreground="{DynamicResource TextSecondary}"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="所有带截止日期的任务会自动投递到桌面面板与系统通知提醒中"
-                         FontSize="12.5"
-                         Foreground="{DynamicResource TextMuted}"
-                         HorizontalAlignment="Center"/>
-            </StackPanel>
+            <Panel>
+              <ScrollViewer IsVisible="{Binding HasHistoricalItems}">
+                <ItemsControl ItemsSource="{Binding HistoricalItems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="contracts:RecordView">
+                      <Border Background="{DynamicResource BgSubtle}"
+                              CornerRadius="7"
+                              Padding="12,8"
+                              Margin="0,3">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                          <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayTitle}"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       FontSize="13"
+                                       FontWeight="Medium"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Body}"
+                                       IsVisible="{Binding Body, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Foreground="{DynamicResource TextMuted}"
+                                       FontSize="11.5"
+                                       MaxLines="1"
+                                       TextTrimming="CharacterEllipsis"/>
+                          </StackPanel>
+
+                          <TextBlock Grid.Column="1"
+                                     Text="{Binding ClosedAt, StringFormat='归档于 {0:yyyy-MM-dd HH:mm}'}"
+                                     IsVisible="{Binding ClosedAt, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                     Foreground="{DynamicResource TextMuted}"
+                                     FontSize="11"
+                                     VerticalAlignment="Center"
+                                     Margin="10,0"/>
+
+                          <Button Grid.Column="2"
+                                  Classes="ghost-link"
+                                  FontSize="11.5"
+                                  Content="重新开启"
+                                  Tag="{Binding Id}"
+                                  IsVisible="{Binding DeletedAt, Converter={x:Static ObjectConverters.IsNull}}"
+                                  Click="OnReopenRecordClick"
+                                  ToolTip.Tip="将该已完成任务恢复到未完成待办列表"/>
+
+                          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+                            <Button Classes="ghost-link"
+                                    FontSize="11.5"
+                                    Foreground="{DynamicResource StatusOverdue}"
+                                    Content="删除"
+                                    Tag="{Binding Id}"
+                                    IsVisible="{Binding DeletedAt, Converter={x:Static ObjectConverters.IsNull}}"
+                                    Click="OnTrashRecordClick"/>
+                            <Button Classes="ghost-link"
+                                    FontSize="11.5"
+                                    Content="还原记录"
+                                    Tag="{Binding Id}"
+                                    IsVisible="{Binding DeletedAt, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                    Click="OnRestoreRecordClick"/>
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
+              <StackPanel IsVisible="{Binding !HasHistoricalItems}"
+                          Spacing="10"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center">
+                <PathIcon Width="32" Height="32"
+                          Foreground="{DynamicResource TextMuted}"
+                          Data="M 6 19 A 2 2 0 0 0 8 21 L 16 21 A 2 2 0 0 0 18 19 L 18 7 L 6 7 L 6 19 Z M 19 4 L 15.5 4 L 14.5 3 L 9.5 3 L 8.5 4 L 5 4 L 5 6 L 19 6 L 19 4 Z"/>
+                <TextBlock Text="暂无相关归档或回收站记录"
+                           FontSize="13.5" FontWeight="Medium"
+                           Foreground="{DynamicResource TextSecondary}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="在主面板勾选完成的待办事项会自动归档至此处，可随时查阅或重新开启"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextMuted}"
+                           HorizontalAlignment="Center"/>
+              </StackPanel>
+            </Panel>
           </Border>
         </Grid>
       </TabItem>
 
-      <!-- Tab 2: Settings & Preferences -->
-      <TabItem Header="设置与偏好" FontSize="13.5">
-        <ScrollViewer Margin="0,14,0,0">
-          <StackPanel Spacing="14">
+      <!-- Tab 3: Settings & Backup -->
+      <TabItem Header="⚙️ 设置与偏好" FontSize="13.5">
+        <ScrollViewer Margin="0,12,0,0">
+          <StackPanel Spacing="12">
             <!-- Window & Desktop Placement -->
             <Border Background="{DynamicResource BgCard}"
                     BorderBrush="{DynamicResource BorderSubtle}"
                     BorderThickness="1"
                     CornerRadius="10"
-                    Padding="18,16"
+                    Padding="18,14"
                     BoxShadow="{DynamicResource CardShadow}">
-              <StackPanel Spacing="12">
-                <TextBlock Text="桌面驻留与窗口行为"
-                           FontSize="14.5" FontWeight="SemiBold"
+              <StackPanel Spacing="10">
+                <TextBlock Text="桌面悬浮层级与窗口行为"
+                           FontSize="14" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimary}"/>
-                
-                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+
+                <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="窗口桌面层级"
+                               FontSize="12.5" FontWeight="Medium"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="支持悬浮在所有应用最上层（置顶），或嵌入在所有应用最下层（桌面层）"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource TextMuted}"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Name="BtnModeTopmost" Classes="seg-pill" Padding="10,4" FontSize="12" Content="📌 最上层 (置顶)"/>
+                    <Button Name="BtnModeDesktop" Classes="seg-pill" Padding="10,4" FontSize="12" Content="🖥️ 最下层 (桌面层)"/>
+                  </StackPanel>
+                </Grid>
+
+                <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Margin="0,2"/>
+
+                <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Grid.Column="0" Spacing="2">
                     <TextBlock Text="位置锁定模式"
-                               FontSize="13" FontWeight="Medium"
+                               FontSize="12.5" FontWeight="Medium"
                                Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBlock Text="锁定后面板禁止被意外拖拽移动，固定吸附在当前屏幕坐标"
-                               FontSize="12"
+                    <TextBlock Text="锁定后面板固定在指定桌面位置，防止鼠标误触拖拽移动"
+                               FontSize="11.5"
                                Foreground="{DynamicResource TextMuted}"/>
                   </StackPanel>
                   <CheckBox Name="CheckLockPosition"
@@ -87,15 +311,15 @@
                             VerticalAlignment="Center"/>
                 </Grid>
 
-                <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Margin="0,4"/>
+                <Border BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Margin="0,2"/>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Grid.Column="0" Spacing="2">
                     <TextBlock Text="开机自动启动"
-                               FontSize="13" FontWeight="Medium"
+                               FontSize="12.5" FontWeight="Medium"
                                Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBlock Text="系统登录后静默启动桌面面板并恢复上次窗口模式与坐标"
-                               FontSize="12"
+                    <TextBlock Text="Windows 登录后自动启动桌面笔记并恢复上次位置与层级"
+                               FontSize="11.5"
                                Foreground="{DynamicResource TextMuted}"/>
                   </StackPanel>
                   <CheckBox Name="CheckLaunchAtLogin"
@@ -111,24 +335,29 @@
                     BorderBrush="{DynamicResource BorderSubtle}"
                     BorderThickness="1"
                     CornerRadius="10"
-                    Padding="18,16"
+                    Padding="18,14"
                     BoxShadow="{DynamicResource CardShadow}">
-              <StackPanel Spacing="12">
-                <TextBlock Text="数据安全与备份迁移"
-                           FontSize="14.5" FontWeight="SemiBold"
+              <StackPanel Spacing="10">
+                <TextBlock Text="数据安全与完整备份迁移"
+                           FontSize="14" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Text="完整备份将生成标准 ZIP 压缩包，内含 SQLite 数据库快照、所有关联附件结构及 SHA-256 完整性清单。"
-                           FontSize="12"
+                <TextBlock Text="完整备份将生成标准 ZIP 压缩包，内含 SQLite 数据库快照、所有关联附件文件及 SHA-256 校验清单。"
+                           FontSize="11.5"
                            Foreground="{DynamicResource TextSecondary}"
                            TextWrapping="Wrap"/>
-                
-                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
+
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
                   <Button Name="BtnExportBackup"
                           Classes="secondary-pill"
                           Content="导出完整备份包 (.zip)"/>
                   <Button Name="BtnRestoreBackup"
                           Classes="secondary-pill"
                           Content="从备份包恢复数据..."/>
+                  <TextBlock Name="SettingsStatusText"
+                             Foreground="{DynamicResource AccentPrimary}"
+                             FontSize="12"
+                             VerticalAlignment="Center"
+                             Margin="8,0,0,0"/>
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -136,32 +365,6 @@
         </ScrollViewer>
       </TabItem>
 
-      <!-- Tab 3: Trash & Archive -->
-      <TabItem Header="归档与回收站" FontSize="13.5">
-        <Border Background="{DynamicResource BgCard}"
-                BorderBrush="{DynamicResource BorderSubtle}"
-                BorderThickness="1"
-                CornerRadius="10"
-                Padding="20"
-                Margin="0,14,0,0"
-                BoxShadow="{DynamicResource CardShadow}">
-          <StackPanel Spacing="14" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <PathIcon Width="36" Height="36"
-                      Foreground="{DynamicResource TextMuted}"
-                      Data="M 6 19 A 2 2 0 0 0 8 21 L 16 21 A 2 2 0 0 0 18 19 L 18 7 L 6 7 L 6 19 Z M 19 4 L 15.5 4 L 14.5 3 L 9.5 3 L 8.5 4 L 5 4 L 5 6 L 19 6 L 19 4 Z"/>
-            <TextBlock Text="安全逻辑回收机制"
-                       FontSize="14.5" FontWeight="Medium"
-                       Foreground="{DynamicResource TextSecondary}"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="删除的任务和附件均存放在逻辑回收区，不会直接从磁盘抹除，可随时成批找回或撤销操作"
-                       FontSize="12.5"
-                       Foreground="{DynamicResource TextMuted}"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"
-                       MaxWidth="360"/>
-          </StackPanel>
-        </Border>
-      </TabItem>
     </TabControl>
   </Border>
 </Window>

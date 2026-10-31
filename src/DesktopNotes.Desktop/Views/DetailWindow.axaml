@@ -1,27 +1,30 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
+        xmlns:contracts="using:DesktopNotes.Application.Contracts"
         x:Class="DesktopNotes.Desktop.Views.DetailWindow"
         x:DataType="vm:DetailViewModel"
-        Width="520" Height="640" MinWidth="380" MinHeight="460"
+        Width="540" Height="680" MinWidth="420" MinHeight="520"
         Background="{DynamicResource BgWindow}"
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1"
         WindowStartupLocation="CenterOwner"
+        DragDrop.AllowDrop="True"
         Title="记录详情">
-  <Border BorderBrush="{DynamicResource BorderSubtle}"
+  <Border Name="DetailRootBorder"
+          BorderBrush="{DynamicResource BorderSubtle}"
           BorderThickness="1"
-          Padding="22,16,22,16">
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+          Padding="20,14,20,14"
+          DragDrop.AllowDrop="True">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
 
       <!-- 1. Header Drag Bar with Draft Status & Close -->
       <Grid Name="DetailHeaderRegion"
             Grid.Row="0"
             ColumnDefinitions="*,Auto,Auto"
             Background="Transparent"
-            Margin="0,0,0,12">
-        <!-- Record Type & Status Label -->
+            Margin="0,0,0,10">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Border Background="{DynamicResource AccentSubtle}"
                   CornerRadius="5"
@@ -37,7 +40,6 @@
                      VerticalAlignment="Center"/>
         </StackPanel>
 
-        <!-- Close Ghost Button -->
         <Button Name="BtnHeaderClose"
                 Grid.Column="2"
                 Classes="icon-ghost"
@@ -49,39 +51,39 @@
         </Button>
       </Grid>
 
-      <!-- 2. Document Title Input & Properties -->
-      <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,14">
+      <!-- 2. Document Title Input & Structured Properties -->
+      <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,10">
         <TextBox Name="TitleBox"
                  Classes="clean-input"
                  Text="{Binding Title}"
-                 PlaceholderText="无标题记录..."
-                 FontSize="18"
+                 PlaceholderText="输入任务或笔记标题..."
+                 FontSize="17"
                  FontWeight="SemiBold"
                  Foreground="{DynamicResource TextPrimary}"/>
 
-        <!-- Structured Properties Panel -->
+        <!-- Structured Properties Card: Priority, Due, Start, Assignee & Publisher -->
         <Border Background="{DynamicResource BgCard}"
                 BorderBrush="{DynamicResource BorderSubtle}"
                 BorderThickness="1"
-                CornerRadius="10"
-                Padding="12,10"
+                CornerRadius="9"
+                Padding="12,9"
                 BoxShadow="{DynamicResource CardShadow}">
-          <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="10">
-            <!-- Row 1: Priority Selector -->
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8">
+            <!-- Row 0: Priority Selector -->
             <TextBlock Grid.Row="0" Grid.Column="0"
                        Text="优先级"
                        Foreground="{DynamicResource TextMuted}"
                        FontSize="12"
                        VerticalAlignment="Center"
-                       Width="56"/>
+                       Width="60"/>
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <Button Name="BtnPrio0" Classes="seg-pill" Classes.active="{Binding IsPriorityP0}" Padding="8,3" FontSize="11.5" Content="● P0 紧急" ToolTip.Tip="设置为最高优先级"/>
-              <Button Name="BtnPrio1" Classes="seg-pill" Classes.active="{Binding IsPriorityP1}" Padding="8,3" FontSize="11.5" Content="● P1 高" ToolTip.Tip="设置高优先级"/>
-              <Button Name="BtnPrio2" Classes="seg-pill" Classes.active="{Binding IsPriorityP2}" Padding="8,3" FontSize="11.5" Content="● P2 普通" ToolTip.Tip="设置普通优先级"/>
-              <Button Name="BtnPrio3" Classes="seg-pill" Classes.active="{Binding IsPriorityP3}" Padding="8,3" FontSize="11.5" Content="● P3 低" ToolTip.Tip="设置低优先级"/>
+              <Button Name="BtnPrio0" Classes="seg-pill" Classes.active="{Binding IsPriorityP0}" Padding="8,2.5" FontSize="11.5" Content="● P0 紧急"/>
+              <Button Name="BtnPrio1" Classes="seg-pill" Classes.active="{Binding IsPriorityP1}" Padding="8,2.5" FontSize="11.5" Content="● P1 高"/>
+              <Button Name="BtnPrio2" Classes="seg-pill" Classes.active="{Binding IsPriorityP2}" Padding="8,2.5" FontSize="11.5" Content="● P2 普通"/>
+              <Button Name="BtnPrio3" Classes="seg-pill" Classes.active="{Binding IsPriorityP3}" Padding="8,2.5" FontSize="11.5" Content="● P3 低"/>
             </StackPanel>
 
-            <!-- Row 2: Due Date Display & Quick Picker -->
+            <!-- Row 1: Due Date (Deadline) -->
             <TextBlock Grid.Row="1" Grid.Column="0"
                        Text="截止期"
                        Foreground="{DynamicResource TextMuted}"
@@ -90,48 +92,103 @@
             <WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
               <Border Background="{DynamicResource BgSubtle}"
                       CornerRadius="5"
-                      Padding="8,3.5"
+                      Padding="7,2.5"
                       Margin="0,0,6,0"
                       VerticalAlignment="Center">
                 <TextBlock Text="{Binding DueDisplayText}"
                            Foreground="{DynamicResource TextPrimary}"
-                           FontSize="12"
+                           FontSize="11.5"
                            FontWeight="Medium"/>
               </Border>
-              <Button Name="BtnDueToday"
-                      Classes="seg-pill"
-                      Padding="7,3"
-                      Margin="0,0,4,0"
-                      FontSize="11.5"
-                      Content="今日"/>
-              <Button Name="BtnDueTomorrow"
-                      Classes="seg-pill"
-                      Padding="7,3"
-                      Margin="0,0,4,0"
-                      FontSize="11.5"
-                      Content="明日"/>
-              <Button Name="BtnDueNextWeek"
-                      Classes="seg-pill"
-                      Padding="7,3"
-                      Margin="0,0,6,0"
-                      FontSize="11.5"
-                      Content="下周"/>
+              <Button Name="BtnDueToday" Classes="seg-pill" Padding="6,2" Margin="0,0,4,0" FontSize="11" Content="今日"/>
+              <Button Name="BtnDueTomorrow" Classes="seg-pill" Padding="6,2" Margin="0,0,4,0" FontSize="11" Content="明日"/>
+              <Button Name="BtnDueNextWeek" Classes="seg-pill" Padding="6,2" Margin="0,0,6,0" FontSize="11" Content="下周"/>
               <CalendarDatePicker Name="DueDatePicker"
                                   SelectedDate="{Binding SelectedDueDate}"
                                   SelectedDateFormat="Custom"
                                   CustomDateFormatString="yyyy-MM-dd"
                                   PlaceholderText="指定日期..."
-                                  FontSize="11.5"
-                                  MinWidth="112"
+                                  FontSize="11"
+                                  MinWidth="105"
                                   Margin="0,0,6,0"
                                   VerticalAlignment="Center"/>
               <Button Name="BtnClearDue"
                       IsVisible="{Binding HasDue}"
                       Classes="ghost-link"
                       Content="清空"
-                      FontSize="11.5"
+                      FontSize="11"
                       VerticalAlignment="Center"/>
             </WrapPanel>
+
+            <!-- Row 2: Start Date (任务记录/开始时间) -->
+            <TextBlock Grid.Row="2" Grid.Column="0"
+                       Text="开始时间"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <Border Background="{DynamicResource BgSubtle}"
+                      CornerRadius="5"
+                      Padding="7,2.5"
+                      VerticalAlignment="Center">
+                <TextBlock Text="{Binding StartDisplayText}"
+                           Foreground="{DynamicResource TextSecondary}"
+                           FontSize="11.5"/>
+              </Border>
+              <Button Name="BtnStartToday" Classes="seg-pill" Padding="6,2" FontSize="11" Content="设为今日"/>
+              <CalendarDatePicker Name="StartDatePicker"
+                                  SelectedDate="{Binding SelectedStartDate}"
+                                  SelectedDateFormat="Custom"
+                                  CustomDateFormatString="yyyy-MM-dd"
+                                  PlaceholderText="选择开始日期..."
+                                  FontSize="11"
+                                  MinWidth="105"
+                                  VerticalAlignment="Center"/>
+              <Button Name="BtnClearStart"
+                      IsVisible="{Binding HasStart}"
+                      Classes="ghost-link"
+                      Content="清空"
+                      FontSize="11"
+                      VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Row 3: Assignee (责任人) & Publisher (发布人) -->
+            <TextBlock Grid.Row="3" Grid.Column="0"
+                       Text="人员信息"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,12,*">
+              <Border Grid.Column="0"
+                      Background="{DynamicResource BgSubtle}"
+                      CornerRadius="5"
+                      Padding="8,2">
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Grid.Column="0" Text="责任人:" Foreground="{DynamicResource TextMuted}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                  <TextBox Name="AssigneeBox"
+                           Grid.Column="1"
+                           Classes="clean-input"
+                           Text="{Binding AssigneeText}"
+                           PlaceholderText="填写责任人..."
+                           FontSize="12"/>
+                </Grid>
+              </Border>
+
+              <Border Grid.Column="2"
+                      Background="{DynamicResource BgSubtle}"
+                      CornerRadius="5"
+                      Padding="8,2">
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Grid.Column="0" Text="发布人:" Foreground="{DynamicResource TextMuted}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                  <TextBox Name="PublisherBox"
+                           Grid.Column="1"
+                           Classes="clean-input"
+                           Text="{Binding PublisherText}"
+                           PlaceholderText="填写发布人..."
+                           FontSize="12"/>
+                </Grid>
+              </Border>
+            </Grid>
           </Grid>
         </Border>
       </StackPanel>
@@ -141,8 +198,9 @@
               Background="{DynamicResource BgCard}"
               BorderBrush="{DynamicResource BorderSubtle}"
               BorderThickness="1"
-              CornerRadius="10"
-              Padding="14,12"
+              CornerRadius="9"
+              Padding="12,10"
+              Margin="0,0,0,10"
               BoxShadow="{DynamicResource CardShadow}">
         <TextBox Name="BodyBox"
                  Classes="clean-input"
@@ -152,18 +210,104 @@
                  TextWrapping="Wrap"
                  VerticalAlignment="Stretch"
                  VerticalContentAlignment="Top"
-                 FontSize="13.5"
-                 LineHeight="22"/>
+                 FontSize="13"
+                 LineHeight="21"/>
       </Border>
 
-      <!-- 4. Bottom Action Bar -->
-      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+      <!-- 4. Attachment Storage Path & Drag-Drop Files Panel -->
+      <Border Grid.Row="3"
+              Background="{DynamicResource BgCard}"
+              BorderBrush="{DynamicResource BorderSubtle}"
+              BorderThickness="1"
+              CornerRadius="9"
+              Padding="12,8"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+            <TextBlock Grid.Column="0"
+                       Text="📎 附件存储:"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="11.5"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding AttachmentRootPathText}"
+                       Foreground="{DynamicResource TextSecondary}"
+                       FontSize="11.5"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="{Binding AttachmentRootPathText}"/>
+            <Button Name="BtnSelectAttachmentFolder"
+                    Grid.Column="2"
+                    Classes="ghost-link"
+                    FontSize="11.5"
+                    Content="指定存储位置"
+                    ToolTip.Tip="为该任务单独指定相关文件的存储文件夹"/>
+            <Button Name="BtnOpenAttachmentFolder"
+                    Grid.Column="3"
+                    Classes="ghost-link"
+                    FontSize="11.5"
+                    Content="打开目录"/>
+            <Button Name="BtnAddAttachmentFiles"
+                    Grid.Column="4"
+                    Classes="ghost-link"
+                    FontSize="11.5"
+                    Content="+ 添加文件"/>
+          </Grid>
+
+          <!-- Linked Attachments List -->
+          <ItemsControl ItemsSource="{Binding Attachments}"
+                        IsVisible="{Binding HasAttachments}"
+                        MaxHeight="95">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="contracts:AttachmentView">
+                <Border Background="{DynamicResource BgSubtle}"
+                        CornerRadius="5"
+                        Padding="8,3"
+                        Margin="0,2">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding OriginalName}"
+                               Foreground="{DynamicResource TextPrimary}"
+                               FontSize="11.5"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                    <Button Grid.Column="1"
+                            Classes="ghost-link"
+                            FontSize="11"
+                            Content="打开"
+                            Tag="{Binding Id}"
+                            Click="OnOpenAttachmentItemClick"/>
+                    <Button Grid.Column="2"
+                            Classes="ghost-link"
+                            FontSize="11"
+                            Foreground="{DynamicResource StatusOverdue}"
+                            Content="移除"
+                            Tag="{Binding Id}"
+                            Click="OnRemoveAttachmentItemClick"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock IsVisible="{Binding !HasAttachments}"
+                     Text="可将文件或文件夹直接拖拽到此窗口，自动存入上方指定路径"
+                     Foreground="{DynamicResource TextMuted}"
+                     FontSize="11"
+                     HorizontalAlignment="Center"
+                     Margin="0,2"/>
+        </StackPanel>
+      </Border>
+
+      <!-- 5. Bottom Action Bar -->
+      <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
         <TextBlock Grid.Column="0"
-                   Text="Ctrl+S 保存 · Esc 关闭"
+                   Text="修改自动暂存 · 支持拖入文件联动存储 · Ctrl+S 保存"
                    Foreground="{DynamicResource TextMuted}"
-                   FontSize="11.5"
+                   FontSize="11"
                    VerticalAlignment="Center"/>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
           <Button Name="BtnClose"
                   Classes="secondary-pill"
                   Content="关闭"/>

@@ -1,5 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using DesktopNotes.Application.Contracts;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Domain;
 
@@ -72,6 +75,61 @@ public partial class DetailWindow : Window
             BtnClearDue.Click += (_, _) => viewModel.ClearDue();
         }
 
+        if (BtnStartToday is not null)
+        {
+            BtnStartToday.Click += (_, _) => viewModel.SetStartToday();
+        }
+
+        if (BtnClearStart is not null)
+        {
+            BtnClearStart.Click += (_, _) => viewModel.ClearStart();
+        }
+
+        if (BtnSelectAttachmentFolder is not null)
+        {
+            BtnSelectAttachmentFolder.Click += async (_, _) =>
+            {
+                var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = "选择该任务的附件存储目录",
+                    AllowMultiple = false
+                });
+                if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } localPath)
+                {
+                    viewModel.SetCustomAttachmentDirectory(localPath);
+                }
+            };
+        }
+
+        if (BtnOpenAttachmentFolder is not null)
+        {
+            BtnOpenAttachmentFolder.Click += (_, _) => viewModel.OpenAttachmentRootDirectory();
+        }
+
+        if (BtnAddAttachmentFiles is not null)
+        {
+            BtnAddAttachmentFiles.Click += async (_, _) =>
+            {
+                var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "选择关联到该任务的文件",
+                    AllowMultiple = true
+                });
+                var paths = files
+                    .Select(f => f.TryGetLocalPath())
+                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                    .Cast<string>()
+                    .ToArray();
+                if (paths.Length > 0)
+                {
+                    await viewModel.ImportFilesAsync(paths, ImportOrigin.FilePicker, CancellationToken.None);
+                }
+            };
+        }
+
+        AddHandler(DragDrop.DragOverEvent, OnWindowDragOver);
+        AddHandler(DragDrop.DropEvent, OnWindowDrop);
+
         if (BtnSave is not null)
         {
             BtnSave.Click += async (_, _) =>
@@ -104,5 +162,56 @@ public partial class DetailWindow : Window
                 e.Handled = true;
             }
         };
+    }
+
+    private void OnWindowDragOver(object? sender, DragEventArgs e)
+    {
+        if (e.DataTransfer.Contains(DataFormat.File))
+        {
+            e.DragEffects = DragDropEffects.Move | DragDropEffects.Copy;
+            e.Handled = true;
+        }
+    }
+
+    private async void OnWindowDrop(object? sender, DragEventArgs e)
+    {
+        if (DataContext is not DetailViewModel vm)
+        {
+            return;
+        }
+
+        var items = e.DataTransfer.TryGetFiles();
+        if (items is null)
+        {
+            return;
+        }
+
+        var localPaths = items
+            .Select(i => i.TryGetLocalPath())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Cast<string>()
+            .ToArray();
+
+        if (localPaths.Length > 0)
+        {
+            e.Handled = true;
+            await vm.ImportFilesAsync(localPaths, ImportOrigin.Drag, CancellationToken.None);
+        }
+    }
+
+    private async void OnOpenAttachmentItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: Guid attachmentId } && DataContext is DetailViewModel vm)
+        {
+            await vm.OpenAttachmentAsync(attachmentId, CancellationToken.None);
+        }
+    }
+
+    private async void OnRemoveAttachmentItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: Guid attachmentId } && DataContext is DetailViewModel vm)
+        {
+            await vm.RemoveAttachmentAsync(attachmentId, CancellationToken.None);
+        }
     }
 }

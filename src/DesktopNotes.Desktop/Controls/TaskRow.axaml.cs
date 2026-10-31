@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesktopNotes.Desktop.ViewModels;
@@ -21,6 +22,8 @@ public partial class TaskRow : UserControl
         if (RowContainer is not null)
         {
             RowContainer.PointerPressed += OnRowPointerPressed;
+            RowContainer.AddHandler(DragDrop.DragOverEvent, OnRowDragOver);
+            RowContainer.AddHandler(DragDrop.DropEvent, OnRowDrop);
         }
 
         if (CompleteCheckBox is not null)
@@ -146,6 +149,43 @@ public partial class TaskRow : UserControl
                 panelVm.RowInteraction.HandleRowClick(vm.Id, 2);
             }
             e.Handled = true;
+        }
+    }
+
+    private void OnRowDragOver(object? sender, DragEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: false } &&
+            e.DataTransfer.Contains(DataFormat.File))
+        {
+            e.DragEffects = DragDropEffects.Move | DragDropEffects.Copy;
+            e.Handled = true;
+        }
+    }
+
+    private async void OnRowDrop(object? sender, DragEventArgs e)
+    {
+        if (DataContext is not TaskRowViewModel { IsEditingInline: false } vm ||
+            FindParentPanelViewModel() is not { } panelVm)
+        {
+            return;
+        }
+
+        var items = e.DataTransfer.TryGetFiles();
+        if (items is null)
+        {
+            return;
+        }
+
+        var localPaths = items
+            .Select(i => i.TryGetLocalPath())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Cast<string>()
+            .ToArray();
+
+        if (localPaths.Length > 0)
+        {
+            e.Handled = true;
+            await panelVm.DropFilesOnRecordAsync(vm.Id, localPaths, CancellationToken.None);
         }
     }
 }

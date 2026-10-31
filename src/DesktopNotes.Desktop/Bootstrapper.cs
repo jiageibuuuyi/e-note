@@ -15,6 +15,8 @@ namespace DesktopNotes.Desktop;
 
 public sealed class Bootstrapper : IDisposable
 {
+    private readonly string _attachmentRootPath;
+
     public SqliteStore Store { get; }
     public IRecordService RecordService { get; }
     public IRecordQueryService QueryService { get; }
@@ -33,7 +35,7 @@ public sealed class Bootstrapper : IDisposable
     public Bootstrapper(string? databasePath = null, string? defaultAttachmentRoot = null)
     {
         string dbPath = databasePath ?? GetDefaultDatabasePath();
-        string attachmentRoot = defaultAttachmentRoot ?? GetDefaultAttachmentRootPath();
+        _attachmentRootPath = defaultAttachmentRoot ?? GetDefaultAttachmentRootPath();
 
         Store = new SqliteStore(dbPath);
         RecordService = new RecordService(Store);
@@ -44,27 +46,37 @@ public sealed class Bootstrapper : IDisposable
         FileClipboard = new WindowsFileClipboard();
         ImportWorker = new ImportWorker(Store, FileStore);
         RecoveryService = new RecoveryService(Store, FileStore, ImportWorker);
-        AttachmentService = new AttachmentService(Store, FileStore, ImportWorker, RecoveryService, attachmentRoot, FileClipboard);
+        AttachmentService = new AttachmentService(Store, FileStore, ImportWorker, RecoveryService, _attachmentRootPath, FileClipboard);
         BackupService = new BackupService(Store, new ArchiveWriter(), FileStore.CurrentDeviceId);
         SettingsService = new SettingsService(Store, DesktopIntegration);
         ReminderScheduler = new ReminderScheduler(Store);
-        PanelViewModel = new PanelViewModel(RecordService, QueryService);
+        PanelViewModel = new PanelViewModel(RecordService, QueryService)
+        {
+            AttachmentService = AttachmentService
+        };
     }
 
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _ = SettingsService.GetPreferences();
+        string intentPath = Path.Combine(AppContext.BaseDirectory, "install-intent.json");
+        await SettingsService.ImportFirstRunIntentIfPresentAsync(intentPath, Store, ct);
         await RecoveryService.ReconcileIncompleteJobsAsync(ct);
     }
 
     public DetailViewModel CreateDetailViewModel()
     {
-        return new DetailViewModel(RecordService, QueryService);
+        return new DetailViewModel(
+            RecordService,
+            QueryService,
+            AttachmentService,
+            Store,
+            _attachmentRootPath);
     }
 
     public CalendarViewModel CreateCalendarViewModel()
     {
-        return new CalendarViewModel(QueryService);
+        return new CalendarViewModel(QueryService, RecordService);
     }
 
     public SettingsViewModel CreateSettingsViewModel()
