@@ -6,8 +6,23 @@
   <Border Name="RowContainer"
           Classes="task-card"
           MinHeight="44"
+          Margin="{Binding RowMargin}"
           Cursor="Hand"
           DragDrop.AllowDrop="True">
+    <Border.ContextMenu>
+      <ContextMenu>
+        <MenuItem Name="MenuAddSubtask"
+                  Header="➕  添加子任务"
+                  IsVisible="{Binding CanAddSubtask}"/>
+        <MenuItem Name="MenuOpenDetail"
+                  Header="📝  查看完整详情"/>
+        <MenuItem Name="MenuCompleteRow"
+                  Header="✅  标记完成并归档"/>
+        <Separator/>
+        <MenuItem Name="MenuTrashRow"
+                  Header="🗑️  移入回收站"/>
+      </ContextMenu>
+    </Border.ContextMenu>
     <Grid ColumnDefinitions="Auto,*">
       <!-- Left Vertical Accent Pill for Overdue / Today -->
       <Panel Grid.Column="0" VerticalAlignment="Stretch" Margin="0,2,10,2">
@@ -50,13 +65,13 @@
                      VerticalAlignment="Center"
                      TextTrimming="CharacterEllipsis"/>
 
-          <!-- Inline Editable Input (When Adding New Blank Row at Bottom) -->
+          <!-- Inline Editable Input (When Adding New Blank Row at Bottom or Subtask) -->
           <TextBox Name="InlineTitleBox"
                    Grid.Column="2"
                    IsVisible="{Binding IsEditingInline}"
                    Classes="clean-input"
                    Text="{Binding InlineEditText}"
-                   PlaceholderText="输入内容后按 Enter 保存，Esc 取消..."
+                   PlaceholderText="{Binding InlinePlaceholder}"
                    FontSize="13.5"
                    Foreground="{DynamicResource TextPrimary}"
                    VerticalAlignment="Center"/>
@@ -150,12 +165,18 @@
                   </Border>
                 </StackPanel>
 
-                <!-- Open Detail Link -->
-                <Button Name="OpenDetailButton"
-                        Grid.Column="1"
-                        Classes="ghost-link"
-                        Content="查看完整详情 ↗"
-                        ToolTip.Tip="打开编辑弹窗"/>
+                <!-- Add Subtask & Open Detail Links -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <Button Name="AddSubtaskButton"
+                          IsVisible="{Binding CanAddSubtask}"
+                          Classes="ghost-link"
+                          Content="+ 子任务"
+                          ToolTip.Tip="在此父任务下方直接新增一条子任务"/>
+                  <Button Name="OpenDetailButton"
+                          Classes="ghost-link"
+                          Content="查看完整详情 ↗"
+                          ToolTip.Tip="打开编辑弹窗"/>
+                </StackPanel>
               </Grid>
             </StackPanel>
           </ScrollViewer>

@@ -18,6 +18,11 @@ public sealed class TaskRowViewModel : ViewModelBase
     public string? Publisher => Record.Effective.Publisher;
     public Priority Priority => Record.Effective.Priority;
     public bool IsSubtask => Record.ParentId.HasValue;
+    public bool CanAddSubtask => Record.Kind == RecordKind.Task && !Record.ParentId.HasValue;
+    public Avalonia.Thickness RowMargin => IsSubtask ? new(18, 0, 0, 0) : new(0);
+    public string InlinePlaceholder => IsSubtask
+        ? "输入子任务内容后按 Enter 保存，Esc 取消..."
+        : "输入内容后按 Enter 保存，Esc 取消...";
     public bool HasBody => !string.IsNullOrWhiteSpace(Body);
     public bool HasAssignee => !string.IsNullOrWhiteSpace(Assignee);
 
@@ -82,19 +87,23 @@ public sealed class TaskRowViewModel : ViewModelBase
         set => SetProperty(ref _inlineEditText, value);
     }
 
-    public static TaskRowViewModel CreateInlineDraft(RecordKind kind, TimeZoneInfo displayZone, DateTimeOffset nowUtc)
+    public static TaskRowViewModel CreateInlineDraft(
+        RecordKind kind,
+        TimeZoneInfo displayZone,
+        DateTimeOffset nowUtc,
+        Guid? parentId = null)
     {
         var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
         var draftRecord = new RecordView(
             Guid.NewGuid(),
-            null,
+            parentId,
             kind,
             string.Empty,
             string.Empty,
             RecordStatus.Active,
             emptyFields,
             emptyFields,
-            InheritField.None,
+            parentId.HasValue ? InheritField.All : InheritField.None,
             0,
             nowUtc,
             null,
@@ -191,6 +200,39 @@ public sealed class PanelViewModel : ViewModelBase
         return draft;
     }
 
+    public TaskRowViewModel StartInlineSubtaskCreate(Guid parentId)
+    {
+        var existing = Items.FirstOrDefault(x => x.IsEditingInline);
+        if (existing is not null)
+        {
+            Items.Remove(existing);
+        }
+
+        var draft = TaskRowViewModel.CreateInlineDraft(
+            RecordKind.Task,
+            _zoneProvider(),
+            _timeProvider.GetUtcNow(),
+            parentId);
+
+        int insertIndex = Items.Count;
+        for (int i = 0; i < Items.Count; i++)
+        {
+            if (Items[i].Id == parentId)
+            {
+                insertIndex = i + 1;
+                while (insertIndex < Items.Count && Items[insertIndex].Record.ParentId == parentId)
+                {
+                    insertIndex++;
+                }
+                break;
+            }
+        }
+
+        Items.Insert(insertIndex, draft);
+        RaisePropertyChanged(nameof(IsEmpty));
+        return draft;
+    }
+
     public async Task CommitInlineCreateAsync(TaskRowViewModel draft, CancellationToken ct)
     {
         if (!draft.IsEditingInline)
@@ -207,7 +249,14 @@ public sealed class PanelViewModel : ViewModelBase
             return;
         }
 
-        await QuickCreateAsync(text, ct);
+        if (draft.Record.ParentId is { } parentId)
+        {
+            await QuickCreateSubtaskAsync(parentId, text, ct);
+        }
+        else
+        {
+            await QuickCreateAsync(text, ct);
+        }
     }
 
     public void CancelInlineCreate(TaskRowViewModel draft)
@@ -443,9 +492,33 @@ public sealed class PanelViewModel : ViewModelBase
         var now = _timeProvider.GetUtcNow();
 
         Items.Clear();
+
+        // Keep subtasks grouped directly underneath their parent task when parent is present in active list
+        var childrenByParent = page.Items
+            .Where(x => x.ParentId.HasValue)
+            .GroupBy(x => x.ParentId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var rootIds = page.Items
+            .Where(x => !x.ParentId.HasValue)
+            .Select(x => x.Id)
+            .ToHashSet();
+
         foreach (var item in page.Items)
         {
+            if (item.ParentId is { } pid && rootIds.Contains(pid))
+            {
+                continue;
+            }
+
             Items.Add(new TaskRowViewModel(item, zone, now, item.Id == _expandedRecordId));
+
+            if (!item.ParentId.HasValue && childrenByParent.TryGetValue(item.Id, out var subtasks))
+            {
+                foreach (var sub in subtasks)
+                {
+                    Items.Add(new TaskRowViewModel(sub, zone, now, sub.Id == _expandedRecordId));
+                }
+            }
         }
 
         TotalCount = page.Total;
@@ -536,6 +609,43 @@ public sealed class PanelViewModel : ViewModelBase
         StatusMessage = "已创建";
         await RefreshAsync(ct);
         return res.Changed.FirstOrDefault();
+    }
+
+    public async Task<RecordView?> QuickCreateSubtaskAsync(Guid parentId, string titleOrBody, CancellationToken ct)
+    {
+        if (!RecordRules.HasValidText(titleOrBody, string.Empty))
+        {
+            return null;
+        }
+
+        var req = new SaveRecordRequest(
+            Guid.NewGuid(),
+            0,
+            RecordKind.Task,
+            parentId,
+            titleOrBody.Trim(),
+            string.Empty,
+            new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null),
+            InheritField.All);
+
+        var res = await _recordService.SaveAsync(req, ct);
+        SetTransientNotice("已添加子任务 (默认继承父任务属性)");
+        await RefreshAsync(ct);
+        return res.Changed.FirstOrDefault();
+    }
+
+    public async Task TrashRecordAsync(Guid id, CancellationToken ct)
+    {
+        var rec = await _recordService.GetAsync(id, ct);
+        if (rec is null) return;
+
+        await _recordService.TrashAsync(id, rec.Version, ct);
+        if (ExpandedRecordId == id)
+        {
+            ExpandedRecordId = null;
+        }
+        SetTransientNotice("已移入回收站");
+        await RefreshAsync(ct);
     }
 
     public async Task CompleteRecordAsync(Guid id, bool includeChildren, CancellationToken ct)

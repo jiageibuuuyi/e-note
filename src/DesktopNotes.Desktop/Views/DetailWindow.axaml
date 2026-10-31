@@ -214,9 +214,86 @@
                  LineHeight="21"/>
       </Border>
 
-      <!-- 4. Attachment Storage Path & Drag-Drop Files Panel -->
-      <Border Grid.Row="3"
-              Background="{DynamicResource BgCard}"
+      <!-- 4. Subtasks & Attachment Storage Path Panel -->
+      <StackPanel Grid.Row="3" Spacing="8">
+        <!-- Subtasks Panel (Only for Root Tasks) -->
+        <Border IsVisible="{Binding CanHaveSubtasks}"
+                Background="{DynamicResource BgCard}"
+                BorderBrush="{DynamicResource BorderSubtle}"
+                BorderThickness="1"
+                CornerRadius="9"
+                Padding="12,8"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="6">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Grid.Column="0"
+                         Text="↳ 子任务:"
+                         Foreground="{DynamicResource TextMuted}"
+                         FontSize="11.5"
+                         VerticalAlignment="Center"
+                         Margin="0,0,8,0"/>
+              <Border Grid.Column="1"
+                      Background="{DynamicResource BgSubtle}"
+                      CornerRadius="5"
+                      Padding="8,2"
+                      Margin="0,0,6,0">
+                <TextBox Name="NewSubtaskBox"
+                         Classes="clean-input"
+                         Text="{Binding NewSubtaskTitle}"
+                         PlaceholderText="输入子任务名称后按 Enter 或点击右侧添加..."
+                         FontSize="12"/>
+              </Border>
+              <Button Name="BtnAddSubtask"
+                      Grid.Column="2"
+                      Classes="ghost-link"
+                      FontSize="11.5"
+                      Content="+ 添加子任务"/>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Subtasks}"
+                          IsVisible="{Binding HasSubtasks}"
+                          MaxHeight="95">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="contracts:RecordView">
+                  <Border Background="{DynamicResource BgSubtle}"
+                          CornerRadius="5"
+                          Padding="8,3"
+                          Margin="0,2">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                      <TextBlock Grid.Column="0"
+                                 Text="↳ "
+                                 Foreground="{DynamicResource TextMuted}"
+                                 FontSize="11.5"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding DisplayTitle}"
+                                 Foreground="{DynamicResource TextPrimary}"
+                                 FontSize="11.5"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis"/>
+                      <Button Grid.Column="2"
+                              Classes="ghost-link"
+                              FontSize="11"
+                              Content="完成"
+                              Tag="{Binding Id}"
+                              Click="OnCompleteSubtaskItemClick"/>
+                      <Button Grid.Column="3"
+                              Classes="ghost-link"
+                              FontSize="11"
+                              Foreground="{DynamicResource StatusOverdue}"
+                              Content="删除"
+                              Tag="{Binding Id}"
+                              Click="OnRemoveSubtaskItemClick"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- Attachment Storage Path & Drag-Drop Files Panel -->
+        <Border Background="{DynamicResource BgCard}"
               BorderBrush="{DynamicResource BorderSubtle}"
               BorderThickness="1"
               CornerRadius="9"
@@ -299,6 +376,7 @@
                      Margin="0,2"/>
         </StackPanel>
       </Border>
+      </StackPanel>
 
       <!-- 5. Bottom Action Bar -->
       <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,12,0,0">

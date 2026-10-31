@@ -36,6 +36,31 @@ public partial class TaskRow : UserControl
             OpenDetailButton.Click += OnOpenDetailButtonClick;
         }
 
+        if (AddSubtaskButton is not null)
+        {
+            AddSubtaskButton.Click += OnAddSubtaskButtonClick;
+        }
+
+        if (MenuAddSubtask is not null)
+        {
+            MenuAddSubtask.Click += OnAddSubtaskButtonClick;
+        }
+
+        if (MenuOpenDetail is not null)
+        {
+            MenuOpenDetail.Click += OnOpenDetailButtonClick;
+        }
+
+        if (MenuCompleteRow is not null)
+        {
+            MenuCompleteRow.Click += OnCompleteCheckBoxClick;
+        }
+
+        if (MenuTrashRow is not null)
+        {
+            MenuTrashRow.Click += OnTrashRowClick;
+        }
+
         if (InlineTitleBox is not null)
         {
             InlineTitleBox.KeyDown += OnInlineTitleBoxKeyDown;
@@ -110,6 +135,11 @@ public partial class TaskRow : UserControl
 
     private void OnRowPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
         if (DataContext is TaskRowViewModel vm)
         {
             if (vm.IsEditingInline)
@@ -122,6 +152,26 @@ public partial class TaskRow : UserControl
             {
                 panelVm.RowInteraction.HandleRowClick(vm.Id, e.ClickCount);
             }
+            e.Handled = true;
+        }
+    }
+
+    private void OnAddSubtaskButtonClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: false, CanAddSubtask: true } vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            panelVm.StartInlineSubtaskCreate(vm.Id);
+            e.Handled = true;
+        }
+    }
+
+    private async void OnTrashRowClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: false } vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            await panelVm.TrashRecordAsync(vm.Id, CancellationToken.None);
             e.Handled = true;
         }
     }

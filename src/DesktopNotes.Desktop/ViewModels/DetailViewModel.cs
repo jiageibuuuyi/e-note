@@ -119,7 +119,18 @@ public sealed class DetailViewModel : ViewModelBase
         ? InheritanceResolver.Resolve(Own, _parentEffective, _inheritMask)
         : Own;
 
-    public string RecordKindTitle => _kind == RecordKind.Task ? "任务详情" : "笔记详情";
+    public string RecordKindTitle => _kind == RecordKind.Task
+        ? (_parentId.HasValue ? "↳ 子任务详情 (支持继承父任务属性)" : "任务详情")
+        : "笔记详情";
+    public bool CanHaveSubtasks => _kind == RecordKind.Task && !_parentId.HasValue;
+    public bool HasSubtasks => Subtasks.Count > 0;
+
+    private string _newSubtaskTitle = string.Empty;
+    public string NewSubtaskTitle
+    {
+        get => _newSubtaskTitle;
+        set => SetProperty(ref _newSubtaskTitle, value);
+    }
 
     public bool IsPriorityP0 => Effective.Priority == Priority.Highest;
     public bool IsPriorityP1 => Effective.Priority == Priority.High;
@@ -265,6 +276,7 @@ public sealed class DetailViewModel : ViewModelBase
         _statusMessage = "新建记录";
         HasConflict = false;
         Attachments.Clear();
+        Subtasks.Clear();
         RaiseAllProperties();
         return Task.CompletedTask;
     }
@@ -299,8 +311,82 @@ public sealed class DetailViewModel : ViewModelBase
         }
 
         HasConflict = false;
+        await RefreshSubtasksAsync(ct);
         await RefreshAttachmentsAsync(ct);
         RaiseAllProperties();
+    }
+
+    public async Task RefreshSubtasksAsync(CancellationToken ct)
+    {
+        Subtasks.Clear();
+        if (CanHaveSubtasks && _version > 0)
+        {
+            var page = await _queryService.SearchAsync(new RecordQuery(
+                RecordKind.Task,
+                RecordStatus.Active,
+                false,
+                string.Empty,
+                new[] { new SortTerm(SortKey.Created, false) },
+                0,
+                200), ct);
+            foreach (var item in page.Items.Where(x => x.ParentId == _recordId))
+            {
+                Subtasks.Add(item);
+            }
+        }
+        RaisePropertyChanged(nameof(HasSubtasks));
+    }
+
+    public async Task AddSubtaskAsync(CancellationToken ct)
+    {
+        string text = _newSubtaskTitle.Trim();
+        if (string.IsNullOrEmpty(text) || !CanHaveSubtasks)
+        {
+            return;
+        }
+
+        if (_version == 0)
+        {
+            if (string.IsNullOrWhiteSpace(_title) && string.IsNullOrWhiteSpace(_body))
+            {
+                _title = "未命名主任务";
+            }
+            bool saved = await SaveAsync(ct);
+            if (!saved) return;
+        }
+
+        var req = new SaveRecordRequest(
+            Guid.NewGuid(),
+            0,
+            RecordKind.Task,
+            _recordId,
+            text,
+            string.Empty,
+            new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null),
+            InheritField.All);
+
+        await _recordService.SaveAsync(req, ct);
+        NewSubtaskTitle = string.Empty;
+        await RefreshSubtasksAsync(ct);
+        StatusMessage = "已添加子任务";
+    }
+
+    public async Task CompleteSubtaskAsync(Guid subtaskId, CancellationToken ct)
+    {
+        var sub = await _recordService.GetAsync(subtaskId, ct);
+        if (sub is null) return;
+        await _recordService.CloseAsync(subtaskId, sub.Version, includeChildren: false, ct);
+        await RefreshSubtasksAsync(ct);
+        StatusMessage = "子任务已完成并归档";
+    }
+
+    public async Task RemoveSubtaskAsync(Guid subtaskId, CancellationToken ct)
+    {
+        var sub = await _recordService.GetAsync(subtaskId, ct);
+        if (sub is null) return;
+        await _recordService.TrashAsync(subtaskId, sub.Version, ct);
+        await RefreshSubtasksAsync(ct);
+        StatusMessage = "已移除子任务";
     }
 
     public async Task RefreshAttachmentsAsync(CancellationToken ct)
@@ -635,6 +721,9 @@ public sealed class DetailViewModel : ViewModelBase
     private void RaiseAllProperties()
     {
         RaisePropertyChanged(nameof(RecordKindTitle));
+        RaisePropertyChanged(nameof(CanHaveSubtasks));
+        RaisePropertyChanged(nameof(HasSubtasks));
+        RaisePropertyChanged(nameof(IsSubtask));
         RaisePropertyChanged(nameof(Title));
         RaisePropertyChanged(nameof(Body));
         RaisePropertyChanged(nameof(AssigneeText));

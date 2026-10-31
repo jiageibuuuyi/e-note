@@ -85,6 +85,23 @@ public partial class DetailWindow : Window
             BtnClearStart.Click += (_, _) => viewModel.ClearStart();
         }
 
+        if (BtnAddSubtask is not null)
+        {
+            BtnAddSubtask.Click += async (_, _) => await viewModel.AddSubtaskAsync(CancellationToken.None);
+        }
+
+        if (NewSubtaskBox is not null)
+        {
+            NewSubtaskBox.KeyDown += async (_, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    e.Handled = true;
+                    await viewModel.AddSubtaskAsync(CancellationToken.None);
+                }
+            };
+        }
+
         if (BtnSelectAttachmentFolder is not null)
         {
             BtnSelectAttachmentFolder.Click += async (_, _) =>
@@ -212,6 +229,22 @@ public partial class DetailWindow : Window
         if (sender is Button { Tag: Guid attachmentId } && DataContext is DetailViewModel vm)
         {
             await vm.RemoveAttachmentAsync(attachmentId, CancellationToken.None);
+        }
+    }
+
+    private async void OnCompleteSubtaskItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: Guid subtaskId } && DataContext is DetailViewModel vm)
+        {
+            await vm.CompleteSubtaskAsync(subtaskId, CancellationToken.None);
+        }
+    }
+
+    private async void OnRemoveSubtaskItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: Guid subtaskId } && DataContext is DetailViewModel vm)
+        {
+            await vm.RemoveSubtaskAsync(subtaskId, CancellationToken.None);
         }
     }
 }
