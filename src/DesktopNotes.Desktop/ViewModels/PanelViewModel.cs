@@ -37,7 +37,16 @@ public sealed class TaskRowViewModel : ViewModelBase
     public Priority Priority => Record.Effective.Priority;
     public bool IsSubtask => Record.ParentId.HasValue;
     public bool CanAddSubtask => Record.Kind == RecordKind.Task && !Record.ParentId.HasValue;
-    public Avalonia.Thickness RowMargin => IsSubtask ? new(18, 0, 0, 0) : new(0);
+    public bool IsTaskRow => Record.Kind == RecordKind.Task && !IsEditingInline;
+    public int SubtaskCount { get; }
+    public bool HasSubtasks => SubtaskCount > 0;
+    public string SubtaskCountText => SubtaskCount > 0 ? $"{SubtaskCount} 子任务" : string.Empty;
+    public bool IsTreeExpanded { get; }
+    public string TreeToggleGlyph => IsTreeExpanded ? "▾" : "▸";
+    public string TreeToggleTooltip => IsTreeExpanded ? "点击折叠子任务树" : "点击展开子任务树";
+    public bool IsLastSubtask { get; }
+    public string TreeBranchPrefix => IsLastSubtask ? "└─ " : "├─ ";
+    public Avalonia.Thickness RowMargin => IsSubtask ? new(22, 1.5, 0, 1.5) : new(0, 3.5, 0, 3.5);
     public string InlinePlaceholder => IsSubtask
         ? "输入子任务内容后按 Enter 保存，Esc 取消..."
         : "输入内容后按 Enter 保存，Esc 取消...";
@@ -168,13 +177,19 @@ public sealed class TaskRowViewModel : ViewModelBase
         TimeZoneInfo displayZone,
         DateTimeOffset nowUtc,
         bool isExpanded,
-        bool isMarkedCompleted = false)
+        bool isMarkedCompleted = false,
+        int subtaskCount = 0,
+        bool isTreeExpanded = true,
+        bool isLastSubtask = false)
     {
         Record = record;
         _editableTitle = !string.IsNullOrWhiteSpace(record.Title) ? record.Title : record.DisplayTitle;
         Stage = DeadlineRules.EvaluateStage(record.Effective.Due, record.Status, nowUtc, displayZone);
         _isExpanded = isExpanded;
         _isMarkedCompleted = isMarkedCompleted;
+        SubtaskCount = subtaskCount;
+        IsTreeExpanded = isTreeExpanded;
+        IsLastSubtask = isLastSubtask;
     }
 }
 
@@ -186,6 +201,7 @@ public sealed class PanelViewModel : ViewModelBase
     private readonly TimeProvider _timeProvider;
     private readonly Func<TimeZoneInfo> _zoneProvider;
     private readonly HashSet<Guid> _markedCompletedIds = new();
+    private readonly HashSet<Guid> _collapsedTreeParentIds = new();
     private bool _markedCompletedLoaded;
     private RecordKind _currentKind = RecordKind.Task;
     private string _searchText = string.Empty;
@@ -266,6 +282,7 @@ public sealed class PanelViewModel : ViewModelBase
 
     public TaskRowViewModel StartInlineSubtaskCreate(Guid parentId)
     {
+        _collapsedTreeParentIds.Remove(parentId);
         var existing = Items.FirstOrDefault(x => x.IsEditingInline);
         if (existing is not null)
         {
@@ -480,10 +497,10 @@ public sealed class PanelViewModel : ViewModelBase
                 Guid.NewGuid(),
                 recordId,
                 filePaths,
-                ImportIntent.Move,
-                ImportOrigin.Drag);
+                ImportIntent.Copy,
+                ImportOrigin.FilePicker);
             await AttachmentService.EnqueueAsync(req, ct);
-            SetTransientNotice($"已关联 {filePaths.Count} 个附件");
+            SetTransientNotice($"已复制关联 {filePaths.Count} 个附件（源文件保留）");
         }
         catch (Exception ex)
         {
@@ -578,23 +595,37 @@ public sealed class PanelViewModel : ViewModelBase
                 continue;
             }
 
+            List<RecordView>? subtasks = null;
+            bool hasChildren = !item.ParentId.HasValue && childrenByParent.TryGetValue(item.Id, out subtasks);
+            int childCount = hasChildren && subtasks is not null ? subtasks.Count : 0;
+            bool isTreeExpanded = !_collapsedTreeParentIds.Contains(item.Id);
+
             Items.Add(new TaskRowViewModel(
                 item,
                 zone,
                 now,
                 item.Id == _expandedRecordId,
-                _markedCompletedIds.Contains(item.Id)));
+                _markedCompletedIds.Contains(item.Id),
+                childCount,
+                isTreeExpanded,
+                isLastSubtask: false));
 
-            if (!item.ParentId.HasValue && childrenByParent.TryGetValue(item.Id, out var subtasks))
+            if (hasChildren && subtasks is not null && isTreeExpanded)
             {
-                foreach (var sub in subtasks)
+                for (int i = 0; i < subtasks.Count; i++)
                 {
+                    var sub = subtasks[i];
+                    bool isLast = i == subtasks.Count - 1 &&
+                                  (activeInlineDraft is null || activeInlineDraft.Record.ParentId != item.Id);
                     Items.Add(new TaskRowViewModel(
                         sub,
                         zone,
                         now,
                         sub.Id == _expandedRecordId,
-                        _markedCompletedIds.Contains(sub.Id)));
+                        _markedCompletedIds.Contains(sub.Id),
+                        subtaskCount: 0,
+                        isTreeExpanded: true,
+                        isLastSubtask: isLast));
                 }
             }
 
@@ -758,6 +789,185 @@ public sealed class PanelViewModel : ViewModelBase
         await _recordService.SaveAsync(req, ct);
         SetTransientNotice("✓ 标题已更新");
         await RefreshAsync(ct);
+    }
+
+    public async Task ToggleTreeCollapseAsync(Guid parentId, CancellationToken ct)
+    {
+        if (!_collapsedTreeParentIds.Remove(parentId))
+        {
+            _collapsedTreeParentIds.Add(parentId);
+        }
+
+        await RefreshAsync(ct);
+    }
+
+    public async Task ConvertTaskToSubtaskAsync(Guid sourceTaskId, Guid targetTaskId, CancellationToken ct)
+    {
+        if (sourceTaskId == targetTaskId)
+        {
+            return;
+        }
+
+        var source = await _recordService.GetAsync(sourceTaskId, ct);
+        var target = await _recordService.GetAsync(targetTaskId, ct);
+        if (source is null || target is null)
+        {
+            return;
+        }
+
+        if (source.Kind != RecordKind.Task || target.Kind != RecordKind.Task)
+        {
+            SetTransientNotice("仅待办任务支持拖入设为子任务");
+            return;
+        }
+
+        if (source.Status != RecordStatus.Active || target.Status != RecordStatus.Active)
+        {
+            return;
+        }
+
+        // If dragged onto an existing subtask, attach to that subtask's root parent task
+        Guid newParentId = target.ParentId ?? target.Id;
+        if (newParentId == source.Id)
+        {
+            return;
+        }
+
+        if (source.ParentId == newParentId)
+        {
+            SetTransientNotice("该任务已经是此父任务下的子任务");
+            return;
+        }
+
+        try
+        {
+            // If source itself had active subtasks, move those subtasks under newParentId as well so tree stays valid
+            var sourceChildren = Items
+                .Where(x => !x.IsEditingInline && x.Record.ParentId == source.Id)
+                .Select(x => x.Id)
+                .ToList();
+
+            foreach (var childId in sourceChildren)
+            {
+                if (childId == newParentId) continue;
+                var childRec = await _recordService.GetAsync(childId, ct);
+                if (childRec is not null && childRec.Status == RecordStatus.Active)
+                {
+                    var childInherit = ComputeSubtaskInheritanceMask(childRec);
+                    var childReq = new SaveRecordRequest(
+                        childRec.Id,
+                        childRec.Version,
+                        RecordKind.Task,
+                        newParentId,
+                        childRec.Title,
+                        childRec.Body,
+                        childRec.Own,
+                        childInherit);
+                    await _recordService.SaveAsync(childReq, ct);
+                }
+            }
+
+            // Re-fetch source in case version changed, then reparent source under newParentId:
+            // Existing attributes on source are preserved (Inherit bit = 0); unset attributes inherit from parent (Inherit bit = 1)
+            source = await _recordService.GetAsync(sourceTaskId, ct);
+            if (source is null)
+            {
+                return;
+            }
+
+            var inheritMask = ComputeSubtaskInheritanceMask(source);
+            var req = new SaveRecordRequest(
+                source.Id,
+                source.Version,
+                RecordKind.Task,
+                newParentId,
+                source.Title,
+                source.Body,
+                source.Own,
+                inheritMask);
+
+            _collapsedTreeParentIds.Remove(newParentId);
+            await _recordService.SaveAsync(req, ct);
+            SetTransientNotice($"↳ 已设为子任务（保留自身已有属性，未设属性继承父任务）");
+            await RefreshAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            SetTransientNotice($"设为子任务失败: {ex.Message}");
+        }
+    }
+
+    public async Task PromoteSubtaskToRootAsync(Guid subtaskId, CancellationToken ct)
+    {
+        var existing = await _recordService.GetAsync(subtaskId, ct);
+        if (existing is null || !existing.ParentId.HasValue || existing.Status != RecordStatus.Active)
+        {
+            return;
+        }
+
+        try
+        {
+            var req = new SaveRecordRequest(
+                existing.Id,
+                existing.Version,
+                existing.Kind,
+                null,
+                existing.Title,
+                existing.Body,
+                existing.Effective,
+                InheritField.None);
+
+            await _recordService.SaveAsync(req, ct);
+            SetTransientNotice("⬆️ 已提升为独立主任务");
+            await RefreshAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            SetTransientNotice($"提升主任务失败: {ex.Message}");
+        }
+    }
+
+    private static InheritField ComputeSubtaskInheritanceMask(RecordView record)
+    {
+        // Rule: 子任务已存在的属性不变，不存在的属性继承父任务
+        // If record was previously a subtask and already inherited a field, its Own value for that field was not explicitly set
+        var own = record.Own;
+        bool wasSubtask = record.ParentId.HasValue;
+        var prevInherit = record.Inherit;
+
+        InheritField mask = InheritField.None;
+
+        if ((wasSubtask && prevInherit.HasFlag(InheritField.Publisher)) || string.IsNullOrWhiteSpace(own.Publisher))
+        {
+            mask |= InheritField.Publisher;
+        }
+
+        if ((wasSubtask && prevInherit.HasFlag(InheritField.Assignee)) || string.IsNullOrWhiteSpace(own.Assignee))
+        {
+            mask |= InheritField.Assignee;
+        }
+
+        if ((wasSubtask && prevInherit.HasFlag(InheritField.Priority)) || own.Priority == Priority.Normal)
+        {
+            mask |= InheritField.Priority;
+        }
+
+        if ((wasSubtask && prevInherit.HasFlag(InheritField.Start)) || !own.Start.HasValue)
+        {
+            mask |= InheritField.Start;
+        }
+
+        if ((wasSubtask && prevInherit.HasFlag(InheritField.Due)) || own.Due.Kind == DueKind.None)
+        {
+            mask |= InheritField.Due;
+        }
+
+        if ((wasSubtask && prevInherit.HasFlag(InheritField.AttachmentRoot)) || !own.AttachmentRootId.HasValue)
+        {
+            mask |= InheritField.AttachmentRoot;
+        }
+
+        return mask;
     }
 
     public async Task TrashRecordAsync(Guid id, CancellationToken ct)

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using DesktopNotes.Application.Attachments;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Ports;
@@ -120,12 +121,19 @@ public sealed class SettingsViewModel : ViewModelBase
             return;
         }
 
-        string fullPath = Path.GetFullPath(folderPath);
-        Directory.CreateDirectory(fullPath);
-        _attachmentService?.SetDefaultStorageRoot(fullPath);
-        _settingsRepository?.SetSettingJson(GlobalAttachmentRootSettingKey, fullPath);
-        RaisePropertyChanged(nameof(DefaultAttachmentRootPath));
-        StatusMessage = $"已更新全局默认附件路径: {fullPath}";
+        try
+        {
+            string fullPath = Path.GetFullPath(folderPath);
+            Directory.CreateDirectory(fullPath);
+            _attachmentService?.SetDefaultStorageRoot(fullPath);
+            _settingsRepository?.SetSettingJson(GlobalAttachmentRootSettingKey, JsonSerializer.Serialize(fullPath));
+            RaisePropertyChanged(nameof(DefaultAttachmentRootPath));
+            StatusMessage = $"已热更新全局默认附件路径: {fullPath}";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"更新全局目录失败: {ex.Message}";
+        }
     }
 
     public void OpenDefaultAttachmentRootDirectory()

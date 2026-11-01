@@ -181,14 +181,27 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
                     throw new AppException(ErrorCodes.Validation, "Closed or trashed records cannot be edited directly.", new[] { request.Id });
                 }
 
-                if (existing.Kind != request.Kind || existing.ParentId != request.ParentId)
+                if (existing.Kind != request.Kind)
                 {
-                    throw new AppException(ErrorCodes.Validation, "Record kind and parent cannot be modified in V1.", new[] { request.Id });
+                    throw new AppException(ErrorCodes.Validation, "Record kind cannot be modified.", new[] { request.Id });
                 }
 
                 EffectiveFields? parentEffective = null;
                 if (request.ParentId is { } parentId)
                 {
+                    if (request.Kind != RecordKind.Task || parentId == request.Id)
+                    {
+                        throw new AppException(ErrorCodes.Validation, "Invalid parent task.", new[] { request.Id });
+                    }
+
+                    var parentRow = LoadRawRecord(conn, parentId)
+                        ?? throw new AppException(ErrorCodes.NotFound, "Parent task not found.", new[] { parentId });
+
+                    if (parentRow.Kind != RecordKind.Task || parentRow.ParentId.HasValue || parentRow.Status != RecordStatus.Active || parentRow.DeletedUtcMs.HasValue)
+                    {
+                        throw new AppException(ErrorCodes.Validation, "Parent must be an active root task.", new[] { parentId });
+                    }
+
                     parentEffective = LoadEffectiveFields(conn, parentId);
                 }
                 else if (request.Inherit != InheritField.None)
@@ -1109,6 +1122,7 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             UPDATE records SET
+                parent_id = $parent_id,
                 title = $title,
                 body = $body,
                 publisher = $pub,

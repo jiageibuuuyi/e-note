@@ -37,7 +37,7 @@ public sealed class Bootstrapper : IDisposable
         string dbPath = databasePath ?? GetDefaultDatabasePath();
 
         Store = new SqliteStore(dbPath);
-        string? savedCustomRoot = Store.GetSettingJson("global.default_attachment_root_path");
+        string? savedCustomRoot = ReadSavedAttachmentRootPath(Store);
         _attachmentRootPath = !string.IsNullOrWhiteSpace(defaultAttachmentRoot)
             ? defaultAttachmentRoot
             : (!string.IsNullOrWhiteSpace(savedCustomRoot) ? savedCustomRoot : GetDefaultAttachmentRootPath());
@@ -91,6 +91,27 @@ public sealed class Bootstrapper : IDisposable
     public SettingsViewModel CreateSettingsViewModel()
     {
         return new SettingsViewModel(SettingsService, AttachmentService, Store);
+    }
+
+    private static string? ReadSavedAttachmentRootPath(SqliteStore store)
+    {
+        try
+        {
+            string? raw = store.GetSettingJson("global.default_attachment_root_path");
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+            if (raw.StartsWith('"'))
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<string>(raw);
+            }
+            return raw;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public static string GetDefaultDatabasePath()

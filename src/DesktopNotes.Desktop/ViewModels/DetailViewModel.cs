@@ -450,11 +450,11 @@ public sealed class DetailViewModel : ViewModelBase
                 Guid.NewGuid(),
                 _recordId,
                 filePaths,
-                origin == ImportOrigin.Drag ? ImportIntent.Move : ImportIntent.Copy,
-                origin);
+                ImportIntent.Copy,
+                ImportOrigin.FilePicker);
             await _attachmentService.EnqueueAsync(req, ct);
             await RefreshAttachmentsAsync(ct);
-            StatusMessage = $"已关联 {filePaths.Count} 个附件";
+            StatusMessage = $"已复制关联 {filePaths.Count} 个附件（源文件已保留）";
         }
         catch (Exception ex)
         {

@@ -22,6 +22,7 @@ public static class MigrationRunner
 
         if (IsVersionApplied(connection, 1))
         {
+            EnsureTriggersUpdated(connection);
             return;
         }
 
@@ -31,6 +32,14 @@ public static class MigrationRunner
         using var migrateCmd = connection.CreateCommand();
         migrateCmd.CommandText = sql;
         migrateCmd.ExecuteNonQuery();
+        EnsureTriggersUpdated(connection);
+    }
+
+    private static void EnsureTriggersUpdated(SqliteConnection connection)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DROP TRIGGER IF EXISTS records_identity_update;";
+        cmd.ExecuteNonQuery();
     }
 
     private static bool IsVersionApplied(SqliteConnection connection, int version)

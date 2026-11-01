@@ -14,6 +14,9 @@
         <MenuItem Name="MenuAddSubtask"
                   Header="➕  添加子任务"
                   IsVisible="{Binding CanAddSubtask}"/>
+        <MenuItem Name="MenuPromoteSubtask"
+                  Header="⬆️  提升为独立主任务"
+                  IsVisible="{Binding IsSubtask}"/>
         <MenuItem Name="MenuOpenDetail"
                   Header="📝  查看完整详情"/>
         <MenuItem Name="MenuCompleteRow"
@@ -41,10 +44,47 @@
 
       <!-- Main Content Area -->
       <StackPanel Grid.Column="1" Spacing="8">
-        <!-- Row Header: Checkbox + Subtask Arrow + Title/InlineInput + Priority + Status/Archive Pill -->
-        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+        <!-- Row Header: DragHandle + TreeToggle/Branch + Checkbox + Title/InlineInput + SubtaskCount + Priority + Status/Archive Pill -->
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto">
+          <!-- Drag Handle for Task-to-Subtask Drag & Drop -->
+          <Border Name="DragHandleBorder"
+                  Grid.Column="0"
+                  IsVisible="{Binding IsTaskRow}"
+                  Background="Transparent"
+                  Padding="2,2,4,2"
+                  Margin="-2,0,2,0"
+                  Cursor="SizeAll"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="按住拖动到其他任务上，可设为该任务的子任务">
+            <TextBlock Text="⠿"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </Border>
+
+          <!-- Parent Task Tree Expand/Collapse Toggle (▼ / ▶) & Subtask Tree Branch Connector (├─ / └─) -->
+          <Panel Grid.Column="1" VerticalAlignment="Center">
+            <Button Name="TreeToggleButton"
+                    IsVisible="{Binding HasSubtasks}"
+                    Classes="icon-ghost"
+                    Width="20" Height="20"
+                    Padding="0"
+                    Margin="0,0,4,0"
+                    FontSize="11.5"
+                    Content="{Binding TreeToggleGlyph}"
+                    ToolTip.Tip="{Binding TreeToggleTooltip}"/>
+            <TextBlock Text="{Binding TreeBranchPrefix}"
+                       IsVisible="{Binding IsSubtask}"
+                       Foreground="{DynamicResource AccentPrimary}"
+                       FontFamily="Consolas, Microsoft YaHei UI, monospace"
+                       FontSize="12.5"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Margin="0,0,4,0"/>
+          </Panel>
+
           <CheckBox Name="CompleteCheckBox"
-                    Grid.Column="0"
+                    Grid.Column="2"
                     Classes="task-check"
                     IsChecked="{Binding IsMarkedCompleted, Mode=OneWay}"
                     IsEnabled="{Binding IsDisplayMode}"
@@ -52,18 +92,9 @@
                     Margin="0,0,8,0"
                     ToolTip.Tip="勾选标记为已完成（保留在列表内，确认归档后移出）"/>
 
-          <!-- Subtask Branch Indicator -->
-          <TextBlock Grid.Column="1"
-                     Text="↳ "
-                     IsVisible="{Binding IsSubtask}"
-                     Foreground="{DynamicResource TextMuted}"
-                     FontSize="13.5"
-                     VerticalAlignment="Center"
-                     Margin="0,0,2,0"/>
-
           <!-- Display & Editable Title (Normal Uncompleted Mode: Supports Mouse Text Selection Copy & Direct Edit) -->
           <TextBox Name="TitleDisplayBox"
-                   Grid.Column="2"
+                   Grid.Column="3"
                    IsVisible="{Binding IsDisplayNormal}"
                    Classes="clean-input"
                    Text="{Binding EditableTitle}"
@@ -73,7 +104,7 @@
                    VerticalAlignment="Center"/>
 
           <!-- Display Title (Completed Mode: Strikethrough + Muted + Selectable for Copy) -->
-          <SelectableTextBlock Grid.Column="2"
+          <SelectableTextBlock Grid.Column="3"
                                IsVisible="{Binding IsDisplayCompleted}"
                                Text="{Binding EditableTitle}"
                                TextDecorations="Strikethrough"
@@ -85,7 +116,7 @@
 
           <!-- Inline Editable Input (When Adding New Blank Row at Bottom or Subtask) -->
           <TextBox Name="InlineTitleBox"
-                   Grid.Column="2"
+                   Grid.Column="3"
                    IsVisible="{Binding IsEditingInline}"
                    Classes="clean-input"
                    Text="{Binding InlineEditText}"
@@ -94,13 +125,27 @@
                    Foreground="{DynamicResource TextPrimary}"
                    VerticalAlignment="Center"/>
 
+          <!-- Subtask Count Badge on Parent Task -->
+          <Border Grid.Column="4"
+                  IsVisible="{Binding HasSubtasks}"
+                  Background="{DynamicResource BgSubtle}"
+                  CornerRadius="5"
+                  Padding="5,1.5"
+                  Margin="6,0,0,0"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="包含的子任务数量">
+            <TextBlock Text="{Binding SubtaskCountText}"
+                       Foreground="{DynamicResource TextSecondary}"
+                       FontSize="10.5"/>
+          </Border>
+
           <!-- Priority Indicator Pill -->
-          <Border Grid.Column="3"
+          <Border Grid.Column="5"
                   IsVisible="{Binding HasPriorityBadge}"
                   Background="{DynamicResource P0_Bg}"
                   CornerRadius="5"
                   Padding="6,2"
-                  Margin="8,0,0,0"
+                  Margin="6,0,0,0"
                   VerticalAlignment="Center">
             <TextBlock Text="{Binding PriorityBadge}"
                        Foreground="{DynamicResource P0_Highest}"
@@ -109,9 +154,9 @@
           </Border>
 
           <!-- Deadline / Completed Status Pill (今日 / 逾期 / ✓ 已完成) -->
-          <Panel Grid.Column="4"
+          <Panel Grid.Column="6"
                  IsVisible="{Binding HasStageLabel}"
-                 Margin="8,0,0,0"
+                 Margin="6,0,0,0"
                  VerticalAlignment="Center">
             <Border IsVisible="{Binding IsOverdue}"
                     Background="{DynamicResource StatusOverdueBg}"
@@ -144,7 +189,7 @@
 
           <!-- Confirm Archive Button (Shown directly on row when Marked Completed) -->
           <Button Name="ConfirmArchiveButton"
-                  Grid.Column="5"
+                  Grid.Column="7"
                   IsVisible="{Binding IsMarkedCompleted}"
                   Classes="ghost-link"
                   Padding="6,2"
@@ -154,7 +199,7 @@
                   ToolTip.Tip="确认归档：将该已完成事项移出主面板并存入历史归档"/>
 
           <!-- Inline Edit Save / Cancel Buttons (Shown when IsEditingInline is true) -->
-          <StackPanel Grid.Column="5"
+          <StackPanel Grid.Column="7"
                       IsVisible="{Binding IsEditingInline}"
                       Orientation="Horizontal"
                       Spacing="2"
