@@ -56,6 +56,16 @@ public partial class TaskRow : UserControl
             MenuCompleteRow.Click += OnCompleteCheckBoxClick;
         }
 
+        if (ConfirmArchiveButton is not null)
+        {
+            ConfirmArchiveButton.Click += OnConfirmArchiveClick;
+        }
+
+        if (MenuArchiveRow is not null)
+        {
+            MenuArchiveRow.Click += OnConfirmArchiveClick;
+        }
+
         if (MenuTrashRow is not null)
         {
             MenuTrashRow.Click += OnTrashRowClick;
@@ -183,9 +193,19 @@ public partial class TaskRow : UserControl
             CompleteRequested?.Invoke(vm.Id);
             if (FindParentPanelViewModel() is { } panelVm)
             {
-                _ = panelVm.CompleteRecordAsync(vm.Id, includeChildren: false, CancellationToken.None);
+                panelVm.ToggleCompletedMark(vm.Id);
             }
             e.Handled = true;
+        }
+    }
+
+    private async void OnConfirmArchiveClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: false } vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            e.Handled = true;
+            await panelVm.ConfirmArchiveRecordAsync(vm.Id, CancellationToken.None);
         }
     }
 

@@ -52,7 +52,8 @@ public sealed class Bootstrapper : IDisposable
         ReminderScheduler = new ReminderScheduler(Store);
         PanelViewModel = new PanelViewModel(RecordService, QueryService)
         {
-            AttachmentService = AttachmentService
+            AttachmentService = AttachmentService,
+            SettingsRepository = Store
         };
     }
 

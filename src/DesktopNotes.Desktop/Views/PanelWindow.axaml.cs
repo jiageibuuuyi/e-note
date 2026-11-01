@@ -98,6 +98,21 @@ public partial class PanelWindow : Window
             BtnBottomAdd.Click += (_, _) => TriggerInlineAdd(viewModel);
         }
 
+        if (BtnArchiveCompleted is not null)
+        {
+            BtnArchiveCompleted.Click += async (_, _) => await viewModel.ConfirmArchiveAllCompletedAsync(CancellationToken.None);
+        }
+
+        if (CtxArchiveAllCompleted is not null)
+        {
+            CtxArchiveAllCompleted.Click += async (_, _) => await viewModel.ConfirmArchiveAllCompletedAsync(CancellationToken.None);
+        }
+
+        if (MenuArchiveAllCompleted is not null)
+        {
+            MenuArchiveAllCompleted.Click += async (_, _) => await viewModel.ConfirmArchiveAllCompletedAsync(CancellationToken.None);
+        }
+
         if (BtnLockToggle is not null)
         {
             BtnLockToggle.Click += (_, _) => TogglePositionLock(viewModel);

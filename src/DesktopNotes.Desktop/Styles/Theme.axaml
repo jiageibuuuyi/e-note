@@ -31,6 +31,8 @@
           <SolidColorBrush x:Key="StatusDueTodayBg" Color="#FEF3C7"/>
           <SolidColorBrush x:Key="StatusOverdue" Color="#DC2626"/>
           <SolidColorBrush x:Key="StatusOverdueBg" Color="#FEE2E2"/>
+          <SolidColorBrush x:Key="StatusCompleted" Color="#16A34A"/>
+          <SolidColorBrush x:Key="StatusCompletedBg" Color="#DCFCE7"/>
           
           <!-- Priorities -->
           <SolidColorBrush x:Key="P0_Highest" Color="#EF4444"/>
@@ -76,6 +78,8 @@
           <SolidColorBrush x:Key="StatusDueTodayBg" Color="#3E2305"/>
           <SolidColorBrush x:Key="StatusOverdue" Color="#F87171"/>
           <SolidColorBrush x:Key="StatusOverdueBg" Color="#3B1214"/>
+          <SolidColorBrush x:Key="StatusCompleted" Color="#4ADE80"/>
+          <SolidColorBrush x:Key="StatusCompletedBg" Color="#064E3B"/>
           
           <!-- Priorities -->
           <SolidColorBrush x:Key="P0_Highest" Color="#F87171"/>

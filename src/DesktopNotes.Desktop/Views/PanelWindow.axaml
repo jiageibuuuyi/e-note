@@ -42,6 +42,7 @@
             <Separator/>
             <MenuItem Name="CtxOpenSettings" Header="⚙️  打开设置面板..."/>
             <MenuItem Name="CtxOpenCalendar" Header="📅  任务日历与历史归档..."/>
+            <MenuItem Name="CtxArchiveAllCompleted" Header="📦  确认归档全部已完成事项"/>
             <Separator/>
             <MenuItem Name="CtxHideToTray" Header="🔽  隐藏到右下角系统托盘"/>
             <MenuItem Name="CtxExitApp" Header="🚪  彻底退出桌面笔记"/>
@@ -148,6 +149,7 @@
                   </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Name="BtnOpenSettings" Header="⚙️  打开设置面板..."/>
+                <MenuItem Name="MenuArchiveAllCompleted" Header="📦  确认归档全部已完成事项"/>
                 <MenuItem Name="BtnThemeToggle" Header="🌓  切换外观主题">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 12 3 A 9 9 0 1 0 21 12 A 5.4 5.4 0 0 1 12 3 Z"/>
@@ -251,9 +253,9 @@
         </StackPanel>
       </Panel>
 
-      <!-- 4. Bottom Strip: Subtle + Add Row Button & Low-Noise Counter -->
+      <!-- 4. Bottom Strip: Subtle + Add Row Button, Confirm Archive Completed & Low-Noise Counter -->
       <Grid Grid.Row="3"
-            ColumnDefinitions="Auto,*,Auto"
+            ColumnDefinitions="Auto,Auto,*,Auto"
             Margin="2,4,2,0">
         <Button Name="BtnBottomAdd"
                 Grid.Column="0"
@@ -262,7 +264,17 @@
                 FontSize="11.5"
                 Content="+ 新增"
                 ToolTip.Tip="在列表末尾增加空白输入行"/>
-        <TextBlock Grid.Column="2"
+        <Button Name="BtnArchiveCompleted"
+                Grid.Column="1"
+                IsVisible="{Binding HasCompletedPendingArchive}"
+                Classes="ghost-link"
+                Padding="8,2"
+                Margin="4,0,0,0"
+                FontSize="11.5"
+                Foreground="{DynamicResource StatusCompleted}"
+                Content="{Binding ArchiveCompletedButtonText}"
+                ToolTip.Tip="点击确认归档：将所有已勾选完成的任务移出主面板并存入历史归档"/>
+        <TextBlock Grid.Column="3"
                    IsVisible="{Binding HasFooterContent}"
                    Text="{Binding WhisperStatus}"
                    Foreground="{DynamicResource TextMuted}"

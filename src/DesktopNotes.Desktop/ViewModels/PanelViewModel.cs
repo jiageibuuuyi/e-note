@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Application.Ports;
 using DesktopNotes.Desktop.Interaction;
 using DesktopNotes.Domain;
 
@@ -26,24 +28,28 @@ public sealed class TaskRowViewModel : ViewModelBase
     public bool HasBody => !string.IsNullOrWhiteSpace(Body);
     public bool HasAssignee => !string.IsNullOrWhiteSpace(Assignee);
 
-    public string StageLabel => Stage switch
-    {
-        DeadlineStage.DueToday => "今日",
-        DeadlineStage.Overdue => "逾期",
-        DeadlineStage.Completed => "已完成",
-        _ => string.Empty
-    };
+    public string StageLabel => IsMarkedCompleted
+        ? "✓ 已完成"
+        : Stage switch
+        {
+            DeadlineStage.DueToday => "今日",
+            DeadlineStage.Overdue => "逾期",
+            DeadlineStage.Completed => "已完成",
+            _ => string.Empty
+        };
 
     public bool HasStageLabel => !string.IsNullOrEmpty(StageLabel);
-    public bool IsOverdue => Stage == DeadlineStage.Overdue;
-    public bool IsDueToday => Stage == DeadlineStage.DueToday;
+    public bool IsOverdue => !IsMarkedCompleted && Stage == DeadlineStage.Overdue;
+    public bool IsDueToday => !IsMarkedCompleted && Stage == DeadlineStage.DueToday;
 
-    public string PriorityBadge => Priority switch
-    {
-        Priority.Highest => "P0",
-        Priority.High => "P1",
-        _ => string.Empty
-    };
+    public string PriorityBadge => IsMarkedCompleted
+        ? string.Empty
+        : Priority switch
+        {
+            Priority.Highest => "P0",
+            Priority.High => "P1",
+            _ => string.Empty
+        };
 
     public bool HasPriorityBadge => !string.IsNullOrEmpty(PriorityBadge);
 
@@ -64,8 +70,30 @@ public sealed class TaskRowViewModel : ViewModelBase
         set => SetProperty(ref _isExpanded, value);
     }
 
+    private bool _isMarkedCompleted;
     private bool _isEditingInline;
     private string _inlineEditText = string.Empty;
+
+    public bool IsMarkedCompleted
+    {
+        get => _isMarkedCompleted;
+        set
+        {
+            if (SetProperty(ref _isMarkedCompleted, value))
+            {
+                RaisePropertyChanged(nameof(IsDisplayNormal));
+                RaisePropertyChanged(nameof(IsDisplayCompleted));
+                RaisePropertyChanged(nameof(StageLabel));
+                RaisePropertyChanged(nameof(HasStageLabel));
+                RaisePropertyChanged(nameof(IsOverdue));
+                RaisePropertyChanged(nameof(IsDueToday));
+                RaisePropertyChanged(nameof(PriorityBadge));
+                RaisePropertyChanged(nameof(HasPriorityBadge));
+                RaisePropertyChanged(nameof(DueSummary));
+                RaisePropertyChanged(nameof(CompleteMenuHeader));
+            }
+        }
+    }
 
     public bool IsEditingInline
     {
@@ -75,11 +103,16 @@ public sealed class TaskRowViewModel : ViewModelBase
             if (SetProperty(ref _isEditingInline, value))
             {
                 RaisePropertyChanged(nameof(IsDisplayMode));
+                RaisePropertyChanged(nameof(IsDisplayNormal));
+                RaisePropertyChanged(nameof(IsDisplayCompleted));
             }
         }
     }
 
     public bool IsDisplayMode => !_isEditingInline;
+    public bool IsDisplayNormal => !_isEditingInline && !_isMarkedCompleted;
+    public bool IsDisplayCompleted => !_isEditingInline && _isMarkedCompleted;
+    public string CompleteMenuHeader => _isMarkedCompleted ? "↩️  取消完成标记" : "✅  标记为已完成";
 
     public string InlineEditText
     {
@@ -114,20 +147,29 @@ public sealed class TaskRowViewModel : ViewModelBase
         };
     }
 
-    public TaskRowViewModel(RecordView record, TimeZoneInfo displayZone, DateTimeOffset nowUtc, bool isExpanded)
+    public TaskRowViewModel(
+        RecordView record,
+        TimeZoneInfo displayZone,
+        DateTimeOffset nowUtc,
+        bool isExpanded,
+        bool isMarkedCompleted = false)
     {
         Record = record;
         Stage = DeadlineRules.EvaluateStage(record.Effective.Due, record.Status, nowUtc, displayZone);
         _isExpanded = isExpanded;
+        _isMarkedCompleted = isMarkedCompleted;
     }
 }
 
 public sealed class PanelViewModel : ViewModelBase
 {
+    private const string MarkedCompletedSettingKey = "panel.marked_completed_ids";
     private readonly IRecordService _recordService;
     private readonly IRecordQueryService _queryService;
     private readonly TimeProvider _timeProvider;
     private readonly Func<TimeZoneInfo> _zoneProvider;
+    private readonly HashSet<Guid> _markedCompletedIds = new();
+    private bool _markedCompletedLoaded;
     private RecordKind _currentKind = RecordKind.Task;
     private string _searchText = string.Empty;
     private bool _isSearchOpen;
@@ -146,9 +188,14 @@ public sealed class PanelViewModel : ViewModelBase
     };
 
     public IAttachmentService? AttachmentService { get; set; }
+    public ISettingsRepositoryPort? SettingsRepository { get; set; }
     public ObservableCollection<TaskRowViewModel> Items { get; } = new();
     public TaskRowInteraction RowInteraction { get; }
     public event Action<Guid>? OpenDetailRequested;
+
+    public int CompletedPendingArchiveCount => Items.Count(x => x.IsMarkedCompleted);
+    public bool HasCompletedPendingArchive => CompletedPendingArchiveCount > 0;
+    public string ArchiveCompletedButtonText => $"📦 归档已完成 ({CompletedPendingArchiveCount})";
 
     public bool IsTaskTab => _currentKind == RecordKind.Task;
     public bool IsNoteTab => _currentKind == RecordKind.Note;
@@ -490,6 +537,7 @@ public sealed class PanelViewModel : ViewModelBase
 
         var zone = _zoneProvider();
         var now = _timeProvider.GetUtcNow();
+        EnsureMarkedCompletedLoaded();
 
         Items.Clear();
 
@@ -510,18 +558,29 @@ public sealed class PanelViewModel : ViewModelBase
                 continue;
             }
 
-            Items.Add(new TaskRowViewModel(item, zone, now, item.Id == _expandedRecordId));
+            Items.Add(new TaskRowViewModel(
+                item,
+                zone,
+                now,
+                item.Id == _expandedRecordId,
+                _markedCompletedIds.Contains(item.Id)));
 
             if (!item.ParentId.HasValue && childrenByParent.TryGetValue(item.Id, out var subtasks))
             {
                 foreach (var sub in subtasks)
                 {
-                    Items.Add(new TaskRowViewModel(sub, zone, now, sub.Id == _expandedRecordId));
+                    Items.Add(new TaskRowViewModel(
+                        sub,
+                        zone,
+                        now,
+                        sub.Id == _expandedRecordId,
+                        _markedCompletedIds.Contains(sub.Id)));
                 }
             }
         }
 
         TotalCount = page.Total;
+        RaiseCompletedArchiveProperties();
         RaisePropertyChanged(nameof(IsEmpty));
         RaisePropertyChanged(nameof(EmptyStateTitle));
         RaisePropertyChanged(nameof(EmptyStateSubtitle));
@@ -646,6 +705,149 @@ public sealed class PanelViewModel : ViewModelBase
         }
         SetTransientNotice("已移入回收站");
         await RefreshAsync(ct);
+    }
+
+    public void ToggleCompletedMark(Guid id)
+    {
+        EnsureMarkedCompletedLoaded();
+        bool markCompleted = !_markedCompletedIds.Contains(id);
+
+        if (markCompleted)
+        {
+            _markedCompletedIds.Add(id);
+            // If marking a parent task as completed, also mark its active subtasks in the panel
+            foreach (var child in Items.Where(x => x.Record.ParentId == id))
+            {
+                _markedCompletedIds.Add(child.Id);
+                child.IsMarkedCompleted = true;
+            }
+        }
+        else
+        {
+            _markedCompletedIds.Remove(id);
+            // If unmarking a subtask whose parent was marked completed, unmark the parent too
+            var targetRow = Items.FirstOrDefault(x => x.Id == id);
+            if (targetRow?.Record.ParentId is { } parentId && _markedCompletedIds.Remove(parentId))
+            {
+                var parentRow = Items.FirstOrDefault(x => x.Id == parentId);
+                if (parentRow is not null)
+                {
+                    parentRow.IsMarkedCompleted = false;
+                }
+            }
+        }
+
+        var row = Items.FirstOrDefault(x => x.Id == id);
+        if (row is not null)
+        {
+            row.IsMarkedCompleted = markCompleted;
+        }
+
+        PersistMarkedCompletedIds();
+        RaiseCompletedArchiveProperties();
+        SetTransientNotice(markCompleted
+            ? "✓ 已标记为完成（点击「归档」后移出列表）"
+            : "↩️ 已恢复为未完成状态");
+    }
+
+    public async Task ConfirmArchiveRecordAsync(Guid id, CancellationToken ct)
+    {
+        await CompleteRecordAsync(id, includeChildren: true, ct);
+        _markedCompletedIds.Remove(id);
+        PersistMarkedCompletedIds();
+        RaiseCompletedArchiveProperties();
+        SetTransientNotice("📦 已归档并移入历史归档列表");
+    }
+
+    public async Task ConfirmArchiveAllCompletedAsync(CancellationToken ct)
+    {
+        var completedRows = Items.Where(x => x.IsMarkedCompleted).ToList();
+        if (completedRows.Count == 0)
+        {
+            SetTransientNotice("当前没有已标记完成的事项可归档");
+            return;
+        }
+
+        int archivedCount = 0;
+        // Archive parent tasks first (which also archives their children), then any remaining standalone subtasks
+        foreach (var rootRow in completedRows.Where(x => !x.IsSubtask))
+        {
+            var rec = await _recordService.GetAsync(rootRow.Id, ct);
+            if (rec is not null && rec.Status == RecordStatus.Active)
+            {
+                await _recordService.CloseAsync(rootRow.Id, rec.Version, includeChildren: true, ct);
+                archivedCount++;
+            }
+            _markedCompletedIds.Remove(rootRow.Id);
+        }
+
+        foreach (var subRow in completedRows.Where(x => x.IsSubtask))
+        {
+            var rec = await _recordService.GetAsync(subRow.Id, ct);
+            if (rec is not null && rec.Status == RecordStatus.Active)
+            {
+                await _recordService.CloseAsync(subRow.Id, rec.Version, includeChildren: false, ct);
+                archivedCount++;
+            }
+            _markedCompletedIds.Remove(subRow.Id);
+        }
+
+        PersistMarkedCompletedIds();
+        await RefreshAsync(ct);
+        SetTransientNotice($"📦 已确认归档 {completedRows.Count} 项完成记录");
+    }
+
+    private void EnsureMarkedCompletedLoaded()
+    {
+        if (_markedCompletedLoaded || SettingsRepository is null)
+        {
+            return;
+        }
+
+        _markedCompletedLoaded = true;
+        try
+        {
+            string? json = SettingsRepository.GetSettingJson(MarkedCompletedSettingKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var ids = JsonSerializer.Deserialize<Guid[]>(json);
+                if (ids is not null)
+                {
+                    foreach (var id in ids)
+                    {
+                        _markedCompletedIds.Add(id);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore malformed persisted state
+        }
+    }
+
+    private void PersistMarkedCompletedIds()
+    {
+        if (SettingsRepository is null)
+        {
+            return;
+        }
+
+        try
+        {
+            string json = JsonSerializer.Serialize(_markedCompletedIds.ToArray());
+            SettingsRepository.SetSettingJson(MarkedCompletedSettingKey, json);
+        }
+        catch
+        {
+        }
+    }
+
+    private void RaiseCompletedArchiveProperties()
+    {
+        RaisePropertyChanged(nameof(CompletedPendingArchiveCount));
+        RaisePropertyChanged(nameof(HasCompletedPendingArchive));
+        RaisePropertyChanged(nameof(ArchiveCompletedButtonText));
     }
 
     public async Task CompleteRecordAsync(Guid id, bool includeChildren, CancellationToken ct)

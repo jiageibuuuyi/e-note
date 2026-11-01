@@ -17,14 +17,16 @@
         <MenuItem Name="MenuOpenDetail"
                   Header="📝  查看完整详情"/>
         <MenuItem Name="MenuCompleteRow"
-                  Header="✅  标记完成并归档"/>
+                  Header="{Binding CompleteMenuHeader}"/>
+        <MenuItem Name="MenuArchiveRow"
+                  Header="📦  确认归档 (移出主面板)"/>
         <Separator/>
         <MenuItem Name="MenuTrashRow"
                   Header="🗑️  移入回收站"/>
       </ContextMenu>
     </Border.ContextMenu>
     <Grid ColumnDefinitions="Auto,*">
-      <!-- Left Vertical Accent Pill for Overdue / Today -->
+      <!-- Left Vertical Accent Pill for Overdue / Today / Completed -->
       <Panel Grid.Column="0" VerticalAlignment="Stretch" Margin="0,2,10,2">
         <Border Width="3.5" CornerRadius="2"
                 Background="{DynamicResource StatusOverdue}"
@@ -32,19 +34,23 @@
         <Border Width="3.5" CornerRadius="2"
                 Background="{DynamicResource StatusDueToday}"
                 IsVisible="{Binding IsDueToday}"/>
+        <Border Width="3.5" CornerRadius="2"
+                Background="{DynamicResource StatusCompleted}"
+                IsVisible="{Binding IsMarkedCompleted}"/>
       </Panel>
 
       <!-- Main Content Area -->
       <StackPanel Grid.Column="1" Spacing="8">
-        <!-- Row Header: Checkbox + Subtask Arrow + Title/InlineInput + Priority + Deadline Pill -->
-        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <!-- Row Header: Checkbox + Subtask Arrow + Title/InlineInput + Priority + Status/Archive Pill -->
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
           <CheckBox Name="CompleteCheckBox"
                     Grid.Column="0"
                     Classes="task-check"
+                    IsChecked="{Binding IsMarkedCompleted, Mode=OneWay}"
                     IsEnabled="{Binding IsDisplayMode}"
                     VerticalAlignment="Center"
                     Margin="0,0,8,0"
-                    ToolTip.Tip="标记完成并归档"/>
+                    ToolTip.Tip="勾选标记为已完成（保留在列表内，确认归档后移出）"/>
 
           <!-- Subtask Branch Indicator -->
           <TextBlock Grid.Column="1"
@@ -55,11 +61,22 @@
                      VerticalAlignment="Center"
                      Margin="0,0,2,0"/>
 
-          <!-- Display Title (Normal Mode) -->
+          <!-- Display Title (Normal Uncompleted Mode) -->
           <TextBlock Grid.Column="2"
-                     IsVisible="{Binding IsDisplayMode}"
+                     IsVisible="{Binding IsDisplayNormal}"
                      Text="{Binding DisplayTitle}"
                      Foreground="{DynamicResource TextPrimary}"
+                     FontSize="13.5"
+                     FontWeight="Normal"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis"/>
+
+          <!-- Display Title (Completed Mode: Strikethrough + Muted) -->
+          <TextBlock Grid.Column="2"
+                     IsVisible="{Binding IsDisplayCompleted}"
+                     Text="{Binding DisplayTitle}"
+                     TextDecorations="Strikethrough"
+                     Foreground="{DynamicResource TextMuted}"
                      FontSize="13.5"
                      FontWeight="Normal"
                      VerticalAlignment="Center"
@@ -90,7 +107,7 @@
                        FontWeight="SemiBold"/>
           </Border>
 
-          <!-- Deadline Status Pill (今日 / 逾期) -->
+          <!-- Deadline / Completed Status Pill (今日 / 逾期 / ✓ 已完成) -->
           <Panel Grid.Column="4"
                  IsVisible="{Binding HasStageLabel}"
                  Margin="8,0,0,0"
@@ -113,7 +130,27 @@
                          FontSize="11"
                          FontWeight="SemiBold"/>
             </Border>
+            <Border IsVisible="{Binding IsMarkedCompleted}"
+                    Background="{DynamicResource StatusCompletedBg}"
+                    CornerRadius="5"
+                    Padding="7,2.5">
+              <TextBlock Text="{Binding StageLabel}"
+                         Foreground="{DynamicResource StatusCompleted}"
+                         FontSize="11"
+                         FontWeight="SemiBold"/>
+            </Border>
           </Panel>
+
+          <!-- Confirm Archive Button (Shown directly on row when Marked Completed) -->
+          <Button Name="ConfirmArchiveButton"
+                  Grid.Column="5"
+                  IsVisible="{Binding IsMarkedCompleted}"
+                  Classes="ghost-link"
+                  Padding="6,2"
+                  Margin="4,0,0,0"
+                  FontSize="11"
+                  Content="归档"
+                  ToolTip.Tip="确认归档：将该已完成事项移出主面板并存入历史归档"/>
         </Grid>
 
         <!-- Expanded Drawer with Smooth Layout -->
