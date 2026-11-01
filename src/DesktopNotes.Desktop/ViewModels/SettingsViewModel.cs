@@ -1,15 +1,23 @@
+using System.Diagnostics;
+using DesktopNotes.Application.Attachments;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Application.Ports;
 using DesktopNotes.Application.Settings;
 
 namespace DesktopNotes.Desktop.ViewModels;
 
 public sealed class SettingsViewModel : ViewModelBase
 {
+    private const string GlobalAttachmentRootSettingKey = "global.default_attachment_root_path";
     private readonly SettingsService _settingsService;
+    private readonly AttachmentService? _attachmentService;
+    private readonly ISettingsRepositoryPort? _settingsRepository;
     private AppPreferences _preferences;
     private bool _loginStartupEnabled;
     private string _statusMessage = string.Empty;
     private CancellationTokenSource? _placementDebounceCts;
+
+    public string DefaultAttachmentRootPath => _attachmentService?.DefaultRootPath ?? Bootstrapper.GetDefaultAttachmentRootPath();
 
     public bool NotificationsEnabled
     {
@@ -94,10 +102,51 @@ public sealed class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _statusMessage, value);
     }
 
-    public SettingsViewModel(SettingsService settingsService)
+    public SettingsViewModel(
+        SettingsService settingsService,
+        AttachmentService? attachmentService = null,
+        ISettingsRepositoryPort? settingsRepository = null)
     {
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+        _attachmentService = attachmentService;
+        _settingsRepository = settingsRepository;
         _preferences = _settingsService.GetPreferences();
+    }
+
+    public void SetDefaultAttachmentRootPath(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return;
+        }
+
+        string fullPath = Path.GetFullPath(folderPath);
+        Directory.CreateDirectory(fullPath);
+        _attachmentService?.SetDefaultStorageRoot(fullPath);
+        _settingsRepository?.SetSettingJson(GlobalAttachmentRootSettingKey, fullPath);
+        RaisePropertyChanged(nameof(DefaultAttachmentRootPath));
+        StatusMessage = $"已更新全局默认附件路径: {fullPath}";
+    }
+
+    public void OpenDefaultAttachmentRootDirectory()
+    {
+        try
+        {
+            string targetDir = DefaultAttachmentRootPath;
+            if (!string.IsNullOrWhiteSpace(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = targetDir,
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"打开目录失败: {ex.Message}";
+        }
     }
 
     public async Task RefreshSystemStateAsync(CancellationToken ct)

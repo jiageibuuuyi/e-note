@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -11,6 +12,7 @@ namespace DesktopNotes.Desktop.Controls;
 
 public partial class TaskRow : UserControl
 {
+    private TaskRowViewModel? _subscribedVm;
     public event Action<Guid, int>? RowClicked;
     public event Action<Guid>? CompleteRequested;
     public event Action<Guid>? OpenDetailClicked;
@@ -21,9 +23,18 @@ public partial class TaskRow : UserControl
 
         if (RowContainer is not null)
         {
-            RowContainer.PointerPressed += OnRowPointerPressed;
+            RowContainer.AddHandler(
+                InputElement.PointerPressedEvent,
+                OnRowPointerPressed,
+                RoutingStrategies.Tunnel);
             RowContainer.AddHandler(DragDrop.DragOverEvent, OnRowDragOver);
             RowContainer.AddHandler(DragDrop.DropEvent, OnRowDrop);
+        }
+
+        if (TitleDisplayBox is not null)
+        {
+            TitleDisplayBox.KeyDown += OnTitleDisplayBoxKeyDown;
+            TitleDisplayBox.LostFocus += OnTitleDisplayBoxLostFocus;
         }
 
         if (CompleteCheckBox is not null)
@@ -92,7 +103,80 @@ public partial class TaskRow : UserControl
 
     private void OnTaskRowDataContextChanged(object? sender, EventArgs e)
     {
+        if (_subscribedVm is not null)
+        {
+            _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
+            _subscribedVm = null;
+        }
+
+        if (DataContext is TaskRowViewModel vm)
+        {
+            _subscribedVm = vm;
+            _subscribedVm.PropertyChanged += OnViewModelPropertyChanged;
+            if (vm.IsExpanded)
+            {
+                EnsureExpandedRowVisible();
+            }
+        }
+
         TryFocusInlineBox();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TaskRowViewModel.IsExpanded) &&
+            DataContext is TaskRowViewModel { IsExpanded: true })
+        {
+            EnsureExpandedRowVisible();
+        }
+    }
+
+    private void EnsureExpandedRowVisible()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            this.BringIntoView();
+            ExpandedDrawerBorder?.BringIntoView();
+        }, DispatcherPriority.Loaded);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            this.BringIntoView();
+            ExpandedDrawerBorder?.BringIntoView();
+        }, DispatcherPriority.Background);
+    }
+
+    private async void OnTitleDisplayBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not TaskRowViewModel { IsEditingInline: false } vm)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            if (FindParentPanelViewModel() is { } panelVm)
+            {
+                await panelVm.SaveEditedTitleAsync(vm, CancellationToken.None);
+            }
+            Focus();
+        }
+        else if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            vm.EditableTitle = !string.IsNullOrWhiteSpace(vm.Record.Title) ? vm.Record.Title : vm.Record.DisplayTitle;
+            Focus();
+        }
+    }
+
+    private async void OnTitleDisplayBoxLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: false, IsTitleDirty: true } vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            await panelVm.SaveEditedTitleAsync(vm, CancellationToken.None);
+        }
     }
 
     private void OnTaskRowAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -170,12 +254,41 @@ public partial class TaskRow : UserControl
             return;
         }
 
+        if (e.Source is Visual sourceVisual)
+        {
+            // Let buttons and checkboxes handle their own clicks without triggering row expand/collapse
+            if (sourceVisual.FindAncestorOfType<Button>(includeSelf: true) is not null ||
+                sourceVisual.FindAncestorOfType<CheckBox>(includeSelf: true) is not null)
+            {
+                return;
+            }
+        }
+
         if (DataContext is TaskRowViewModel vm)
         {
             if (vm.IsEditingInline)
             {
-                e.Handled = true;
                 InlineTitleBox?.Focus();
+                return;
+            }
+
+            bool isInsideTextControl = false;
+            if (e.Source is Visual src)
+            {
+                isInsideTextControl =
+                    src.FindAncestorOfType<TextBox>(includeSelf: true) is not null ||
+                    src.FindAncestorOfType<SelectableTextBlock>(includeSelf: true) is not null;
+            }
+
+            if (isInsideTextControl)
+            {
+                // When clicking inside the editable/selectable title or body:
+                // 1) Expand this row if it is not yet expanded so the user immediately sees details
+                // 2) Do NOT mark e.Handled = true so mouse drag selection (Ctrl+C copy) and text editing work natively!
+                if (!vm.IsExpanded && e.ClickCount == 1 && FindParentPanelViewModel() is { } pvm)
+                {
+                    pvm.ExpandedRecordId = vm.Id;
+                }
                 return;
             }
 

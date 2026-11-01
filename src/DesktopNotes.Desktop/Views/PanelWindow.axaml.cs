@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DesktopNotes.Application.Backup;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Settings;
@@ -345,6 +346,27 @@ public partial class PanelWindow : Window
         };
 
         viewModel.OpenDetailRequested += async id => await OpenDetailWindowAsync(id);
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PanelViewModel.ExpandedRecordId) &&
+                viewModel.ExpandedRecordId is { } expId)
+            {
+                var expItem = viewModel.Items.FirstOrDefault(x => x.Id == expId);
+                if (expItem is not null)
+                {
+                    int idx = viewModel.Items.IndexOf(expItem);
+                    bool isNearBottom = idx >= viewModel.Items.Count - 2;
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        RecordListBox?.ScrollIntoView(expItem);
+                        if (isNearBottom && RecordListBox?.FindDescendantOfType<ScrollViewer>() is { } sv)
+                        {
+                            sv.ScrollToEnd();
+                        }
+                    }, DispatcherPriority.Background);
+                }
+            }
+        };
     }
 
     private nint OnWndProc(nint hWnd, uint msg, nint wParam, nint lParam, ref bool handled)

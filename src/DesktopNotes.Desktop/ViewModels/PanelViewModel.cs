@@ -10,11 +10,27 @@ namespace DesktopNotes.Desktop.ViewModels;
 public sealed class TaskRowViewModel : ViewModelBase
 {
     private bool _isExpanded;
+    private string _editableTitle;
     public RecordView Record { get; }
     public DeadlineStage Stage { get; }
 
     public Guid Id => Record.Id;
     public string DisplayTitle => Record.DisplayTitle;
+    public string EditableTitle
+    {
+        get => _editableTitle;
+        set
+        {
+            if (SetProperty(ref _editableTitle, value))
+            {
+                RaisePropertyChanged(nameof(IsTitleDirty));
+            }
+        }
+    }
+    public bool IsTitleDirty => !string.Equals(
+        _editableTitle?.Trim() ?? string.Empty,
+        (!string.IsNullOrWhiteSpace(Record.Title) ? Record.Title : Record.DisplayTitle).Trim(),
+        StringComparison.Ordinal);
     public string Body => Record.Body;
     public string? Assignee => Record.Effective.Assignee;
     public string? Publisher => Record.Effective.Publisher;
@@ -155,6 +171,7 @@ public sealed class TaskRowViewModel : ViewModelBase
         bool isMarkedCompleted = false)
     {
         Record = record;
+        _editableTitle = !string.IsNullOrWhiteSpace(record.Title) ? record.Title : record.DisplayTitle;
         Stage = DeadlineRules.EvaluateStage(record.Effective.Due, record.Status, nowUtc, displayZone);
         _isExpanded = isExpanded;
         _isMarkedCompleted = isMarkedCompleted;
@@ -705,6 +722,42 @@ public sealed class PanelViewModel : ViewModelBase
         SetTransientNotice("已添加子任务 (默认继承父任务属性)");
         await RefreshAsync(ct);
         return res.Changed.FirstOrDefault();
+    }
+
+    public async Task SaveEditedTitleAsync(TaskRowViewModel row, CancellationToken ct)
+    {
+        if (row.IsEditingInline || !row.IsTitleDirty)
+        {
+            return;
+        }
+
+        string newTitle = row.EditableTitle?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(newTitle))
+        {
+            // Restore original title if cleared completely
+            row.EditableTitle = !string.IsNullOrWhiteSpace(row.Record.Title) ? row.Record.Title : row.Record.DisplayTitle;
+            return;
+        }
+
+        var existing = await _recordService.GetAsync(row.Id, ct);
+        if (existing is null || existing.Status != RecordStatus.Active)
+        {
+            return;
+        }
+
+        var req = new SaveRecordRequest(
+            existing.Id,
+            existing.Version,
+            existing.Kind,
+            existing.ParentId,
+            newTitle,
+            existing.Body,
+            existing.Own,
+            existing.Inherit);
+
+        await _recordService.SaveAsync(req, ct);
+        SetTransientNotice("✓ 标题已更新");
+        await RefreshAsync(ct);
     }
 
     public async Task TrashRecordAsync(Guid id, CancellationToken ct)

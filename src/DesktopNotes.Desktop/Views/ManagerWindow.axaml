@@ -330,6 +330,51 @@
               </StackPanel>
             </Border>
 
+            <!-- Global Default Attachment Storage Directory -->
+            <Border Background="{DynamicResource BgCard}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,14"
+                    BoxShadow="{DynamicResource CardShadow}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="📎 全局默认附件存储位置"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="当任务未单独指定专属存储目录时，拖拽或添加的相关文件将默认归档存储在此全局目录中。"
+                           FontSize="11.5"
+                           Foreground="{DynamicResource TextMuted}"
+                           TextWrapping="Wrap"/>
+
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2,0,0">
+                  <Border Grid.Column="0"
+                          Background="{DynamicResource BgSubtle}"
+                          CornerRadius="6"
+                          Padding="10,6"
+                          Margin="0,0,10,0"
+                          VerticalAlignment="Center">
+                    <TextBlock Name="GlobalAttachmentPathText"
+                               Foreground="{DynamicResource TextPrimary}"
+                               FontSize="12"
+                               TextTrimming="CharacterEllipsis"/>
+                  </Border>
+                  <Button Name="BtnChangeGlobalAttachmentPath"
+                          Grid.Column="1"
+                          Classes="secondary-pill"
+                          Padding="12,5"
+                          FontSize="12"
+                          Margin="0,0,6,0"
+                          Content="更改默认路径..."/>
+                  <Button Name="BtnOpenGlobalAttachmentPath"
+                          Grid.Column="2"
+                          Classes="secondary-pill"
+                          Padding="12,5"
+                          FontSize="12"
+                          Content="打开目录"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
             <!-- Backup & Restore -->
             <Border Background="{DynamicResource BgCard}"
                     BorderBrush="{DynamicResource BorderSubtle}"

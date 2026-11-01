@@ -141,6 +141,45 @@ public partial class ManagerWindow : Window
                     await SettingsViewModel.SetLoginStartupAsync(CheckLaunchAtLogin.IsChecked ?? false, CancellationToken.None);
                 };
             }
+
+            if (GlobalAttachmentPathText is not null)
+            {
+                GlobalAttachmentPathText.Text = SettingsViewModel.DefaultAttachmentRootPath;
+                ToolTip.SetTip(GlobalAttachmentPathText, SettingsViewModel.DefaultAttachmentRootPath);
+            }
+
+            if (BtnChangeGlobalAttachmentPath is not null)
+            {
+                BtnChangeGlobalAttachmentPath.Click += async (_, _) =>
+                {
+                    var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                    {
+                        Title = "选择全局默认附件存储目录",
+                        AllowMultiple = false
+                    });
+                    if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } localPath)
+                    {
+                        SettingsViewModel.SetDefaultAttachmentRootPath(localPath);
+                        if (GlobalAttachmentPathText is not null)
+                        {
+                            GlobalAttachmentPathText.Text = SettingsViewModel.DefaultAttachmentRootPath;
+                            ToolTip.SetTip(GlobalAttachmentPathText, SettingsViewModel.DefaultAttachmentRootPath);
+                        }
+                        if (SettingsStatusText is not null)
+                        {
+                            SettingsStatusText.Text = "✅ 已更新全局默认附件路径";
+                        }
+                    }
+                };
+            }
+
+            if (BtnOpenGlobalAttachmentPath is not null)
+            {
+                BtnOpenGlobalAttachmentPath.Click += (_, _) =>
+                {
+                    SettingsViewModel.OpenDefaultAttachmentRootDirectory();
+                };
+            }
         }
 
         if (BtnExportBackup is not null)

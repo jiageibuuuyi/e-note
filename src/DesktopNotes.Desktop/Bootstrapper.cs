@@ -35,9 +35,13 @@ public sealed class Bootstrapper : IDisposable
     public Bootstrapper(string? databasePath = null, string? defaultAttachmentRoot = null)
     {
         string dbPath = databasePath ?? GetDefaultDatabasePath();
-        _attachmentRootPath = defaultAttachmentRoot ?? GetDefaultAttachmentRootPath();
 
         Store = new SqliteStore(dbPath);
+        string? savedCustomRoot = Store.GetSettingJson("global.default_attachment_root_path");
+        _attachmentRootPath = !string.IsNullOrWhiteSpace(defaultAttachmentRoot)
+            ? defaultAttachmentRoot
+            : (!string.IsNullOrWhiteSpace(savedCustomRoot) ? savedCustomRoot : GetDefaultAttachmentRootPath());
+
         RecordService = new RecordService(Store);
         QueryService = new RecordQueryService(Store);
         DesktopIntegration = new DesktopHostProbe();
@@ -47,6 +51,10 @@ public sealed class Bootstrapper : IDisposable
         ImportWorker = new ImportWorker(Store, FileStore);
         RecoveryService = new RecoveryService(Store, FileStore, ImportWorker);
         AttachmentService = new AttachmentService(Store, FileStore, ImportWorker, RecoveryService, _attachmentRootPath, FileClipboard);
+        if (!string.IsNullOrWhiteSpace(savedCustomRoot) && string.IsNullOrWhiteSpace(defaultAttachmentRoot))
+        {
+            AttachmentService.SetDefaultStorageRoot(savedCustomRoot);
+        }
         BackupService = new BackupService(Store, new ArchiveWriter(), FileStore.CurrentDeviceId);
         SettingsService = new SettingsService(Store, DesktopIntegration);
         ReminderScheduler = new ReminderScheduler(Store);
@@ -72,7 +80,7 @@ public sealed class Bootstrapper : IDisposable
             QueryService,
             AttachmentService,
             Store,
-            _attachmentRootPath);
+            AttachmentService.DefaultRootPath);
     }
 
     public CalendarViewModel CreateCalendarViewModel()
@@ -82,7 +90,7 @@ public sealed class Bootstrapper : IDisposable
 
     public SettingsViewModel CreateSettingsViewModel()
     {
-        return new SettingsViewModel(SettingsService);
+        return new SettingsViewModel(SettingsService, AttachmentService, Store);
     }
 
     public static string GetDefaultDatabasePath()

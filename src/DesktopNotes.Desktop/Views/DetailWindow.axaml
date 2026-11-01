@@ -53,13 +53,29 @@
 
       <!-- 2. Document Title Input & Structured Properties -->
       <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,10">
-        <TextBox Name="TitleBox"
-                 Classes="clean-input"
-                 Text="{Binding Title}"
-                 PlaceholderText="输入任务或笔记标题..."
-                 FontSize="17"
-                 FontWeight="SemiBold"
-                 Foreground="{DynamicResource TextPrimary}"/>
+        <Border Background="{DynamicResource BgCard}"
+                BorderBrush="{DynamicResource BorderSubtle}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12,6"
+                BoxShadow="{DynamicResource CardShadow}">
+          <Grid ColumnDefinitions="Auto,*">
+            <TextBlock Grid.Column="0"
+                       Text="标题"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Width="44"/>
+            <TextBox Name="TitleBox"
+                     Grid.Column="1"
+                     Classes="clean-input"
+                     Text="{Binding Title}"
+                     PlaceholderText="输入或修改任务/笔记标题..."
+                     FontSize="15.5"
+                     FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimary}"/>
+          </Grid>
+        </Border>
 
         <!-- Structured Properties Card: Priority, Due, Start, Assignee & Publisher -->
         <Border Background="{DynamicResource BgCard}"

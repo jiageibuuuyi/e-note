@@ -61,26 +61,27 @@
                      VerticalAlignment="Center"
                      Margin="0,0,2,0"/>
 
-          <!-- Display Title (Normal Uncompleted Mode) -->
-          <TextBlock Grid.Column="2"
-                     IsVisible="{Binding IsDisplayNormal}"
-                     Text="{Binding DisplayTitle}"
-                     Foreground="{DynamicResource TextPrimary}"
-                     FontSize="13.5"
-                     FontWeight="Normal"
-                     VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis"/>
+          <!-- Display & Editable Title (Normal Uncompleted Mode: Supports Mouse Text Selection Copy & Direct Edit) -->
+          <TextBox Name="TitleDisplayBox"
+                   Grid.Column="2"
+                   IsVisible="{Binding IsDisplayNormal}"
+                   Classes="clean-input"
+                   Text="{Binding EditableTitle}"
+                   Foreground="{DynamicResource TextPrimary}"
+                   FontSize="13.5"
+                   FontWeight="Normal"
+                   VerticalAlignment="Center"/>
 
-          <!-- Display Title (Completed Mode: Strikethrough + Muted) -->
-          <TextBlock Grid.Column="2"
-                     IsVisible="{Binding IsDisplayCompleted}"
-                     Text="{Binding DisplayTitle}"
-                     TextDecorations="Strikethrough"
-                     Foreground="{DynamicResource TextMuted}"
-                     FontSize="13.5"
-                     FontWeight="Normal"
-                     VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis"/>
+          <!-- Display Title (Completed Mode: Strikethrough + Muted + Selectable for Copy) -->
+          <SelectableTextBlock Grid.Column="2"
+                               IsVisible="{Binding IsDisplayCompleted}"
+                               Text="{Binding EditableTitle}"
+                               TextDecorations="Strikethrough"
+                               Foreground="{DynamicResource TextMuted}"
+                               FontSize="13.5"
+                               FontWeight="Normal"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
 
           <!-- Inline Editable Input (When Adding New Blank Row at Bottom or Subtask) -->
           <TextBox Name="InlineTitleBox"
@@ -175,20 +176,21 @@
         </Grid>
 
         <!-- Expanded Drawer with Smooth Layout -->
-        <Border IsVisible="{Binding IsExpanded}"
+        <Border Name="ExpandedDrawerBorder"
+                IsVisible="{Binding IsExpanded}"
                 BorderBrush="{DynamicResource BorderSubtle}"
                 BorderThickness="0,1,0,0"
                 Padding="26,10,2,2"
                 MaxHeight="220">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="8">
-              <!-- Body Preview -->
-              <TextBlock Text="{Binding Body}"
-                         IsVisible="{Binding HasBody}"
-                         Foreground="{DynamicResource TextSecondary}"
-                         FontSize="12.5"
-                         LineHeight="20"
-                         TextWrapping="Wrap"/>
+              <!-- Body Preview (Selectable for Copy) -->
+              <SelectableTextBlock Text="{Binding Body}"
+                                   IsVisible="{Binding HasBody}"
+                                   Foreground="{DynamicResource TextSecondary}"
+                                   FontSize="12.5"
+                                   LineHeight="20"
+                                   TextWrapping="Wrap"/>
 
               <!-- Meta Footer Strip -->
               <Grid ColumnDefinitions="*,Auto">

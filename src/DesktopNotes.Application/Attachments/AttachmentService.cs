@@ -13,6 +13,7 @@ public sealed class AttachmentService : IAttachmentService
     private readonly IFileClipboard? _clipboard;
     private readonly TimeProvider _timeProvider;
     private Guid _defaultRootId;
+    private string _defaultRootPath;
 
     public bool AutoExecuteJobsOnEnqueue { get; set; } = true;
 
@@ -41,9 +42,37 @@ public sealed class AttachmentService : IAttachmentService
             platform,
             _timeProvider.GetUtcNow());
         _defaultRootId = root.Id;
+        _defaultRootPath = root.AbsolutePath;
     }
 
     public Guid DefaultRootId => _defaultRootId;
+    public string DefaultRootPath => _defaultRootPath;
+
+    public void SetDefaultStorageRoot(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return;
+        }
+
+        string fullPath = Path.GetFullPath(folderPath);
+        Directory.CreateDirectory(fullPath);
+
+        string platform = OperatingSystem.IsWindows()
+            ? "windows"
+            : OperatingSystem.IsMacOS() ? "macos" : "linux";
+
+        var existing = _repository.ListStorageRoots()
+            .FirstOrDefault(r => string.Equals(r.AbsolutePath, fullPath, StringComparison.OrdinalIgnoreCase));
+        var root = existing ?? _repository.RegisterStorageRoot(
+            Guid.NewGuid(),
+            fullPath,
+            platform,
+            _timeProvider.GetUtcNow());
+
+        _defaultRootId = root.Id;
+        _defaultRootPath = root.AbsolutePath;
+    }
 
     public async Task<IReadOnlyList<Guid>> EnqueueAsync(ImportRequest request, CancellationToken ct)
     {
