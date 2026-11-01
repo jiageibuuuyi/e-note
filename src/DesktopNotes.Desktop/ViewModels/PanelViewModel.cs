@@ -539,6 +539,9 @@ public sealed class PanelViewModel : ViewModelBase
         var now = _timeProvider.GetUtcNow();
         EnsureMarkedCompletedLoaded();
 
+        // Preserve any active inline editing row so background refreshes never discard user input
+        var activeInlineDraft = Items.FirstOrDefault(x => x.IsEditingInline);
+
         Items.Clear();
 
         // Keep subtasks grouped directly underneath their parent task when parent is present in active list
@@ -577,6 +580,17 @@ public sealed class PanelViewModel : ViewModelBase
                         _markedCompletedIds.Contains(sub.Id)));
                 }
             }
+
+            if (activeInlineDraft is not null && activeInlineDraft.Record.ParentId == item.Id)
+            {
+                Items.Add(activeInlineDraft);
+                activeInlineDraft = null;
+            }
+        }
+
+        if (activeInlineDraft is not null)
+        {
+            Items.Add(activeInlineDraft);
         }
 
         TotalCount = page.Total;

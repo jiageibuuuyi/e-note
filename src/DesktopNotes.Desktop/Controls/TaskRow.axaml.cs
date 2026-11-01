@@ -74,7 +74,16 @@ public partial class TaskRow : UserControl
         if (InlineTitleBox is not null)
         {
             InlineTitleBox.KeyDown += OnInlineTitleBoxKeyDown;
-            InlineTitleBox.LostFocus += OnInlineTitleBoxLostFocus;
+        }
+
+        if (InlineSaveButton is not null)
+        {
+            InlineSaveButton.Click += OnInlineSaveButtonClick;
+        }
+
+        if (InlineCancelButton is not null)
+        {
+            InlineCancelButton.Click += OnInlineCancelButtonClick;
         }
 
         DataContextChanged += OnTaskRowDataContextChanged;
@@ -128,12 +137,23 @@ public partial class TaskRow : UserControl
         }
     }
 
-    private async void OnInlineTitleBoxLostFocus(object? sender, RoutedEventArgs e)
+    private async void OnInlineSaveButtonClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is TaskRowViewModel { IsEditingInline: true } vm &&
             FindParentPanelViewModel() is { } panelVm)
         {
+            e.Handled = true;
             await panelVm.CommitInlineCreateAsync(vm, CancellationToken.None);
+        }
+    }
+
+    private void OnInlineCancelButtonClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel { IsEditingInline: true } vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            e.Handled = true;
+            panelVm.CancelInlineCreate(vm);
         }
     }
 
@@ -154,6 +174,8 @@ public partial class TaskRow : UserControl
         {
             if (vm.IsEditingInline)
             {
+                e.Handled = true;
+                InlineTitleBox?.Focus();
                 return;
             }
 

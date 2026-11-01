@@ -320,6 +320,11 @@ public partial class PanelWindow : Window
 
         _deadlineRefreshTimer.Tick += async (_, _) =>
         {
+            // Never refresh the list while the user is actively typing in an inline draft row
+            if (viewModel.Items.Any(x => x.IsEditingInline))
+            {
+                return;
+            }
             await viewModel.RefreshAsync(CancellationToken.None);
         };
         _deadlineRefreshTimer.Start();

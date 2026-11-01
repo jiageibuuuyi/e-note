@@ -151,6 +151,27 @@
                   FontSize="11"
                   Content="归档"
                   ToolTip.Tip="确认归档：将该已完成事项移出主面板并存入历史归档"/>
+
+          <!-- Inline Edit Save / Cancel Buttons (Shown when IsEditingInline is true) -->
+          <StackPanel Grid.Column="5"
+                      IsVisible="{Binding IsEditingInline}"
+                      Orientation="Horizontal"
+                      Spacing="2"
+                      Margin="4,0,0,0"
+                      VerticalAlignment="Center">
+            <Button Name="InlineSaveButton"
+                    Classes="ghost-link"
+                    Padding="6,2"
+                    FontSize="11.5"
+                    Content="保存"
+                    ToolTip.Tip="保存该条记录 (Enter)"/>
+            <Button Name="InlineCancelButton"
+                    Classes="icon-ghost"
+                    Width="20" Height="20"
+                    FontSize="10"
+                    Content="✕"
+                    ToolTip.Tip="取消新增 (Esc)"/>
+          </StackPanel>
         </Grid>
 
         <!-- Expanded Drawer with Smooth Layout -->
