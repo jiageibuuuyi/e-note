@@ -12,20 +12,20 @@
     <Border.ContextMenu>
       <ContextMenu>
         <MenuItem Name="MenuAddSubtask"
-                  Header="➕  添加子任务"
+                  Header="{Binding Loc.RowMenuAddSubtask}"
                   IsVisible="{Binding CanAddSubtask}"/>
         <MenuItem Name="MenuPromoteSubtask"
-                  Header="⬆️  提升为独立主任务"
+                  Header="{Binding Loc.RowMenuPromoteSubtask}"
                   IsVisible="{Binding IsSubtask}"/>
         <MenuItem Name="MenuOpenDetail"
-                  Header="📝  查看完整详情"/>
+                  Header="{Binding Loc.RowMenuOpenDetail}"/>
         <MenuItem Name="MenuCompleteRow"
                   Header="{Binding CompleteMenuHeader}"/>
         <MenuItem Name="MenuArchiveRow"
-                  Header="📦  确认归档 (移出主面板)"/>
+                  Header="{Binding Loc.RowMenuArchive}"/>
         <Separator/>
         <MenuItem Name="MenuTrashRow"
-                  Header="🗑️  移入回收站"/>
+                  Header="{Binding Loc.RowMenuTrash}"/>
       </ContextMenu>
     </Border.ContextMenu>
     <Grid ColumnDefinitions="Auto,*">
@@ -55,7 +55,7 @@
                   Margin="-2,0,2,0"
                   Cursor="SizeAll"
                   VerticalAlignment="Center"
-                  ToolTip.Tip="按住拖动到其他任务上，可设为该任务的子任务">
+                  ToolTip.Tip="{Binding Loc.RowDragHandleTooltip}">
             <TextBlock Text="⠿"
                        Foreground="{DynamicResource TextMuted}"
                        FontSize="12"
@@ -90,7 +90,7 @@
                     IsEnabled="{Binding IsDisplayMode}"
                     VerticalAlignment="Center"
                     Margin="0,0,8,0"
-                    ToolTip.Tip="勾选标记为已完成（保留在列表内，确认归档后移出）"/>
+                    ToolTip.Tip="{Binding Loc.RowCheckTooltip}"/>
 
           <!-- Display & Editable Title (Normal Uncompleted Mode: Supports Mouse Text Selection Copy & Direct Edit) -->
           <TextBox Name="TitleDisplayBox"
@@ -195,8 +195,8 @@
                   Padding="6,2"
                   Margin="4,0,0,0"
                   FontSize="11"
-                  Content="归档"
-                  ToolTip.Tip="确认归档：将该已完成事项移出主面板并存入历史归档"/>
+                  Content="{Binding Loc.RowArchiveBtn}"
+                  ToolTip.Tip="{Binding Loc.RowArchiveTooltip}"/>
 
           <!-- Inline Edit Save / Cancel Buttons (Shown when IsEditingInline is true) -->
           <StackPanel Grid.Column="7"
@@ -209,24 +209,24 @@
                     Classes="ghost-link"
                     Padding="6,2"
                     FontSize="11.5"
-                    Content="保存"
-                    ToolTip.Tip="保存该条记录 (Enter)"/>
+                    Content="{Binding Loc.RowSaveBtn}"
+                    ToolTip.Tip="{Binding Loc.RowSaveTooltip}"/>
             <Button Name="InlineCancelButton"
                     Classes="icon-ghost"
                     Width="20" Height="20"
                     FontSize="10"
                     Content="✕"
-                    ToolTip.Tip="取消新增 (Esc)"/>
+                    ToolTip.Tip="{Binding Loc.RowCancelTooltip}"/>
           </StackPanel>
         </Grid>
 
         <!-- Expanded Drawer with Smooth Layout -->
         <Border Name="ExpandedDrawerBorder"
-                IsVisible="{Binding IsExpanded}"
-                BorderBrush="{DynamicResource BorderSubtle}"
-                BorderThickness="0,1,0,0"
-                Padding="26,10,2,2"
-                MaxHeight="220">
+                 IsVisible="{Binding IsExpanded}"
+                 BorderBrush="{DynamicResource BorderSubtle}"
+                 BorderThickness="0,1,0,0"
+                 Padding="26,10,2,2"
+                 MaxHeight="220">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="8">
               <!-- Body Preview (Selectable for Copy) -->
@@ -240,8 +240,9 @@
               <!-- Meta Footer Strip -->
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                  <!-- Due Date Pill -->
-                  <Border Background="{DynamicResource BgSubtle}"
+                  <!-- Due Date Pill (Only for Tasks; Notes only show Title, Details & Attachments) -->
+                  <Border IsVisible="{Binding IsTaskKind}"
+                          Background="{DynamicResource BgSubtle}"
                           CornerRadius="5"
                           Padding="6,2.5">
                     <StackPanel Orientation="Horizontal" Spacing="4">
@@ -275,12 +276,12 @@
                   <Button Name="AddSubtaskButton"
                           IsVisible="{Binding CanAddSubtask}"
                           Classes="ghost-link"
-                          Content="+ 子任务"
-                          ToolTip.Tip="在此父任务下方直接新增一条子任务"/>
+                          Content="{Binding Loc.RowAddSubtaskBtn}"
+                          ToolTip.Tip="{Binding Loc.RowAddSubtaskTooltip}"/>
                   <Button Name="OpenDetailButton"
                           Classes="ghost-link"
-                          Content="查看完整详情 ↗"
-                          ToolTip.Tip="打开编辑弹窗"/>
+                          Content="{Binding Loc.RowOpenDetailBtn}"
+                          ToolTip.Tip="{Binding Loc.RowOpenDetailTooltip}"/>
                 </StackPanel>
               </Grid>
             </StackPanel>

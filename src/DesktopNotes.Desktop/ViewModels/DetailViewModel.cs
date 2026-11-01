@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Ports;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Domain;
 
 namespace DesktopNotes.Desktop.ViewModels;
@@ -119,9 +120,15 @@ public sealed class DetailViewModel : ViewModelBase
         ? InheritanceResolver.Resolve(Own, _parentEffective, _inheritMask)
         : Own;
 
+    public bool IsTaskKind => _kind == RecordKind.Task;
+    public bool IsNoteKind => _kind == RecordKind.Note;
+    public bool CanArchiveOrTrash => _version > 0;
+
     public string RecordKindTitle => _kind == RecordKind.Task
-        ? (_parentId.HasValue ? "↳ 子任务详情 (支持继承父任务属性)" : "任务详情")
-        : "笔记详情";
+        ? (_parentId.HasValue
+            ? Loc.T("↳ Subtask Details (inherits parent settings)", "↳ 子任务详情 (支持继承父任务属性)")
+            : Loc.T("Task Details", "任务详情"))
+        : Loc.T("Note Details", "笔记详情");
     public bool CanHaveSubtasks => _kind == RecordKind.Task && !_parentId.HasValue;
     public bool HasSubtasks => Subtasks.Count > 0;
 
@@ -142,12 +149,14 @@ public sealed class DetailViewModel : ViewModelBase
     public string DueDisplayText => Effective.Due.Kind switch
     {
         DueKind.Date when Effective.Due.Date is { } d =>
-            IsInheriting(InheritField.Due) ? $"{d:yyyy-MM-dd} (继承)" : d.ToString("yyyy-MM-dd"),
+            IsInheriting(InheritField.Due)
+                ? Loc.T($"{d:yyyy-MM-dd} (Inherited)", $"{d:yyyy-MM-dd} (继承)")
+                : d.ToString("yyyy-MM-dd"),
         DueKind.Instant when Effective.Due.Instant is { } inst =>
             IsInheriting(InheritField.Due)
-                ? $"{inst.ToLocalTime():yyyy-MM-dd HH:mm} (继承)"
+                ? Loc.T($"{inst.ToLocalTime():yyyy-MM-dd HH:mm} (Inherited)", $"{inst.ToLocalTime():yyyy-MM-dd HH:mm} (继承)")
                 : inst.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
-        _ => "无截止期"
+        _ => Loc.T("No due date", "无截止期")
     };
 
     public DateTime? SelectedDueDate
@@ -176,9 +185,9 @@ public sealed class DetailViewModel : ViewModelBase
     public string StartDisplayText => Effective.Start switch
     {
         { } s => IsInheriting(InheritField.Start)
-            ? $"{s.ToLocalTime():yyyy-MM-dd} (继承)"
+            ? Loc.T($"{s.ToLocalTime():yyyy-MM-dd} (Inherited)", $"{s.ToLocalTime():yyyy-MM-dd} (继承)")
             : s.ToLocalTime().ToString("yyyy-MM-dd"),
-        _ => "未设置"
+        _ => Loc.T("Not set", "未设置")
     };
 
     public DateTime? SelectedStartDate
@@ -208,17 +217,17 @@ public sealed class DetailViewModel : ViewModelBase
                 if (root is not null)
                 {
                     return IsInheriting(InheritField.AttachmentRoot)
-                        ? $"{root.AbsolutePath} (继承)"
+                        ? Loc.T($"{root.AbsolutePath} (Inherited)", $"{root.AbsolutePath} (继承)")
                         : root.AbsolutePath;
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(_defaultAttachmentRootPath))
             {
-                return $"默认路径: {_defaultAttachmentRootPath}";
+                return Loc.T($"Default: {_defaultAttachmentRootPath}", $"默认路径: {_defaultAttachmentRootPath}");
             }
 
-            return "使用系统默认附件目录";
+            return Loc.T("System default folder", "使用系统默认附件目录");
         }
     }
 
@@ -254,6 +263,7 @@ public sealed class DetailViewModel : ViewModelBase
         _attachmentService = attachmentService;
         _attachmentRepository = attachmentRepository;
         _defaultAttachmentRootPath = defaultAttachmentRootPath;
+        AppLocalizer.Instance.LanguageChanged += () => RaiseAllProperties();
     }
 
     public Task LoadNewAsync(RecordKind kind, Guid? parentId, CancellationToken ct)
@@ -273,7 +283,7 @@ public sealed class DetailViewModel : ViewModelBase
         _ownDue = DueSpec.Empty;
         _ownAttachmentRootId = null;
         _inheritMask = parentId.HasValue ? InheritField.All : InheritField.None;
-        _statusMessage = "新建记录";
+        _statusMessage = Loc.T("New item", "新建记录");
         HasConflict = false;
         Attachments.Clear();
         Subtasks.Clear();
@@ -634,19 +644,63 @@ public sealed class DetailViewModel : ViewModelBase
             ApplyRecordView(updatedSelf);
             await _recordService.DeleteDraftAsync(EditorId, ct);
             HasConflict = false;
-            StatusMessage = "已保存";
+            StatusMessage = Loc.T("Saved", "已保存");
             RaiseAllProperties();
             return true;
         }
         catch (AppException ex) when (ex.Code == ErrorCodes.Conflict)
         {
             HasConflict = true;
-            StatusMessage = "版本冲突：该记录已被更新，请重新加载合并后再保存";
+            StatusMessage = Loc.T(
+                "Conflict: updated elsewhere. Please reload first.",
+                "版本冲突：该记录已被更新，请重新加载合并后再保存");
             return false;
         }
         catch (AppException ex)
         {
-            StatusMessage = $"保存失败 ({ex.Code}): {ex.Message}";
+            StatusMessage = Loc.T($"Save failed ({ex.Code}): {ex.Message}", $"保存失败 ({ex.Code}): {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> ArchiveRecordAsync(CancellationToken ct)
+    {
+        if (_version == 0)
+        {
+            return false;
+        }
+
+        _draftDebounceCts?.Cancel();
+        try
+        {
+            await _recordService.CloseAsync(_recordId, _version, includeChildren: true, ct);
+            await _recordService.DeleteDraftAsync(EditorId, ct);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = Loc.T($"Archive failed: {ex.Message}", $"归档失败: {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> TrashRecordAsync(CancellationToken ct)
+    {
+        if (_version == 0)
+        {
+            return false;
+        }
+
+        _draftDebounceCts?.Cancel();
+        try
+        {
+            await _recordService.TrashAsync(_recordId, _version, ct);
+            await _recordService.DeleteDraftAsync(EditorId, ct);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = Loc.T($"Delete failed: {ex.Message}", $"删除失败: {ex.Message}");
             return false;
         }
     }
@@ -655,7 +709,7 @@ public sealed class DetailViewModel : ViewModelBase
     {
         _draftDebounceCts?.Cancel();
         await _recordService.SaveDraftAsync(EditorId, _recordId, _version, _title, _body, ct);
-        StatusMessage = "草稿已暂存";
+        StatusMessage = Loc.T("Draft saved", "草稿已暂存");
     }
 
     private void ScheduleDraftSave()
@@ -720,6 +774,10 @@ public sealed class DetailViewModel : ViewModelBase
 
     private void RaiseAllProperties()
     {
+        RaisePropertyChanged(nameof(Loc));
+        RaisePropertyChanged(nameof(IsTaskKind));
+        RaisePropertyChanged(nameof(IsNoteKind));
+        RaisePropertyChanged(nameof(CanArchiveOrTrash));
         RaisePropertyChanged(nameof(RecordKindTitle));
         RaisePropertyChanged(nameof(CanHaveSubtasks));
         RaisePropertyChanged(nameof(HasSubtasks));

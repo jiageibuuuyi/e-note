@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Domain;
 
@@ -18,6 +19,10 @@ public partial class DetailWindow : Window
     public DetailWindow(DetailViewModel viewModel) : this()
     {
         DataContext = viewModel;
+        if (viewModel.IsNoteKind)
+        {
+            Height = 520;
+        }
 
         if (DetailHeaderRegion is not null)
         {
@@ -108,7 +113,7 @@ public partial class DetailWindow : Window
             {
                 var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
-                    Title = "选择该任务的附件存储目录",
+                    Title = AppLocalizer.Instance.T("Select folder for attached files", "选择该记录的附件存储目录"),
                     AllowMultiple = false
                 });
                 if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } localPath)
@@ -129,7 +134,7 @@ public partial class DetailWindow : Window
             {
                 var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
                 {
-                    Title = "选择关联到该任务的文件",
+                    Title = AppLocalizer.Instance.T("Select files to attach", "选择关联到该记录的文件"),
                     AllowMultiple = true
                 });
                 var paths = files
@@ -146,6 +151,28 @@ public partial class DetailWindow : Window
 
         AddHandler(DragDrop.DragOverEvent, OnWindowDragOver);
         AddHandler(DragDrop.DropEvent, OnWindowDrop);
+
+        if (BtnArchiveDetail is not null)
+        {
+            BtnArchiveDetail.Click += async (_, _) =>
+            {
+                if (await viewModel.ArchiveRecordAsync(CancellationToken.None))
+                {
+                    Close();
+                }
+            };
+        }
+
+        if (BtnTrashDetail is not null)
+        {
+            BtnTrashDetail.Click += async (_, _) =>
+            {
+                if (await viewModel.TrashRecordAsync(CancellationToken.None))
+                {
+                    Close();
+                }
+            };
+        }
 
         if (BtnSave is not null)
         {

@@ -4,6 +4,7 @@ using DesktopNotes.Application.Attachments;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Ports;
 using DesktopNotes.Application.Settings;
+using DesktopNotes.Desktop.Localization;
 
 namespace DesktopNotes.Desktop.ViewModels;
 
@@ -19,6 +20,10 @@ public sealed class SettingsViewModel : ViewModelBase
     private CancellationTokenSource? _placementDebounceCts;
 
     public string DefaultAttachmentRootPath => _attachmentService?.DefaultRootPath ?? Bootstrapper.GetDefaultAttachmentRootPath();
+    public AppLanguage Language => AppLocalizer.Instance.Language;
+    public bool IsEnglish => AppLocalizer.Instance.IsEnglish;
+    public bool IsChinese => AppLocalizer.Instance.IsChinese;
+    public string DetectedTimeZoneSummary => AppLocalizer.Instance.DetectedTimeZoneSummary;
 
     public bool NotificationsEnabled
     {
@@ -112,6 +117,22 @@ public sealed class SettingsViewModel : ViewModelBase
         _attachmentService = attachmentService;
         _settingsRepository = settingsRepository;
         _preferences = _settingsService.GetPreferences();
+        AppLocalizer.Instance.LanguageChanged += () =>
+        {
+            RaisePropertyChanged(nameof(Loc));
+            RaisePropertyChanged(nameof(Language));
+            RaisePropertyChanged(nameof(IsEnglish));
+            RaisePropertyChanged(nameof(IsChinese));
+            RaisePropertyChanged(nameof(DetectedTimeZoneSummary));
+        };
+    }
+
+    public void SetLanguage(AppLanguage language)
+    {
+        AppLocalizer.Instance.SetLanguage(language, _settingsRepository);
+        StatusMessage = language == AppLanguage.Chinese
+            ? "🌐 已切换为中文"
+            : "🌐 Language switched to English";
     }
 
     public void SetDefaultAttachmentRootPath(string folderPath)
@@ -128,11 +149,13 @@ public sealed class SettingsViewModel : ViewModelBase
             _attachmentService?.SetDefaultStorageRoot(fullPath);
             _settingsRepository?.SetSettingJson(GlobalAttachmentRootSettingKey, JsonSerializer.Serialize(fullPath));
             RaisePropertyChanged(nameof(DefaultAttachmentRootPath));
-            StatusMessage = $"已热更新全局默认附件路径: {fullPath}";
+            StatusMessage = Loc.T(
+                $"Updated default folder: {fullPath}",
+                $"已热更新全局默认附件路径: {fullPath}");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"更新全局目录失败: {ex.Message}";
+            StatusMessage = Loc.T($"Failed to update folder: {ex.Message}", $"更新全局目录失败: {ex.Message}");
         }
     }
 
@@ -153,7 +176,7 @@ public sealed class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"打开目录失败: {ex.Message}";
+            StatusMessage = Loc.T($"Failed to open folder: {ex.Message}", $"打开目录失败: {ex.Message}");
         }
     }
 
@@ -166,13 +189,19 @@ public sealed class SettingsViewModel : ViewModelBase
         RaisePropertyChanged(nameof(PositionLocked));
         RaisePropertyChanged(nameof(ThemeVariant));
         RaisePropertyChanged(nameof(FontSizeDip));
+        RaisePropertyChanged(nameof(Language));
+        RaisePropertyChanged(nameof(IsEnglish));
+        RaisePropertyChanged(nameof(IsChinese));
+        RaisePropertyChanged(nameof(DetectedTimeZoneSummary));
     }
 
     public async Task SetLoginStartupAsync(bool enabled, CancellationToken ct)
     {
         await _settingsService.SetSystemLoginStartupAsync(enabled, ct);
         LoginStartupEnabled = await _settingsService.GetSystemLoginStartupAsync(ct);
-        StatusMessage = LoginStartupEnabled ? "已开启登录自动启动" : "已关闭登录自动启动";
+        StatusMessage = LoginStartupEnabled
+            ? Loc.T("Launch at login enabled", "已开启登录自动启动")
+            : Loc.T("Launch at login disabled", "已关闭登录自动启动");
     }
 
     public void ScheduleWindowPlacementSave(WindowPlacement placement)

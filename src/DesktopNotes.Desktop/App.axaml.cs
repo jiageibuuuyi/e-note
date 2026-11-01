@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.Views;
 using AppPlacementMode = DesktopNotes.Application.Contracts.PlacementMode;
 
@@ -70,9 +71,10 @@ public partial class App : global::Avalonia.Application
     {
         try
         {
+            var loc = AppLocalizer.Instance;
             var menu = new NativeMenu();
 
-            var itemShow = new NativeMenuItem("显示 / 隐藏主面板");
+            var itemShow = new NativeMenuItem(loc.T("Show / Hide Main Window", "显示 / 隐藏主面板"));
             itemShow.Click += (_, _) =>
             {
                 if (panelWindow.IsVisible)
@@ -86,36 +88,52 @@ public partial class App : global::Avalonia.Application
             };
             menu.Items.Add(itemShow);
 
-            var itemNew = new NativeMenuItem("新建待办 / 笔记");
+            var itemNew = new NativeMenuItem(loc.T("New Task / Note", "新建待办 / 笔记"));
             itemNew.Click += (_, _) => panelWindow.TriggerInlineAddFromOutside();
             menu.Items.Add(itemNew);
 
-            var itemCalendar = new NativeMenuItem("任务日历 · 历史归档 · 设置");
+            var itemCalendar = new NativeMenuItem(loc.T("Calendar · Archive · Settings", "任务日历 · 历史归档 · 设置"));
             itemCalendar.Click += (_, _) => panelWindow.OpenManagerWindow();
             menu.Items.Add(itemCalendar);
 
             menu.Items.Add(new NativeMenuItemSeparator());
 
-            var itemTopmost = new NativeMenuItem("置于所有应用最上层 (置顶)");
+            var itemTopmost = new NativeMenuItem(loc.T("Always on Top", "置于所有应用最上层 (置顶)"));
             itemTopmost.Click += (_, _) => panelWindow.ApplyPlacementMode(AppPlacementMode.Topmost);
             menu.Items.Add(itemTopmost);
 
-            var itemBottom = new NativeMenuItem("置于所有应用最下层 (桌面层)");
+            var itemBottom = new NativeMenuItem(loc.T("Send to Desktop Back", "置于所有应用最下层 (桌面层)"));
             itemBottom.Click += (_, _) => panelWindow.ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
             menu.Items.Add(itemBottom);
 
             menu.Items.Add(new NativeMenuItemSeparator());
 
-            var itemExit = new NativeMenuItem("退出桌面笔记");
+            var itemExit = new NativeMenuItem(loc.T("Quit Desktop Notes", "退出桌面笔记"));
             itemExit.Click += (_, _) => panelWindow.ExitApplication();
             menu.Items.Add(itemExit);
 
             _trayIcon = new TrayIcon
             {
-                ToolTipText = "桌面笔记 (单击显示/隐藏，右键更多选项)",
+                ToolTipText = loc.T("Desktop Notes (Click to show/hide, right-click for menu)", "桌面笔记 (单击显示/隐藏，右键更多选项)"),
                 Icon = CreateAppWindowIcon(),
                 Menu = menu,
                 IsVisible = true
+            };
+
+            loc.LanguageChanged += () =>
+            {
+                itemShow.Header = loc.T("Show / Hide Main Window", "显示 / 隐藏主面板");
+                itemNew.Header = loc.T("New Task / Note", "新建待办 / 笔记");
+                itemCalendar.Header = loc.T("Calendar · Archive · Settings", "任务日历 · 历史归档 · 设置");
+                itemTopmost.Header = loc.T("Always on Top", "置于所有应用最上层 (置顶)");
+                itemBottom.Header = loc.T("Send to Desktop Back", "置于所有应用最下层 (桌面层)");
+                itemExit.Header = loc.T("Quit Desktop Notes", "退出桌面笔记");
+                if (_trayIcon is not null)
+                {
+                    _trayIcon.ToolTipText = loc.T(
+                        "Desktop Notes (Click to show/hide, right-click for menu)",
+                        "桌面笔记 (单击显示/隐藏，右键更多选项)");
+                }
             };
 
             _trayIcon.Clicked += (_, _) =>

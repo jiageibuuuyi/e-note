@@ -1,5 +1,6 @@
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Settings;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Infrastructure.Persistence;
 using DesktopNotes.Platforms.Windows;
@@ -88,10 +89,14 @@ public sealed class SettingsAndShellTests : IDisposable
     {
         var fakeDesktop = new FakeDesktopIntegration();
         var service = new SettingsService(_store, fakeDesktop);
-        var vm = new SettingsViewModel(service);
+        AppLocalizer.Instance.InitializeFromEnvironmentAndStore(_store);
+        Assert.Equal(AppLanguage.English, AppLocalizer.Instance.Language);
+
+        var vm = new SettingsViewModel(service, settingsRepository: _store);
 
         await vm.RefreshSystemStateAsync(CancellationToken.None);
         Assert.False(vm.LoginStartupEnabled);
+        Assert.True(vm.IsEnglish);
 
         vm.NotificationsEnabled = true;
         vm.PositionLocked = true;
@@ -99,7 +104,15 @@ public sealed class SettingsAndShellTests : IDisposable
         await vm.SetLoginStartupAsync(true, CancellationToken.None);
 
         Assert.True(vm.LoginStartupEnabled);
+        Assert.Equal("Launch at login enabled", vm.StatusMessage);
+
+        vm.SetLanguage(AppLanguage.Chinese);
+        Assert.True(vm.IsChinese);
+        await vm.SetLoginStartupAsync(true, CancellationToken.None);
         Assert.Equal("已开启登录自动启动", vm.StatusMessage);
+
+        vm.SetLanguage(AppLanguage.English);
+        Assert.True(vm.IsEnglish);
 
         // Schedule rapid debounced window placement updates
         vm.ScheduleWindowPlacementSave(new WindowPlacement("primary", 100, 100, 350, 520, 1.0));

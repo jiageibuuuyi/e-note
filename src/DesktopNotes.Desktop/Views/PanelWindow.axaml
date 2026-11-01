@@ -9,7 +9,7 @@
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="0"
-        Title="桌面笔记">
+        Title="{Binding Loc.AppTitle}">
   <Border BorderBrush="{DynamicResource BorderSubtle}"
           BorderThickness="1"
           Padding="10,8,10,6">
@@ -22,30 +22,34 @@
             Background="Transparent"
             Height="28"
             Margin="0,0,0,6"
-            ToolTip.Tip="左键按住拖动窗口（未锁定时）· 右键打开快捷设置菜单">
+            ToolTip.Tip="{Binding Loc.HeaderDragTooltip}">
         <Grid.ContextMenu>
           <ContextMenu Name="HeaderContextMenu">
-            <MenuItem Name="CtxToggleLock" Header="🔒  锁定窗口位置 (禁止拖动)"/>
+            <MenuItem Name="CtxToggleLock" Header="🔒  Lock Window Position"/>
             <Separator/>
-            <MenuItem Name="CtxPlaceTopmost" Header="📌  悬浮在所有应用最上层 (置顶)"/>
-            <MenuItem Name="CtxPlaceBottom" Header="🖥️  置于所有应用最下层 (桌面底层)"/>
+            <MenuItem Name="CtxPlaceTopmost" Header="📌  Always on Top"/>
+            <MenuItem Name="CtxPlaceBottom" Header="🖥️  Send to Desktop Back"/>
             <Separator/>
-            <MenuItem Header="↕️  排列方式">
-              <MenuItem Name="CtxSortDefault" Header="默认综合排序 (优先级 → 截止期 → 创建时间)"/>
-              <MenuItem Name="CtxSortDeadline" Header="按截止时间排序 (最近到期优先)"/>
-              <MenuItem Name="CtxSortPriority" Header="按优先级重要程度排序"/>
-              <MenuItem Name="CtxSortCreated" Header="按创建时间排序 (最新创建优先)"/>
+            <MenuItem Header="{Binding Loc.MenuSortHeader}">
+              <MenuItem Name="CtxSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
+              <MenuItem Name="CtxSortDeadline" Header="{Binding Loc.MenuSortDeadline}"/>
+              <MenuItem Name="CtxSortPriority" Header="{Binding Loc.MenuSortPriority}"/>
+              <MenuItem Name="CtxSortCreated" Header="{Binding Loc.MenuSortCreated}"/>
             </MenuItem>
-            <MenuItem Name="CtxSwitchTasks" Header="📋  切换至待办事项"/>
-            <MenuItem Name="CtxSwitchNotes" Header="📝  切换至随手笔记"/>
-            <MenuItem Name="CtxThemeToggle" Header="🌓  切换外观主题"/>
+            <MenuItem Header="{Binding Loc.MenuLanguageHeader}">
+              <MenuItem Name="CtxLangEn" Header="English (Default)"/>
+              <MenuItem Name="CtxLangZh" Header="中文 (Chinese)"/>
+            </MenuItem>
+            <MenuItem Name="CtxSwitchTasks" Header="{Binding Loc.MenuSwitchTasks}"/>
+            <MenuItem Name="CtxSwitchNotes" Header="{Binding Loc.MenuSwitchNotes}"/>
+            <MenuItem Name="CtxThemeToggle" Header="{Binding Loc.MenuSwitchTheme}"/>
             <Separator/>
-            <MenuItem Name="CtxOpenSettings" Header="⚙️  打开设置面板..."/>
-            <MenuItem Name="CtxOpenCalendar" Header="📅  任务日历与历史归档..."/>
-            <MenuItem Name="CtxArchiveAllCompleted" Header="📦  确认归档全部已完成事项"/>
+            <MenuItem Name="CtxOpenSettings" Header="{Binding Loc.MenuOpenSettings}"/>
+            <MenuItem Name="CtxOpenCalendar" Header="{Binding Loc.MenuCalendarArchive}"/>
+            <MenuItem Name="CtxArchiveAllCompleted" Header="{Binding Loc.MenuArchiveAllDone}"/>
             <Separator/>
-            <MenuItem Name="CtxHideToTray" Header="🔽  隐藏到右下角系统托盘"/>
-            <MenuItem Name="CtxExitApp" Header="🚪  彻底退出桌面笔记"/>
+            <MenuItem Name="CtxHideToTray" Header="{Binding Loc.MenuHideToTray}"/>
+            <MenuItem Name="CtxExitApp" Header="{Binding Loc.MenuExitApp}"/>
           </ContextMenu>
         </Grid.ContextMenu>
 
@@ -53,7 +57,7 @@
         <Button Name="BtnKindSelector"
                 Grid.Column="0"
                 Classes="mode-pill"
-                ToolTip.Tip="点击快速切换 待办 / 笔记">
+                ToolTip.Tip="{Binding Loc.KindSwitchTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
             <PathIcon Width="11" Height="11"
                       Foreground="{DynamicResource AccentPrimary}"
@@ -75,12 +79,12 @@
           </StackPanel>
         </Button>
 
-        <!-- Right Action Icons: + Add Inline + Search + Three-dot Menu + Hide to Tray -->
+        <!-- Right Action Icons: + Add Inline + Search + Lock + Three-dot Menu + Hide to Tray -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
           <!-- + Add New Blank Row at Bottom of List -->
           <Button Name="BtnAddInline"
                   Classes="icon-ghost"
-                  ToolTip.Tip="在列表末尾新增空白输入行 (Ctrl+N)">
+                  ToolTip.Tip="{Binding Loc.AddInlineTooltip}">
             <PathIcon Width="13" Height="13"
                       Foreground="{DynamicResource AccentPrimary}"
                       Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
@@ -89,7 +93,7 @@
           <!-- Search Toggle -->
           <Button Name="BtnSearchToggle"
                   Classes="icon-ghost"
-                  ToolTip.Tip="精确搜索 (Ctrl+F)">
+                  ToolTip.Tip="{Binding Loc.SearchTooltip}">
             <PathIcon Width="13" Height="13"
                       Foreground="{DynamicResource TextSecondary}"
                       Data="M 15.5 14 L 14.71 14 L 14.43 13.73 A 6.5 6.5 0 1 0 13.73 14.43 L 14 14.71 L 14 15.5 L 19 20.49 L 20.49 19 L 15.5 14 Z M 9.5 14 A 4.5 4.5 0 1 1 14 9.5 A 4.5 4.5 0 0 1 9.5 14 Z"/>
@@ -98,66 +102,70 @@
           <!-- Lock / Unlock Position Toggle -->
           <Button Name="BtnLockToggle"
                   Classes="icon-ghost"
-                  ToolTip.Tip="锁定 / 解锁窗口位置 (锁定时禁止拖动)">
+                  ToolTip.Tip="Lock / Unlock window position">
             <PathIcon Name="IconLockState"
                       Width="12" Height="12"
                       Foreground="{DynamicResource TextSecondary}"
                       Data="M 18 8 L 17 8 L 17 6 A 5 5 0 0 0 7 6 L 9 6 A 3 3 0 0 1 15 6 L 15 8 L 6 8 A 2 2 0 0 0 4 10 L 4 20 A 2 2 0 0 0 6 22 L 18 22 A 2 2 0 0 0 20 20 L 20 10 A 2 2 0 0 0 18 8 Z"/>
           </Button>
 
-          <!-- Three Dots Menu for Transactions, Sorting, Placement & Settings -->
+          <!-- Three Dots Menu for Transactions, Sorting, Placement, Language & Settings -->
           <Button Name="BtnMoreOptions"
                   Classes="icon-ghost"
-                  ToolTip.Tip="事务切换 · 排序方式 · 桌面层级 · 日历与归档">
+                  ToolTip.Tip="{Binding Loc.MoreOptionsTooltip}">
             <PathIcon Width="13" Height="13"
                       Foreground="{DynamicResource TextSecondary}"
                       Data="M 6 12 A 2 2 0 1 1 2 12 A 2 2 0 1 1 6 12 Z M 14 12 A 2 2 0 1 1 10 12 A 2 2 0 1 1 14 12 Z M 22 12 A 2 2 0 1 1 18 12 A 2 2 0 1 1 22 12 Z"/>
             <Button.Flyout>
               <MenuFlyout Placement="BottomEdgeAlignedRight">
-                <MenuItem Name="BtnTabTasks" Header="📋  待办事项">
+                <MenuItem Name="BtnTabTasks" Header="{Binding Loc.MenuSwitchTasks}">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 9 16.17 L 4.83 12 L 3.41 13.41 L 9 19 L 21 7 L 19.59 5.59 L 9 16.17 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Name="BtnTabNotes" Header="📝  随手笔记">
+                <MenuItem Name="BtnTabNotes" Header="{Binding Loc.MenuSwitchNotes}">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 3 17.25 L 3 21 L 6.75 21 L 17.81 9.94 L 14.06 6.19 L 3 17.25 Z M 20.71 7.04 L 18.37 4.7 L 16.54 6.53 L 20.29 10.28 L 20.71 7.04 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="↕️  排列方式">
-                  <MenuItem Name="MenuSortDefault" Header="默认综合排序 (优先级 → 截止期 → 创建时间)"/>
-                  <MenuItem Name="MenuSortDeadline" Header="按截止时间排序 (最近到期优先)"/>
-                  <MenuItem Name="MenuSortPriority" Header="按优先级重要程度排序"/>
-                  <MenuItem Name="MenuSortCreated" Header="按创建时间排序 (最新创建优先)"/>
+                <MenuItem Header="{Binding Loc.MenuSortHeader}">
+                  <MenuItem Name="MenuSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
+                  <MenuItem Name="MenuSortDeadline" Header="{Binding Loc.MenuSortDeadline}"/>
+                  <MenuItem Name="MenuSortPriority" Header="{Binding Loc.MenuSortPriority}"/>
+                  <MenuItem Name="MenuSortCreated" Header="{Binding Loc.MenuSortCreated}"/>
                 </MenuItem>
-                <MenuItem Header="📌  窗口桌面层级与锁定">
-                  <MenuItem Name="MenuPlaceTopmost" Header="📌 悬浮在所有应用最上层 (置顶)"/>
-                  <MenuItem Name="MenuPlaceBottom" Header="🖥️ 置于所有应用最下层 (桌面底层)"/>
+                <MenuItem Header="{Binding Loc.MenuLayerHeader}">
+                  <MenuItem Name="MenuPlaceTopmost" Header="📌 Always on Top"/>
+                  <MenuItem Name="MenuPlaceBottom" Header="🖥️ Send to Desktop Back"/>
                   <Separator/>
-                  <MenuItem Name="MenuToggleLock" Header="🔒 锁定 / 解锁当前桌面位置"/>
+                  <MenuItem Name="MenuToggleLock" Header="🔒 Lock / Unlock Position"/>
+                </MenuItem>
+                <MenuItem Header="{Binding Loc.MenuLanguageHeader}">
+                  <MenuItem Name="MenuLangEn" Header="English (Default)"/>
+                  <MenuItem Name="MenuLangZh" Header="中文 (Chinese)"/>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Name="BtnQuickAdd" Header="➕  详情窗口新建...">
+                <MenuItem Name="BtnQuickAdd" Header="{Binding Loc.MenuQuickAddDetail}">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Name="BtnCalendar" Header="📅  任务日历与历史归档...">
+                <MenuItem Name="BtnCalendar" Header="{Binding Loc.MenuCalendarArchive}">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Name="BtnOpenSettings" Header="⚙️  打开设置面板..."/>
-                <MenuItem Name="MenuArchiveAllCompleted" Header="📦  确认归档全部已完成事项"/>
-                <MenuItem Name="BtnThemeToggle" Header="🌓  切换外观主题">
+                <MenuItem Name="BtnOpenSettings" Header="{Binding Loc.MenuOpenSettings}"/>
+                <MenuItem Name="MenuArchiveAllCompleted" Header="{Binding Loc.MenuArchiveAllDone}"/>
+                <MenuItem Name="BtnThemeToggle" Header="{Binding Loc.MenuSwitchTheme}">
                   <MenuItem.Icon>
                     <PathIcon Width="11" Height="11" Data="M 12 3 A 9 9 0 1 0 21 12 A 5.4 5.4 0 0 1 12 3 Z"/>
                   </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Name="MenuHideToTray" Header="🔽  隐藏到右下角系统托盘"/>
-                <MenuItem Name="MenuExitApp" Header="🚪  彻底退出桌面笔记"/>
+                <MenuItem Name="MenuHideToTray" Header="{Binding Loc.MenuHideToTray}"/>
+                <MenuItem Name="MenuExitApp" Header="{Binding Loc.MenuExitApp}"/>
               </MenuFlyout>
             </Button.Flyout>
           </Button>
@@ -165,7 +173,7 @@
           <!-- Minimize / Hide to Tray Button -->
           <Button Name="BtnCloseWindow"
                   Classes="icon-ghost"
-                  ToolTip.Tip="隐藏到系统右下角托盘 (彻底退出请通过 ⋯ 菜单或托盘右键)">
+                  ToolTip.Tip="{Binding Loc.HideToTrayTooltip}">
             <PathIcon Width="11" Height="11"
                       Foreground="{DynamicResource TextMuted}"
                       Data="M 19 6.41 L 17.59 5 L 12 10.59 L 6.41 5 L 5 6.41 L 10.59 12 L 5 17.59 L 6.41 19 L 12 13.41 L 17.59 19 L 19 17.59 L 13.41 12 L 19 6.41 Z"/>
@@ -194,14 +202,14 @@
                    Classes="clean-input"
                    Text="{Binding SearchText}"
                    FontSize="12"
-                   PlaceholderText="输入关键词搜索... (Esc 清空)"/>
+                   PlaceholderText="{Binding Loc.SearchPlaceholder}"/>
           <Button Name="BtnClearSearch"
                   Grid.Column="2"
                   Classes="icon-ghost"
                   Width="18" Height="18"
                   Content="✕"
                   FontSize="10"
-                  ToolTip.Tip="清空搜索"/>
+                  ToolTip.Tip="{Binding Loc.ClearSearchTooltip}"/>
         </Grid>
       </Border>
 
@@ -233,7 +241,7 @@
                   BorderThickness="1"
                   HorizontalAlignment="Center"
                   Cursor="Hand"
-                  ToolTip.Tip="点击新增一项">
+                  ToolTip.Tip="{Binding Loc.EmptyAddTooltip}">
             <PathIcon Width="14" Height="14"
                       Foreground="{DynamicResource AccentPrimary}"
                       Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
@@ -262,8 +270,8 @@
                 Classes="ghost-link"
                 Padding="6,2"
                 FontSize="11.5"
-                Content="+ 新增"
-                ToolTip.Tip="在列表末尾增加空白输入行"/>
+                Content="{Binding Loc.BottomAddText}"
+                ToolTip.Tip="{Binding Loc.BottomAddTooltip}"/>
         <Button Name="BtnArchiveCompleted"
                 Grid.Column="1"
                 IsVisible="{Binding HasCompletedPendingArchive}"
@@ -273,7 +281,7 @@
                 FontSize="11.5"
                 Foreground="{DynamicResource StatusCompleted}"
                 Content="{Binding ArchiveCompletedButtonText}"
-                ToolTip.Tip="点击确认归档：将所有已勾选完成的任务移出主面板并存入历史归档"/>
+                ToolTip.Tip="{Binding Loc.ArchiveCompletedTooltip}"/>
         <TextBlock Grid.Column="3"
                    IsVisible="{Binding HasFooterContent}"
                    Text="{Binding WhisperStatus}"

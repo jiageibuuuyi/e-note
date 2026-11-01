@@ -5,6 +5,7 @@ using DesktopNotes.Application.Queries;
 using DesktopNotes.Application.Records;
 using DesktopNotes.Application.Reminders;
 using DesktopNotes.Application.Settings;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Infrastructure.Backup;
 using DesktopNotes.Infrastructure.Files;
@@ -37,13 +38,15 @@ public sealed class Bootstrapper : IDisposable
         string dbPath = databasePath ?? GetDefaultDatabasePath();
 
         Store = new SqliteStore(dbPath);
+        AppLocalizer.Instance.InitializeFromEnvironmentAndStore(Store);
+
         string? savedCustomRoot = ReadSavedAttachmentRootPath(Store);
         _attachmentRootPath = !string.IsNullOrWhiteSpace(defaultAttachmentRoot)
             ? defaultAttachmentRoot
             : (!string.IsNullOrWhiteSpace(savedCustomRoot) ? savedCustomRoot : GetDefaultAttachmentRootPath());
 
-        RecordService = new RecordService(Store);
-        QueryService = new RecordQueryService(Store);
+        RecordService = new RecordService(Store, zoneProvider: () => AppLocalizer.Instance.ActiveTimeZone);
+        QueryService = new RecordQueryService(Store, () => AppLocalizer.Instance.ActiveTimeZone);
         DesktopIntegration = new DesktopHostProbe();
         SourceCleanup = new WindowsSourceCleanup();
         FileStore = new ManagedFileStore(SourceCleanup);
@@ -57,8 +60,8 @@ public sealed class Bootstrapper : IDisposable
         }
         BackupService = new BackupService(Store, new ArchiveWriter(), FileStore.CurrentDeviceId);
         SettingsService = new SettingsService(Store, DesktopIntegration);
-        ReminderScheduler = new ReminderScheduler(Store);
-        PanelViewModel = new PanelViewModel(RecordService, QueryService)
+        ReminderScheduler = new ReminderScheduler(Store, zoneProvider: () => AppLocalizer.Instance.ActiveTimeZone);
+        PanelViewModel = new PanelViewModel(RecordService, QueryService, zoneProvider: () => AppLocalizer.Instance.ActiveTimeZone)
         {
             AttachmentService = AttachmentService,
             SettingsRepository = Store

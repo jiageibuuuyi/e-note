@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using DesktopNotes.Application.Backup;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Settings;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Domain;
 using AppPlacementMode = DesktopNotes.Application.Contracts.PlacementMode;
@@ -154,7 +155,9 @@ public partial class PanelWindow : Window
             MenuPlaceTopmost.Click += (_, _) =>
             {
                 ApplyPlacementMode(AppPlacementMode.Topmost);
-                viewModel.SetTransientNotice("已切换至: 悬浮在所有应用最上层 (置顶)");
+                viewModel.SetTransientNotice(AppLocalizer.Instance.T(
+                    "📌 Mode: Always on Top",
+                    "已切换至: 悬浮在所有应用最上层 (置顶)"));
             };
         }
 
@@ -163,13 +166,33 @@ public partial class PanelWindow : Window
             MenuPlaceBottom.Click += (_, _) =>
             {
                 ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
-                viewModel.SetTransientNotice("已切换至: 置于所有应用最下层 (桌面底层)");
+                viewModel.SetTransientNotice(AppLocalizer.Instance.T(
+                    "🖥️ Mode: Desktop Back",
+                    "已切换至: 置于所有应用最下层 (桌面底层)"));
             };
         }
 
         if (MenuToggleLock is not null)
         {
             MenuToggleLock.Click += (_, _) => TogglePositionLock(viewModel);
+        }
+
+        if (MenuLangEn is not null)
+        {
+            MenuLangEn.Click += (_, _) =>
+            {
+                viewModel.SetLanguage(AppLanguage.English);
+                UpdateMenuStatusIndicators();
+            };
+        }
+
+        if (MenuLangZh is not null)
+        {
+            MenuLangZh.Click += (_, _) =>
+            {
+                viewModel.SetLanguage(AppLanguage.Chinese);
+                UpdateMenuStatusIndicators();
+            };
         }
 
         // Top Bar Right-Click ContextMenu Bindings
@@ -183,7 +206,9 @@ public partial class PanelWindow : Window
             CtxPlaceTopmost.Click += (_, _) =>
             {
                 ApplyPlacementMode(AppPlacementMode.Topmost);
-                viewModel.SetTransientNotice("已切换至: 悬浮在所有应用最上层 (置顶)");
+                viewModel.SetTransientNotice(AppLocalizer.Instance.T(
+                    "📌 Mode: Always on Top",
+                    "已切换至: 悬浮在所有应用最上层 (置顶)"));
             };
         }
 
@@ -192,7 +217,27 @@ public partial class PanelWindow : Window
             CtxPlaceBottom.Click += (_, _) =>
             {
                 ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
-                viewModel.SetTransientNotice("已切换至: 置于所有应用最下层 (桌面底层)");
+                viewModel.SetTransientNotice(AppLocalizer.Instance.T(
+                    "🖥️ Mode: Desktop Back",
+                    "已切换至: 置于所有应用最下层 (桌面底层)"));
+            };
+        }
+
+        if (CtxLangEn is not null)
+        {
+            CtxLangEn.Click += (_, _) =>
+            {
+                viewModel.SetLanguage(AppLanguage.English);
+                UpdateMenuStatusIndicators();
+            };
+        }
+
+        if (CtxLangZh is not null)
+        {
+            CtxLangZh.Click += (_, _) =>
+            {
+                viewModel.SetLanguage(AppLanguage.Chinese);
+                UpdateMenuStatusIndicators();
             };
         }
 
@@ -318,6 +363,7 @@ public partial class PanelWindow : Window
         Opened += OnWindowOpened;
         PositionChanged += OnWindowPositionOrSizeChanged;
         SizeChanged += OnWindowPositionOrSizeChanged;
+        AppLocalizer.Instance.LanguageChanged += UpdateMenuStatusIndicators;
 
         _deadlineRefreshTimer.Tick += async (_, _) =>
         {
@@ -439,8 +485,8 @@ public partial class PanelWindow : Window
         bool newLock = !_isPositionLocked;
         ApplyLockState(newLock, savePreference: true);
         viewModel.SetTransientNotice(newLock
-            ? "🔒 已锁定窗口位置 (禁止拖动)"
-            : "🔓 已解锁窗口位置 (可按住顶端拖动)");
+            ? AppLocalizer.Instance.T("🔒 Window position locked", "🔒 已锁定窗口位置 (禁止拖动)")
+            : AppLocalizer.Instance.T("🔓 Window unlocked (drag top bar to move)", "🔓 已解锁窗口位置 (可按住顶端拖动)"));
     }
 
     public void ApplyLockState(bool locked, bool savePreference = true)
@@ -485,44 +531,58 @@ public partial class PanelWindow : Window
 
     private void UpdateMenuStatusIndicators()
     {
+        var loc = AppLocalizer.Instance;
         if (_settingsService is not null)
         {
             var prefs = _settingsService.GetPreferences();
             _isPositionLocked = prefs.PositionLocked;
             bool isTopmost = prefs.PlacementMode == AppPlacementMode.Topmost;
 
+            string topText = loc.T("📌  Always on Top", "📌  悬浮在所有应用最上层 (置顶)");
+            string bottomText = loc.T("🖥️  Send to Desktop Back", "🖥️  置于所有应用最下层 (桌面底层)");
+
             if (CtxPlaceTopmost is not null)
             {
-                CtxPlaceTopmost.Header = isTopmost
-                    ? "✓ 📌  悬浮在所有应用最上层 (置顶)"
-                    : "📌  悬浮在所有应用最上层 (置顶)";
+                CtxPlaceTopmost.Header = isTopmost ? $"✓ {topText}" : topText;
             }
 
             if (CtxPlaceBottom is not null)
             {
-                CtxPlaceBottom.Header = !isTopmost
-                    ? "✓ 🖥️  置于所有应用最下层 (桌面底层)"
-                    : "🖥️  置于所有应用最下层 (桌面底层)";
+                CtxPlaceBottom.Header = !isTopmost ? $"✓ {bottomText}" : bottomText;
             }
 
             if (MenuPlaceTopmost is not null)
             {
-                MenuPlaceTopmost.Header = isTopmost
-                    ? "✓ 📌 悬浮在所有应用最上层 (置顶)"
-                    : "📌 悬浮在所有应用最上层 (置顶)";
+                MenuPlaceTopmost.Header = isTopmost ? $"✓ {topText}" : topText;
             }
 
             if (MenuPlaceBottom is not null)
             {
-                MenuPlaceBottom.Header = !isTopmost
-                    ? "✓ 🖥️ 置于所有应用最下层 (桌面底层)"
-                    : "🖥️ 置于所有应用最下层 (桌面底层)";
+                MenuPlaceBottom.Header = !isTopmost ? $"✓ {bottomText}" : bottomText;
             }
         }
 
+        bool isZh = loc.IsChinese;
+        if (CtxLangEn is not null)
+        {
+            CtxLangEn.Header = !isZh ? "✓ English (Default)" : "English (Default)";
+        }
+        if (CtxLangZh is not null)
+        {
+            CtxLangZh.Header = isZh ? "✓ 中文 (Chinese)" : "中文 (Chinese)";
+        }
+        if (MenuLangEn is not null)
+        {
+            MenuLangEn.Header = !isZh ? "✓ English (Default)" : "English (Default)";
+        }
+        if (MenuLangZh is not null)
+        {
+            MenuLangZh.Header = isZh ? "✓ 中文 (Chinese)" : "中文 (Chinese)";
+        }
+
         string lockHeader = _isPositionLocked
-            ? "✓ 🔒  已锁定窗口位置 (点击解锁)"
-            : "🔒  锁定窗口位置 (禁止拖动)";
+            ? loc.T("✓ 🔒  Window Locked (Click to Unlock)", "✓ 🔒  已锁定窗口位置 (点击解锁)")
+            : loc.T("🔒  Lock Window Position", "🔒  锁定窗口位置 (禁止拖动)");
 
         if (CtxToggleLock is not null)
         {
@@ -547,8 +607,8 @@ public partial class PanelWindow : Window
         if (BtnLockToggle is not null)
         {
             ToolTip.SetTip(BtnLockToggle, _isPositionLocked
-                ? "当前已锁定窗口位置 (不可拖动) · 点击解锁"
-                : "点击锁定窗口位置 (锁定时禁止拖动)");
+                ? loc.T("Window position is locked · Click to unlock", "当前已锁定窗口位置 (不可拖动) · 点击解锁")
+                : loc.T("Click to lock window position", "点击锁定窗口位置 (锁定时禁止拖动)"));
         }
     }
 
@@ -645,7 +705,9 @@ public partial class PanelWindow : Window
             _isPositionLocked = true;
             if (DataContext is PanelViewModel vm)
             {
-                vm.SetTransientNotice("🔒 窗口已锁定，不可拖动 (右键顶端可设置解锁)");
+                vm.SetTransientNotice(AppLocalizer.Instance.T(
+                    "🔒 Window is locked (right-click top bar to unlock)",
+                    "🔒 窗口已锁定，不可拖动 (右键顶端可设置解锁)"));
             }
             e.Handled = true;
             return;

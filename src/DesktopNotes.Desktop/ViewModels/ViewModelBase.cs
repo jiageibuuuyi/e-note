@@ -1,11 +1,14 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using DesktopNotes.Desktop.Localization;
 
 namespace DesktopNotes.Desktop.ViewModels;
 
 public abstract class ViewModelBase : INotifyPropertyChanged
 {
+    public AppLocalizer Loc => AppLocalizer.Instance;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void RaisePropertyChanged([CallerMemberName] string? propertyName = null)

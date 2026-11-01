@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Domain;
 
 namespace DesktopNotes.Desktop.ViewModels;
@@ -47,7 +48,12 @@ public sealed class CalendarViewModel : ViewModelBase
         }
     }
 
-    public string YearMonthTitle => $"{_year} 年 {_month:D2} 月";
+    public string YearMonthTitle => Loc.IsChinese
+        ? $"{_year} 年 {_month:D2} 月"
+        : new DateTime(_year, _month, 1).ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture);
+    public string MonthEntriesBadgeText => Loc.T(
+        $"{MonthEntries.Count} item(s)",
+        $"本月 {MonthEntries.Count} 项记录");
     public bool HasMonthEntries => MonthEntries.Count > 0;
     public bool HasHistoricalItems => HistoricalItems.Count > 0;
 
@@ -105,6 +111,12 @@ public sealed class CalendarViewModel : ViewModelBase
     {
         _queryService = queryService ?? throw new ArgumentNullException(nameof(queryService));
         _recordService = recordService;
+        AppLocalizer.Instance.LanguageChanged += () =>
+        {
+            RaisePropertyChanged(nameof(Loc));
+            RaisePropertyChanged(nameof(YearMonthTitle));
+            RaisePropertyChanged(nameof(MonthEntriesBadgeText));
+        };
     }
 
     public async Task LoadMonthAsync(int year, int month, CalendarAxis axis, RecordKind kind, RecordStatus? statusFilter, CancellationToken ct)
@@ -139,6 +151,7 @@ public sealed class CalendarViewModel : ViewModelBase
         }
 
         RaisePropertyChanged(nameof(HasMonthEntries));
+        RaisePropertyChanged(nameof(MonthEntriesBadgeText));
         RebuildSelectedDayItems();
     }
 
@@ -180,8 +193,8 @@ public sealed class CalendarViewModel : ViewModelBase
             new SortTerm(SortKey.Created, true)
         };
 
-        var query = new RecordQuery(
-            _kind,
+        var taskQuery = new RecordQuery(
+            RecordKind.Task,
             _showTrash ? null : RecordStatus.Closed,
             _showTrash,
             _historySearchText,
@@ -189,9 +202,24 @@ public sealed class CalendarViewModel : ViewModelBase
             0,
             200);
 
-        var page = await _queryService.SearchAsync(query, ct);
+        var noteQuery = new RecordQuery(
+            RecordKind.Note,
+            _showTrash ? null : RecordStatus.Closed,
+            _showTrash,
+            _historySearchText,
+            sort,
+            0,
+            200);
+
+        var taskPage = await _queryService.SearchAsync(taskQuery, ct);
+        var notePage = await _queryService.SearchAsync(noteQuery, ct);
+
         HistoricalItems.Clear();
-        foreach (var item in page.Items)
+        var combined = taskPage.Items
+            .Concat(notePage.Items)
+            .OrderByDescending(x => x.ClosedAt ?? x.DeletedAt ?? x.CreatedAt);
+
+        foreach (var item in combined)
         {
             if (_showTrash && item.DeletedAt is null)
             {

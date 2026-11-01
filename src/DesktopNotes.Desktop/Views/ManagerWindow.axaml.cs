@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using DesktopNotes.Application.Backup;
 using DesktopNotes.Application.Contracts;
+using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
 using AppPlacementMode = DesktopNotes.Application.Contracts.PlacementMode;
 
@@ -97,6 +98,33 @@ public partial class ManagerWindow : Window
         {
             _ = SettingsViewModel.RefreshSystemStateAsync(CancellationToken.None);
             UpdatePlacementButtonsVisual();
+            UpdateLanguageButtonsVisual();
+
+            if (BtnLangEn is not null)
+            {
+                BtnLangEn.Click += (_, _) =>
+                {
+                    SettingsViewModel.SetLanguage(AppLanguage.English);
+                    UpdateLanguageButtonsVisual();
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = "🌐 Language switched to English";
+                    }
+                };
+            }
+
+            if (BtnLangZh is not null)
+            {
+                BtnLangZh.Click += (_, _) =>
+                {
+                    SettingsViewModel.SetLanguage(AppLanguage.Chinese);
+                    UpdateLanguageButtonsVisual();
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = "🌐 已切换为中文";
+                    }
+                };
+            }
 
             if (BtnModeTopmost is not null)
             {
@@ -128,7 +156,9 @@ public partial class ManagerWindow : Window
                     _onLockStateChanged?.Invoke(locked);
                     if (SettingsStatusText is not null)
                     {
-                        SettingsStatusText.Text = locked ? "🔒 已锁定窗口位置（禁止拖动）" : "🔓 已解锁窗口位置（允许拖动）";
+                        SettingsStatusText.Text = locked
+                            ? AppLocalizer.Instance.T("🔒 Window position locked", "🔒 已锁定窗口位置（禁止拖动）")
+                            : AppLocalizer.Instance.T("🔓 Window position unlocked", "🔓 已解锁窗口位置（允许拖动）");
                     }
                 };
             }
@@ -154,7 +184,7 @@ public partial class ManagerWindow : Window
                 {
                     var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                     {
-                        Title = "选择全局默认附件存储目录",
+                        Title = AppLocalizer.Instance.T("Select default file folder", "选择全局默认附件存储目录"),
                         AllowMultiple = false
                     });
                     if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } localPath)
@@ -167,7 +197,9 @@ public partial class ManagerWindow : Window
                         }
                         if (SettingsStatusText is not null)
                         {
-                            SettingsStatusText.Text = "✅ 已更新全局默认附件路径";
+                            SettingsStatusText.Text = AppLocalizer.Instance.T(
+                                "✅ Default file folder updated",
+                                "✅ 已更新全局默认附件路径");
                         }
                     }
                 };
@@ -201,6 +233,13 @@ public partial class ManagerWindow : Window
         BtnModeDesktop?.Classes.Set("active", !isTopmost);
     }
 
+    private void UpdateLanguageButtonsVisual()
+    {
+        bool isZh = AppLocalizer.Instance.IsChinese;
+        BtnLangEn?.Classes.Set("active", !isZh);
+        BtnLangZh?.Classes.Set("active", isZh);
+    }
+
     private async void OnReopenRecordClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: Guid id } && CalendarViewModel is not null)
@@ -228,10 +267,11 @@ public partial class ManagerWindow : Window
     private async void OnExportBackupClick(object? sender, RoutedEventArgs e)
     {
         if (_backupService is null) return;
+        var loc = AppLocalizer.Instance;
 
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "导出完整备份包 (.zip)",
+            Title = loc.T("Export Backup (.zip)", "导出完整备份包 (.zip)"),
             SuggestedFileName = $"DesktopNotes-Backup-{DateTime.Now:yyyyMMdd-HHmm}.zip",
             DefaultExtension = "zip"
         });
@@ -240,13 +280,13 @@ public partial class ManagerWindow : Window
         {
             try
             {
-                if (SettingsStatusText is not null) SettingsStatusText.Text = "正在导出备份...";
+                if (SettingsStatusText is not null) SettingsStatusText.Text = loc.T("Exporting backup...", "正在导出备份...");
                 await _backupService.ExportAsync(localPath, includeTrash: true, CancellationToken.None);
-                if (SettingsStatusText is not null) SettingsStatusText.Text = "✅ 备份导出成功";
+                if (SettingsStatusText is not null) SettingsStatusText.Text = loc.T("✅ Backup exported", "✅ 备份导出成功");
             }
             catch (Exception ex)
             {
-                if (SettingsStatusText is not null) SettingsStatusText.Text = $"导出失败: {ex.Message}";
+                if (SettingsStatusText is not null) SettingsStatusText.Text = loc.T($"Export failed: {ex.Message}", $"导出失败: {ex.Message}");
             }
         }
     }
@@ -254,14 +294,15 @@ public partial class ManagerWindow : Window
     private async void OnRestoreBackupClick(object? sender, RoutedEventArgs e)
     {
         if (_backupService is null) return;
+        var loc = AppLocalizer.Instance;
 
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "选择要恢复的备份包 (.zip)",
+            Title = loc.T("Select backup file (.zip)", "选择要恢复的备份包 (.zip)"),
             AllowMultiple = false,
             FileTypeFilter = new[]
             {
-                new FilePickerFileType("ZIP 备份包") { Patterns = new[] { "*.zip" } }
+                new FilePickerFileType(loc.T("ZIP Backup", "ZIP 备份包")) { Patterns = new[] { "*.zip" } }
             }
         });
 
@@ -269,12 +310,12 @@ public partial class ManagerWindow : Window
         {
             try
             {
-                if (SettingsStatusText is not null) SettingsStatusText.Text = "正在恢复备份...";
+                if (SettingsStatusText is not null) SettingsStatusText.Text = loc.T("Restoring backup...", "正在恢复备份...");
                 await _backupService.RestoreAsync(
                     localPath,
                     new Dictionary<Guid, string>(),
                     CancellationToken.None);
-                if (SettingsStatusText is not null) SettingsStatusText.Text = "✅ 备份已成功恢复";
+                if (SettingsStatusText is not null) SettingsStatusText.Text = loc.T("✅ Backup restored", "✅ 备份已成功恢复");
                 if (CalendarViewModel is not null)
                 {
                     await CalendarViewModel.GoToTodayAsync(CancellationToken.None);
@@ -283,7 +324,7 @@ public partial class ManagerWindow : Window
             }
             catch (Exception ex)
             {
-                if (SettingsStatusText is not null) SettingsStatusText.Text = $"恢复失败: {ex.Message}";
+                if (SettingsStatusText is not null) SettingsStatusText.Text = loc.T($"Restore failed: {ex.Message}", $"恢复失败: {ex.Message}");
             }
         }
     }
