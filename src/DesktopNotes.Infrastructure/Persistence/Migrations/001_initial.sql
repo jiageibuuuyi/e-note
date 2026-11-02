@@ -62,8 +62,8 @@ WHEN NEW.parent_id IS NOT NULL
 BEGIN
     SELECT CASE WHEN NOT EXISTS (
         SELECT 1 FROM records p WHERE p.id = NEW.parent_id AND p.kind = 0
-        AND p.parent_id IS NULL AND p.status = 0 AND p.deleted_utc_ms IS NULL
-    ) THEN RAISE(ABORT, 'invalid_active_root_parent') END;
+        AND p.status = 0 AND p.deleted_utc_ms IS NULL
+    ) THEN RAISE(ABORT, 'invalid_active_parent') END;
 END;
 
 CREATE TRIGGER records_identity_update BEFORE UPDATE OF parent_id, kind ON records

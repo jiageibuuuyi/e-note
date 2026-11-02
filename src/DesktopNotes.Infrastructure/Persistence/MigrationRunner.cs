@@ -38,7 +38,18 @@ public static class MigrationRunner
     private static void EnsureTriggersUpdated(SqliteConnection connection)
     {
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DROP TRIGGER IF EXISTS records_identity_update;";
+        cmd.CommandText = """
+            DROP TRIGGER IF EXISTS records_identity_update;
+            DROP TRIGGER IF EXISTS records_parent_insert;
+            CREATE TRIGGER records_parent_insert BEFORE INSERT ON records
+            WHEN NEW.parent_id IS NOT NULL
+            BEGIN
+                SELECT CASE WHEN NOT EXISTS (
+                    SELECT 1 FROM records p WHERE p.id = NEW.parent_id AND p.kind = 0
+                    AND p.status = 0 AND p.deleted_utc_ms IS NULL
+                ) THEN RAISE(ABORT, 'invalid_active_parent') END;
+            END;
+            """;
         cmd.ExecuteNonQuery();
     }
 

@@ -82,7 +82,7 @@ public static class RecordRules
             return false;
         }
 
-        if (parentKind != RecordKind.Task || parentParentId is not null)
+        if (parentKind != RecordKind.Task)
         {
             return false;
         }

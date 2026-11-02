@@ -2,6 +2,22 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <ResourceDictionary>
+            <!-- Embedded Muyao Softbrush Handwriting Font & Standard Modern Font -->
+      <FontFamily x:Key="MuyaoFont">avares://DesktopNotes.Desktop/Assets/Fonts#Muyao-Softbrush, Microsoft YaHei UI, Segoe UI Variable, sans-serif</FontFamily>
+      <FontFamily x:Key="StandardFont">Segoe UI Variable, Plus Jakarta Sans, Microsoft YaHei UI, -apple-system, sans-serif</FontFamily>
+
+      <!-- Realistic Sticky Note Warm Yellow Palette (#FFF5A8 -> #FEE974 -> #FDDD4E) -->
+      <LinearGradientBrush x:Key="PaperWarmGradient" StartPoint="0%,0%" EndPoint="6%,100%">
+        <GradientStop Offset="0.0" Color="#FFF5A8"/>
+        <GradientStop Offset="0.42" Color="#FEE974"/>
+        <GradientStop Offset="1.0" Color="#FDDD4E"/>
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="PaperBorderBrush" Color="#C9A11E"/>
+      <SolidColorBrush x:Key="PaperCreaseBrush" Color="#B58D12"/>
+      <SolidColorBrush x:Key="InkBlackBrush" Color="#141414"/>
+      <SolidColorBrush x:Key="InkMutedBrush" Color="#75141414"/>
+      <BoxShadows x:Key="PaperStickyShadow">0 2 5 0 #1A966E0A, 0 10 20 -2 #298C640A, 0 18 28 -6 #22785005</BoxShadows>
+
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
           <!-- Canvas & Surfaces -->
@@ -286,6 +302,39 @@
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
   </Style>
 
+  <!-- Danger Action Button -->
+  <Style Selector="Button.danger-btn">
+    <Setter Property="Background" Value="#EA3323"/>
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="7"/>
+    <Setter Property="Padding" Value="14,6"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.danger-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#C92517"/>
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+  </Style>
+
+  <!-- Danger Ghost Link/Button -->
+  <Style Selector="Button.danger-ghost-btn">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#EA3323"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="BorderBrush" Value="#4DEA3323"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="8,3"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.danger-ghost-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#1AEA3323"/>
+    <Setter Property="BorderBrush" Value="#EA3323"/>
+    <Setter Property="Foreground" Value="#EA3323"/>
+  </Style>
+
   <!-- Clean Borderless TextBox -->
   <Style Selector="TextBox.clean-input">
     <Setter Property="Background" Value="Transparent"/>
@@ -318,4 +367,224 @@
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
     <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
   </Style>
+
+  <!-- ============================================================ -->
+  <!-- REALISTIC STICKY NOTE STYLES (Strictly Scoped via .realistic)  -->
+  <!-- ============================================================ -->
+  <Style Selector="Window.realistic">
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+  </Style>
+  <Style Selector="Window.realistic TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+  <Style Selector="Window.realistic TextBox">
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+  <Style Selector="Window.realistic Button">
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+  </Style>
+  <Style Selector="Window.realistic SelectableTextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+
+  <!-- Realistic Paper Row -->
+  <Style Selector="Border.paper-row">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="6,2"/>
+  </Style>
+  <Style Selector="Border.paper-row:pointerover">
+    <Setter Property="Background" Value="#12141414"/>
+  </Style>
+
+  <!-- Realistic Subtask Tree (Subtle left line border matching prototype) -->
+  <Style Selector="Border.paper-row.subtask-tree">
+    <Setter Property="BorderBrush" Value="#4D141414"/>
+    <Setter Property="BorderThickness" Value="2,0,0,0"/>
+    <Setter Property="CornerRadius" Value="0,8,8,0"/>
+    <Setter Property="Padding" Value="8,2,4,2"/>
+  </Style>
+
+  <!-- Cute Hand-drawn Round Checkbox -->
+  <Style Selector="CheckBox.cute-check">
+    <Setter Property="MinWidth" Value="19"/>
+    <Setter Property="MinHeight" Value="19"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="CuteCheckBorder"
+                Width="19" Height="19"
+                Background="#7AFFFFFF"
+                BorderBrush="#141414"
+                BorderThickness="1.8"
+                CornerRadius="8">
+          <TextBlock Name="CheckGlyph"
+                     Text="✓"
+                     Foreground="#FFFFFF"
+                     FontSize="12"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     IsVisible="False"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.cute-check:checked /template/ Border#CuteCheckBorder">
+    <Setter Property="Background" Value="#EA3323"/>
+    <Setter Property="BorderBrush" Value="#141414"/>
+  </Style>
+  <Style Selector="CheckBox.cute-check:checked /template/ TextBlock#CheckGlyph">
+    <Setter Property="IsVisible" Value="True"/>
+  </Style>
+
+  <!-- Cute Mint Paper-Airplane Archive Pill Button -->
+  <Style Selector="Button.cute-archive-pill">
+    <Setter Property="Background" Value="#74C69D"/>
+    <Setter Property="Foreground" Value="#141414"/>
+    <Setter Property="BorderBrush" Value="#141414"/>
+    <Setter Property="BorderThickness" Value="1.3"/>
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="8,2"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.cute-archive-pill:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#52B788"/>
+    <Setter Property="Foreground" Value="#141414"/>
+    <Setter Property="BorderBrush" Value="#141414"/>
+  </Style>
+
+  <!-- Cute Header Doodle Icon Button -->
+  <Style Selector="Button.cute-icon-btn">
+    <Setter Property="Width" Value="32"/>
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="Background" Value="#8CFFFFFF"/>
+    <Setter Property="BorderBrush" Value="#4D141414"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.cute-icon-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#D9FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#141414"/>
+  </Style>
+
+  <!-- Panel Window Frame Styles -->
+  <Style Selector="Border.minimal-frame">
+    <Setter Property="Background" Value="{DynamicResource BgWindow}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="BoxShadow" Value="{DynamicResource WindowShadow}"/>
+    <Setter Property="Padding" Value="10,8,10,6"/>
+  </Style>
+
+  <Style Selector="Border.paper-frame">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="14"/>
+    <Setter Property="BoxShadow" Value="{StaticResource PaperStickyShadow}"/>
+    <Setter Property="Padding" Value="0"/>
+  </Style>
+
+  <Style Selector="Grid.paper-content">
+    <Setter Property="Margin" Value="12,6,12,10"/>
+  </Style>
+
+  <!-- Title Styles for Minimalist and Realistic Modes -->
+  <Style Selector="TextBox.minimal-title">
+    <Setter Property="FontSize" Value="13.5"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+  <Style Selector="SelectableTextBlock.minimal-title">
+    <Setter Property="FontSize" Value="13.5"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+  </Style>
+  <Style Selector="TextBox.paper-title">
+    <Setter Property="FontSize" Value="16.5"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+  <Style Selector="SelectableTextBlock.paper-title">
+    <Setter Property="FontSize" Value="16.5"/>
+    <Setter Property="Foreground" Value="#8C141414"/>
+  </Style>
+
+
+  <!-- Detail Window Container & Card Styles -->
+  <Style Selector="Border.minimal-detail">
+    <Setter Property="Background" Value="{DynamicResource BgWindow}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="BoxShadow" Value="{DynamicResource WindowShadow}"/>
+    <Setter Property="Padding" Value="18,12,18,14"/>
+  </Style>
+
+  <Style Selector="Border.paper-detail">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="14"/>
+    <Setter Property="BoxShadow" Value="{StaticResource PaperStickyShadow}"/>
+    <Setter Property="Padding" Value="0"/>
+  </Style>
+
+  <Style Selector="Grid.detail-paper-content">
+    <Setter Property="Margin" Value="18,12,18,14"/>
+  </Style>
+
+  <Style Selector="Border.minimal-card">
+    <Setter Property="Background" Value="{DynamicResource BgCard}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="BoxShadow" Value="{DynamicResource CardShadow}"/>
+  </Style>
+
+  <Style Selector="Border.paper-card">
+    <Setter Property="Background" Value="#73FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#33141414"/>
+    <Setter Property="BorderThickness" Value="1.2"/>
+    <Setter Property="CornerRadius" Value="12"/>
+  </Style>
+
+  <!-- Calendar Month Cell Styles -->
+  <Style Selector="Button.cal-cell-btn">
+    <Setter Property="Background" Value="{DynamicResource BgCard}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="7"/>
+    <Setter Property="Padding" Value="4,3"/>
+    <Setter Property="Margin" Value="2"/>
+    <Setter Property="MinHeight" Value="50"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.cal-cell-btn:pointerover">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimary}"/>
+  </Style>
+  <Style Selector="Button.cal-cell-btn.other-month">
+    <Setter Property="Opacity" Value="0.45"/>
+  </Style>
+  <Style Selector="Button.cal-cell-btn.today">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimary}"/>
+    <Setter Property="BorderThickness" Value="1.5"/>
+  </Style>
+  <Style Selector="Button.cal-cell-btn.selected">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimary}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+
 </Styles>
+

@@ -23,6 +23,9 @@ public sealed class SettingsViewModel : ViewModelBase
     public AppLanguage Language => AppLocalizer.Instance.Language;
     public bool IsEnglish => AppLocalizer.Instance.IsEnglish;
     public bool IsChinese => AppLocalizer.Instance.IsChinese;
+    public AppVisualStyle VisualStyle => AppLocalizer.Instance.VisualStyle;
+    public bool IsRealisticStyle => AppLocalizer.Instance.IsRealisticStyle;
+    public bool IsMinimalistStyle => AppLocalizer.Instance.IsMinimalistStyle;
     public string DetectedTimeZoneSummary => AppLocalizer.Instance.DetectedTimeZoneSummary;
 
     public bool NotificationsEnabled
@@ -125,6 +128,20 @@ public sealed class SettingsViewModel : ViewModelBase
             RaisePropertyChanged(nameof(IsChinese));
             RaisePropertyChanged(nameof(DetectedTimeZoneSummary));
         };
+        AppLocalizer.Instance.VisualStyleChanged += () =>
+        {
+            RaisePropertyChanged(nameof(Loc));
+            RaisePropertyChanged(nameof(VisualStyle));
+            RaisePropertyChanged(nameof(IsRealisticStyle));
+            RaisePropertyChanged(nameof(IsMinimalistStyle));
+        };
+        Services.UndoService.Instance.StateChanged += (_, _) =>
+        {
+            RaisePropertyChanged(nameof(CanUndo));
+            RaisePropertyChanged(nameof(LastUndoSummary));
+            RaisePropertyChanged(nameof(UndoStatusText));
+            RaisePropertyChanged(nameof(RecentUndoEntries));
+        };
     }
 
     public void SetLanguage(AppLanguage language)
@@ -133,6 +150,14 @@ public sealed class SettingsViewModel : ViewModelBase
         StatusMessage = language == AppLanguage.Chinese
             ? "🌐 已切换为中文"
             : "🌐 Language switched to English";
+    }
+
+    public void SetVisualStyle(AppVisualStyle style)
+    {
+        AppLocalizer.Instance.SetVisualStyle(style, _settingsRepository);
+        StatusMessage = style == AppVisualStyle.Realistic
+            ? Loc.T("📌 Switched to Realistic Sticky Note style", "📌 已切换为「写实便利贴（沐瑶软笔体）」样式")
+            : Loc.T("✨ Switched to Minimalist style", "✨ 已切换为「简约现代」样式");
     }
 
     public void SetDefaultAttachmentRootPath(string folderPath)
@@ -202,6 +227,40 @@ public sealed class SettingsViewModel : ViewModelBase
         StatusMessage = LoginStartupEnabled
             ? Loc.T("Launch at login enabled", "已开启登录自动启动")
             : Loc.T("Launch at login disabled", "已关闭登录自动启动");
+    }
+
+    public bool CanUndo => Services.UndoService.Instance.CanUndo;
+    public string? LastUndoSummary => Services.UndoService.Instance.LastActionDescription;
+    public string UndoStatusText => Services.UndoService.Instance.CanUndo
+        ? Loc.T($"Ready to undo: {Services.UndoService.Instance.LastActionDescription}", $"可撤销操作: {Services.UndoService.Instance.LastActionDescription}")
+        : Loc.T("No recent operations to undo", "当前暂无可撤销的近期操作");
+
+    public IReadOnlyList<Services.UndoEntry> RecentUndoEntries => Services.UndoService.Instance.RecentEntries;
+
+    public async Task<bool> UndoLastActionAsync(CancellationToken ct)
+    {
+        if (!Services.UndoService.Instance.CanUndo)
+        {
+            StatusMessage = Loc.T("No recent operations to undo", "当前暂无可撤销的近期操作");
+            return false;
+        }
+
+        string desc = Services.UndoService.Instance.LastActionDescription ?? Loc.T("operation", "操作");
+        bool success = await Services.UndoService.Instance.UndoAsync(ct);
+        if (success)
+        {
+            StatusMessage = Loc.T($"↩️ Successfully undone: {desc}", $"↩️ 已成功撤销: {desc}");
+            RaisePropertyChanged(nameof(CanUndo));
+            RaisePropertyChanged(nameof(LastUndoSummary));
+            RaisePropertyChanged(nameof(UndoStatusText));
+            RaisePropertyChanged(nameof(RecentUndoEntries));
+            return true;
+        }
+        else
+        {
+            StatusMessage = Loc.T("Failed to undo operation", "撤销操作失败");
+            return false;
+        }
     }
 
     public void ScheduleWindowPlacementSave(WindowPlacement placement)

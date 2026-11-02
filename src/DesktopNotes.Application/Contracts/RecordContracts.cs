@@ -124,6 +124,7 @@ public interface IRecordService
     Task SaveDraftAsync(string editorId, Guid? recordId, long? baseVersion, string title, string body, CancellationToken ct);
     Task<DraftView?> GetDraftAsync(string editorId, CancellationToken ct);
     Task DeleteDraftAsync(string editorId, CancellationToken ct);
+    Task<int> PurgeTrashAsync(CancellationToken ct);
 }
 
 public interface IRecordQueryService

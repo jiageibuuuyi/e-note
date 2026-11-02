@@ -114,6 +114,22 @@ public sealed class SettingsAndShellTests : IDisposable
         vm.SetLanguage(AppLanguage.English);
         Assert.True(vm.IsEnglish);
 
+        // Verify visual style switching (Realistic <-> Minimalist) and persistence
+        Assert.True(vm.IsRealisticStyle);
+        Assert.False(vm.IsMinimalistStyle);
+
+        vm.SetVisualStyle(AppVisualStyle.Minimalist);
+        Assert.True(vm.IsMinimalistStyle);
+        Assert.False(vm.IsRealisticStyle);
+
+        AppLocalizer.Instance.InitializeFromEnvironmentAndStore(_store);
+        Assert.Equal(AppVisualStyle.Minimalist, AppLocalizer.Instance.VisualStyle);
+
+        vm.SetVisualStyle(AppVisualStyle.Realistic);
+        Assert.True(vm.IsRealisticStyle);
+        AppLocalizer.Instance.InitializeFromEnvironmentAndStore(_store);
+        Assert.Equal(AppVisualStyle.Realistic, AppLocalizer.Instance.VisualStyle);
+
         // Schedule rapid debounced window placement updates
         vm.ScheduleWindowPlacementSave(new WindowPlacement("primary", 100, 100, 350, 520, 1.0));
         vm.ScheduleWindowPlacementSave(new WindowPlacement("primary", 240, 180, 360, 540, 1.0));
@@ -139,6 +155,42 @@ public sealed class SettingsAndShellTests : IDisposable
         {
             // Ignore cleanup errors
         }
+    }
+
+    [Fact]
+    public void AppLocalizer_AndAssets_ReflectFormalStickyNotesBranding()
+    {
+        var loc = AppLocalizer.Instance;
+        loc.SetLanguage(AppLanguage.Chinese);
+        Assert.Equal("电子便签", loc.AppTitle);
+        Assert.Contains("电子便签", loc.MenuExitApp);
+
+        loc.SetLanguage(AppLanguage.English);
+        Assert.Equal("Sticky Notes", loc.AppTitle);
+        Assert.Contains("Sticky Notes", loc.MenuExitApp);
+
+        // Reset to default
+        loc.SetLanguage(AppLanguage.Chinese);
+
+        string baseDir = AppContext.BaseDirectory;
+        // Search upwards for src/DesktopNotes.Desktop/Assets/Icons
+        string? projectRoot = null;
+        var dir = new DirectoryInfo(baseDir);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "DesktopNotes.sln")))
+            {
+                projectRoot = dir.FullName;
+                break;
+            }
+            dir = dir.Parent;
+        }
+
+        Assert.NotNull(projectRoot);
+        string iconsDir = Path.Combine(projectRoot, "src", "DesktopNotes.Desktop", "Assets", "Icons");
+        Assert.True(File.Exists(Path.Combine(iconsDir, "app-icon.ico")), "app-icon.ico exists");
+        Assert.True(File.Exists(Path.Combine(iconsDir, "app-icon.png")), "app-icon.png exists");
+        Assert.True(File.Exists(Path.Combine(iconsDir, "tray-icon.png")), "tray-icon.png exists");
     }
 
     private sealed class FakeDesktopIntegration : IDesktopIntegration

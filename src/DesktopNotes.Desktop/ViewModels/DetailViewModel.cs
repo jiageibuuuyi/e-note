@@ -126,10 +126,10 @@ public sealed class DetailViewModel : ViewModelBase
 
     public string RecordKindTitle => _kind == RecordKind.Task
         ? (_parentId.HasValue
-            ? Loc.T("↳ Subtask Details (inherits parent settings)", "↳ 子任务详情 (支持继承父任务属性)")
-            : Loc.T("Task Details", "任务详情"))
+            ? Loc.T("↳ Sub-TODO Details (inherits parent settings)", "↳ 子任务详情 (支持继承父任务属性)")
+            : Loc.T("TODO Details", "任务详情"))
         : Loc.T("Note Details", "笔记详情");
-    public bool CanHaveSubtasks => _kind == RecordKind.Task && !_parentId.HasValue;
+    public bool CanHaveSubtasks => _kind == RecordKind.Task;
     public bool HasSubtasks => Subtasks.Count > 0;
 
     private string _newSubtaskTitle = string.Empty;
@@ -264,6 +264,7 @@ public sealed class DetailViewModel : ViewModelBase
         _attachmentRepository = attachmentRepository;
         _defaultAttachmentRootPath = defaultAttachmentRootPath;
         AppLocalizer.Instance.LanguageChanged += () => RaiseAllProperties();
+        AppLocalizer.Instance.VisualStyleChanged += () => RaiseAllProperties();
     }
 
     public Task LoadNewAsync(RecordKind kind, Guid? parentId, CancellationToken ct)

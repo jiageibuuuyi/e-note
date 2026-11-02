@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -46,6 +47,9 @@ public partial class PanelWindow : Window
         {
             Win32Properties.AddWndProcHookCallback(this, OnWndProc);
         }
+
+        AddHandler(PointerPressedEvent, OnWindowTunnelPointerPressed, RoutingStrategies.Tunnel);
+        AddHandler(PointerMovedEvent, OnWindowTunnelPointerMoved, RoutingStrategies.Tunnel);
     }
 
     public PanelWindow(
@@ -75,10 +79,54 @@ public partial class PanelWindow : Window
                 handledEventsToo: true);
         }
 
+        if (PushpinRegion is not null)
+        {
+            PushpinRegion.PointerPressed += OnHeaderPointerPressed;
+            PushpinRegion.AddHandler(
+                InputElement.PointerReleasedEvent,
+                OnHeaderPointerReleased,
+                RoutingStrategies.Tunnel | RoutingStrategies.Bubble,
+                handledEventsToo: true);
+        }
+
+        if (WindowFrameBorder is not null)
+        {
+            WindowFrameBorder.PointerPressed += OnWindowFramePointerPressed;
+        }
+
         if (HeaderContextMenu is not null)
         {
             HeaderContextMenu.Opening += (_, _) => UpdateMenuStatusIndicators();
         }
+
+        if (CtxUndoAction is not null)
+        {
+            CtxUndoAction.Click += async (_, _) => await viewModel.UndoLastActionAsync(CancellationToken.None);
+        }
+
+        void SetupHeaderPromoteDrop(Control control)
+        {
+            DragDrop.SetAllowDrop(control, true);
+            control.AddHandler(DragDrop.DragOverEvent, (_, e) =>
+            {
+                if (Controls.TaskRow.ActiveDraggedTaskId.HasValue)
+                {
+                    e.DragEffects = DragDropEffects.Move;
+                    e.Handled = true;
+                }
+            });
+            control.AddHandler(DragDrop.DropEvent, async (_, e) =>
+            {
+                if (Controls.TaskRow.ActiveDraggedTaskId is { } draggedId)
+                {
+                    await viewModel.PromoteSubtaskToRootAsync(draggedId, CancellationToken.None);
+                    e.Handled = true;
+                }
+            });
+        }
+
+        if (PushpinRegion is not null) SetupHeaderPromoteDrop(PushpinRegion);
+        if (HeaderDragRegion is not null) SetupHeaderPromoteDrop(HeaderDragRegion);
 
         if (BtnKindSelector is not null)
         {
@@ -296,6 +344,36 @@ public partial class PanelWindow : Window
             CtxExitApp.Click += (_, _) => ExitApplication();
         }
 
+        if (CtxStyleRealistic is not null)
+        {
+            CtxStyleRealistic.Click += (_, _) => viewModel.SetVisualStyle(AppVisualStyle.Realistic);
+        }
+
+        if (CtxStyleMinimalist is not null)
+        {
+            CtxStyleMinimalist.Click += (_, _) => viewModel.SetVisualStyle(AppVisualStyle.Minimalist);
+        }
+
+        if (FlyoutStyleRealistic is not null)
+        {
+            FlyoutStyleRealistic.Click += (_, _) => viewModel.SetVisualStyle(AppVisualStyle.Realistic);
+        }
+
+        if (FlyoutStyleMinimalist is not null)
+        {
+            FlyoutStyleMinimalist.Click += (_, _) => viewModel.SetVisualStyle(AppVisualStyle.Minimalist);
+        }
+
+
+
+        if (BtnOpenArchiveBox is not null)
+        {
+            BtnOpenArchiveBox.Click += (_, _) => OpenManagerWindow(initialTabIndex: 1);
+        }
+
+        AppLocalizer.Instance.VisualStyleChanged += ApplyVisualStyle;
+        ApplyVisualStyle();
+
         if (BtnSearchToggle is not null)
         {
             BtnSearchToggle.Click += (_, _) =>
@@ -376,7 +454,7 @@ public partial class PanelWindow : Window
         };
         _deadlineRefreshTimer.Start();
 
-        KeyDown += (_, e) =>
+        KeyDown += async (_, e) =>
         {
             if (e.Key == Key.N && e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
@@ -387,6 +465,11 @@ public partial class PanelWindow : Window
             {
                 viewModel.IsSearchOpen = true;
                 SearchBox?.Focus();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                await viewModel.UndoLastActionAsync(CancellationToken.None);
                 e.Handled = true;
             }
         };
@@ -415,25 +498,136 @@ public partial class PanelWindow : Window
         };
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(nint hWnd, out RECT lpRect);
+
     private nint OnWndProc(nint hWnd, uint msg, nint wParam, nint lParam, ref bool handled)
     {
-        if (!_isPositionLocked)
+        if (_isPositionLocked)
         {
+            // WM_SYSCOMMAND = 0x0112, SC_MOVE = 0xF010, SC_SIZE = 0xF000
+            if (msg == 0x0112)
+            {
+                long cmd = wParam.ToInt64() & 0xFFF0;
+                if (cmd == 0xF010 || cmd == 0xF000)
+                {
+                    handled = true;
+                    return nint.Zero;
+                }
+            }
             return nint.Zero;
         }
 
-        // WM_SYSCOMMAND = 0x0112, SC_MOVE = 0xF010, SC_SIZE = 0xF000
-        if (msg == 0x0112)
+        // WM_NCHITTEST = 0x0084
+        if (msg == 0x0084 && CanResize)
         {
-            long cmd = wParam.ToInt64() & 0xFFF0;
-            if (cmd == 0xF010 || cmd == 0xF000)
+            if (GetWindowRect(hWnd, out RECT rect))
             {
-                handled = true;
-                return nint.Zero;
+                int screenX = unchecked((short)(lParam.ToInt64() & 0xFFFF));
+                int screenY = unchecked((short)((lParam.ToInt64() >> 16) & 0xFFFF));
+                const int border = 10;
+
+                bool isLeft = screenX >= rect.Left && screenX < rect.Left + border;
+                bool isRight = screenX <= rect.Right && screenX > rect.Right - border;
+                bool isTop = screenY >= rect.Top && screenY < rect.Top + border;
+                bool isBottom = screenY <= rect.Bottom && screenY > rect.Bottom - border;
+
+                if (isTop && isLeft) { handled = true; return 13; } // HTTOPLEFT
+                if (isTop && isRight) { handled = true; return 14; } // HTTOPRIGHT
+                if (isBottom && isLeft) { handled = true; return 16; } // HTBOTTOMLEFT
+                if (isBottom && isRight) { handled = true; return 17; } // HTBOTTOMRIGHT
+                if (isLeft) { handled = true; return 10; } // HTLEFT
+                if (isRight) { handled = true; return 11; } // HTRIGHT
+                if (isTop) { handled = true; return 12; } // HTTOP
+                if (isBottom) { handled = true; return 15; } // HTBOTTOM
             }
         }
 
         return nint.Zero;
+    }
+
+    private WindowEdge? GetResizeEdge(Point pos)
+    {
+        if (_isPositionLocked || !CanResize)
+        {
+            return null;
+        }
+
+        const double thickness = 10.0;
+        double w = Bounds.Width;
+        double h = Bounds.Height;
+
+        if (w <= 0 || h <= 0)
+        {
+            return null;
+        }
+
+        bool left = pos.X >= 0 && pos.X <= thickness;
+        bool right = pos.X >= w - thickness && pos.X <= w;
+        bool top = pos.Y >= 0 && pos.Y <= thickness;
+        bool bottom = pos.Y >= h - thickness && pos.Y <= h;
+
+        if (top && left) return WindowEdge.NorthWest;
+        if (top && right) return WindowEdge.NorthEast;
+        if (bottom && left) return WindowEdge.SouthWest;
+        if (bottom && right) return WindowEdge.SouthEast;
+        if (top) return WindowEdge.North;
+        if (bottom) return WindowEdge.South;
+        if (left) return WindowEdge.West;
+        if (right) return WindowEdge.East;
+
+        return null;
+    }
+
+    private void OnWindowTunnelPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (!_isPositionLocked && CanResize)
+        {
+            var edge = GetResizeEdge(e.GetPosition(this));
+            if (edge.HasValue)
+            {
+                BeginResizeDrag(edge.Value, e);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnWindowTunnelPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_isPositionLocked || !CanResize)
+        {
+            Cursor = Cursor.Default;
+            return;
+        }
+
+        var edge = GetResizeEdge(e.GetPosition(this));
+        Cursor = edge switch
+        {
+            WindowEdge.NorthWest => new Cursor(StandardCursorType.TopLeftCorner),
+            WindowEdge.NorthEast => new Cursor(StandardCursorType.TopRightCorner),
+            WindowEdge.SouthWest => new Cursor(StandardCursorType.BottomLeftCorner),
+            WindowEdge.SouthEast => new Cursor(StandardCursorType.BottomRightCorner),
+            WindowEdge.North => new Cursor(StandardCursorType.TopSide),
+            WindowEdge.South => new Cursor(StandardCursorType.BottomSide),
+            WindowEdge.West => new Cursor(StandardCursorType.LeftSide),
+            WindowEdge.East => new Cursor(StandardCursorType.RightSide),
+            _ => Cursor.Default
+        };
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -480,6 +674,22 @@ public partial class PanelWindow : Window
         Close();
     }
 
+    private void ApplyVisualStyle()
+
+    {
+
+        bool isRealistic = AppLocalizer.Instance.IsRealisticStyle;
+
+        Classes.Set("realistic", isRealistic);
+
+        Classes.Set("minimalist", !isRealistic);
+
+        UpdateMenuStatusIndicators();
+
+    }
+
+
+
     private void TogglePositionLock(PanelViewModel viewModel)
     {
         bool newLock = !_isPositionLocked;
@@ -494,6 +704,10 @@ public partial class PanelWindow : Window
         _isPositionLocked = locked;
         _lockedPosition = Position;
         CanResize = !locked;
+        if (locked)
+        {
+            Cursor = Cursor.Default;
+        }
 
         if (_settingsService is not null && savePreference)
         {
@@ -579,6 +793,88 @@ public partial class PanelWindow : Window
         {
             MenuLangZh.Header = isZh ? "✓ 中文 (Chinese)" : "中文 (Chinese)";
         }
+
+        if (CtxStyleRealistic is not null)
+
+        {
+
+            CtxStyleRealistic.Header = loc.IsRealisticStyle ? $"✓ {loc.MenuStyleRealistic}" : loc.MenuStyleRealistic;
+
+        }
+
+        if (CtxStyleMinimalist is not null)
+
+        {
+
+            CtxStyleMinimalist.Header = loc.IsMinimalistStyle ? $"✓ {loc.MenuStyleMinimalist}" : loc.MenuStyleMinimalist;
+
+        }
+
+        if (FlyoutStyleRealistic is not null)
+
+        {
+
+            FlyoutStyleRealistic.Header = loc.IsRealisticStyle ? $"✓ {loc.MenuStyleRealistic}" : loc.MenuStyleRealistic;
+
+        }
+
+        if (FlyoutStyleMinimalist is not null)
+
+        {
+
+            FlyoutStyleMinimalist.Header = loc.IsMinimalistStyle ? $"✓ {loc.MenuStyleMinimalist}" : loc.MenuStyleMinimalist;
+
+        }
+
+
+
+        if (loc.IsRealisticStyle)
+
+        {
+
+            if (PinNeedlePath is not null) PinNeedlePath.IsVisible = _isPositionLocked;
+
+            if (PinShadowEllipse is not null) PinShadowEllipse.IsVisible = _isPositionLocked;
+
+            if (PinHolePath is not null) PinHolePath.IsVisible = _isPositionLocked;
+
+            if (DoodleLockBody is not null)
+
+            {
+
+                DoodleLockBody.Background = _isPositionLocked
+
+                    ? new SolidColorBrush(Color.Parse("#FF758F"))
+
+                    : new SolidColorBrush(Color.Parse("#A8E6CF"));
+
+            }
+
+            if (RootScenePanel is not null)
+
+            {
+
+                RootScenePanel.RenderTransform = new RotateTransform(_isPositionLocked ? 0 : -1.2);
+
+            }
+
+        }
+
+        else
+
+        {
+
+            if (RootScenePanel is not null)
+
+            {
+
+                RootScenePanel.RenderTransform = new RotateTransform(0);
+
+            }
+
+        }
+
+
 
         string lockHeader = _isPositionLocked
             ? loc.T("✓ 🔒  Window Locked (Click to Unlock)", "✓ 🔒  已锁定窗口位置 (点击解锁)")
@@ -692,6 +988,39 @@ public partial class PanelWindow : Window
         }, DispatcherPriority.Loaded);
     }
 
+    private void OnWindowFramePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(this);
+        if (!point.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var resizeEdge = GetResizeEdge(e.GetPosition(this));
+        if (resizeEdge.HasValue && !_isPositionLocked && CanResize)
+        {
+            BeginResizeDrag(resizeEdge.Value, e);
+            e.Handled = true;
+            return;
+        }
+
+        // Only trigger move drag if clicking on non-interactive regions (like background paper, headers, empty margins)
+        if (e.Source is Visual visual)
+        {
+            if (visual.FindAncestorOfType<Button>() is not null ||
+                visual.FindAncestorOfType<TextBox>() is not null ||
+                visual.FindAncestorOfType<ListBoxItem>() is not null ||
+                visual.FindAncestorOfType<ContextMenu>() is not null ||
+                visual.FindAncestorOfType<MenuItem>() is not null ||
+                visual.FindAncestorOfType<FlyoutPresenter>() is not null)
+            {
+                return;
+            }
+        }
+
+        OnHeaderPointerPressed(sender, e);
+    }
+
     private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var point = e.GetCurrentPoint(this);
@@ -721,7 +1050,16 @@ public partial class PanelWindow : Window
         if (e.InitialPressMouseButton == MouseButton.Right && HeaderContextMenu is not null && HeaderDragRegion is not null)
         {
             UpdateMenuStatusIndicators();
-            HeaderContextMenu.Open(HeaderDragRegion);
+            try
+            {
+                if (!HeaderContextMenu.IsOpen)
+                {
+                    HeaderContextMenu.Open(HeaderDragRegion);
+                }
+            }
+            catch
+            {
+            }
             e.Handled = true;
         }
     }

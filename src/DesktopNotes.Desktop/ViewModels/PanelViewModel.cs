@@ -38,9 +38,19 @@ public sealed class TaskRowViewModel : ViewModelBase
     public Priority Priority => Record.Effective.Priority;
     public bool IsTaskKind => Record.Kind == RecordKind.Task;
     public bool IsNoteKind => Record.Kind == RecordKind.Note;
-    public bool IsSubtask => Record.ParentId.HasValue;
-    public bool CanAddSubtask => Record.Kind == RecordKind.Task && !Record.ParentId.HasValue;
+    public int Depth { get; }
+    public bool IsSubtask => Depth > 0 || Record.ParentId.HasValue;
+    public bool CanAddSubtask => Record.Kind == RecordKind.Task;
     public bool IsTaskRow => Record.Kind == RecordKind.Task && !IsEditingInline;
+    public bool ShowDragHandle => Depth == 0 && !IsSubtask && IsTaskRow && Loc.IsMinimalistStyle;
+    public bool ShowRealisticSubtaskPlant => IsSubtask && Loc.IsRealisticStyle;
+    public bool ShowMinimalistSubtaskBranch => IsSubtask && Loc.IsMinimalistStyle;
+    public bool ShowRealisticPlantToggle => Loc.IsRealisticStyle && IsTaskRow;
+    public string RealisticPlantIcon => _isMarkedCompleted ? "🌸" : "🌱";
+    public string SubtaskPlantIcon => RealisticPlantIcon;
+    public string RealisticPlantTooltip => _isMarkedCompleted
+        ? Loc.T("Completed (Blossom flower) · Click to mark uncompleted", "已完成 (粉色小花) · 点击标记为未完成")
+        : Loc.T("Pending TODO (Green sprout) · Click to mark completed", "待完成 (绿色嫩苗) · 点击标记为已完成");
     public int SubtaskCount { get; }
     public bool HasSubtasks => IsTaskKind && SubtaskCount > 0;
     public string SubtaskCountText => SubtaskCount > 0
@@ -53,12 +63,15 @@ public sealed class TaskRowViewModel : ViewModelBase
         : Loc.T("Expand subtasks", "点击展开子任务树");
     public bool IsLastSubtask { get; }
     public string TreeBranchPrefix => IsLastSubtask ? "└─ " : "├─ ";
-    public Avalonia.Thickness RowMargin => IsSubtask ? new(22, 1.5, 0, 1.5) : new(0, 3.5, 0, 3.5);
+    public Avalonia.Thickness RowMargin => Depth > 0
+        ? (Loc.IsRealisticStyle ? new(16 * Depth, 1, 0, 1) : new(18 * Depth, 1.5, 0, 1.5))
+        : (Loc.IsRealisticStyle ? new(0, 1.5, 0, 1.5) : new(0, 3.5, 0, 3.5));
     public string InlinePlaceholder => IsSubtask
         ? Loc.T("Type subtask and press Enter, Esc to cancel...", "输入子任务内容后按 Enter 保存，Esc 取消...")
         : Loc.T("Type and press Enter to save, Esc to cancel...", "输入内容后按 Enter 保存，Esc 取消...");
     public bool HasBody => !string.IsNullOrWhiteSpace(Body);
     public bool HasAssignee => IsTaskKind && !string.IsNullOrWhiteSpace(Assignee);
+    public bool ShowSubtaskAssigneeInline => IsSubtask && Loc.IsRealisticStyle && HasAssignee && !_isMarkedCompleted;
 
     public string StageLabel => IsMarkedCompleted
         ? Loc.T("✓ Done", "✓ 已完成")
@@ -86,6 +99,7 @@ public sealed class TaskRowViewModel : ViewModelBase
         };
 
     public bool HasPriorityBadge => !string.IsNullOrEmpty(PriorityBadge);
+    public bool HasDue => IsTaskKind && Record.Effective.Due.Kind != DueKind.None;
 
     public string DueSummary => Record.Effective.Due.Kind switch
     {
@@ -98,10 +112,20 @@ public sealed class TaskRowViewModel : ViewModelBase
         _ => Loc.T("No due date", "无截止期")
     };
 
+    public bool ShowRealisticDelete => IsExpanded && !IsEditingInline && Loc.IsRealisticStyle;
+    public bool ShowMinimalistDelete => IsExpanded && !IsEditingInline && Loc.IsMinimalistStyle;
+
     public bool IsExpanded
     {
         get => _isExpanded;
-        set => SetProperty(ref _isExpanded, value);
+        set
+        {
+            if (SetProperty(ref _isExpanded, value))
+            {
+                RaisePropertyChanged(nameof(ShowRealisticDelete));
+                RaisePropertyChanged(nameof(ShowMinimalistDelete));
+            }
+        }
     }
 
     private bool _isMarkedCompleted;
@@ -125,6 +149,11 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(HasPriorityBadge));
                 RaisePropertyChanged(nameof(DueSummary));
                 RaisePropertyChanged(nameof(CompleteMenuHeader));
+                RaisePropertyChanged(nameof(SubtaskPlantIcon));
+                RaisePropertyChanged(nameof(RealisticPlantIcon));
+                RaisePropertyChanged(nameof(RealisticPlantTooltip));
+                RaisePropertyChanged(nameof(ShowRealisticPlantToggle));
+                RaisePropertyChanged(nameof(ShowSubtaskAssigneeInline));
             }
         }
     }
@@ -139,6 +168,8 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(IsDisplayMode));
                 RaisePropertyChanged(nameof(IsDisplayNormal));
                 RaisePropertyChanged(nameof(IsDisplayCompleted));
+                RaisePropertyChanged(nameof(ShowRealisticDelete));
+                RaisePropertyChanged(nameof(ShowMinimalistDelete));
             }
         }
     }
@@ -153,13 +184,25 @@ public sealed class TaskRowViewModel : ViewModelBase
     public void RefreshLocalization()
     {
         RaisePropertyChanged(nameof(Loc));
+        RaisePropertyChanged(nameof(RowMargin));
+        RaisePropertyChanged(nameof(ShowDragHandle));
+        RaisePropertyChanged(nameof(ShowRealisticSubtaskPlant));
+        RaisePropertyChanged(nameof(ShowRealisticPlantToggle));
+        RaisePropertyChanged(nameof(ShowMinimalistSubtaskBranch));
+        RaisePropertyChanged(nameof(SubtaskPlantIcon));
+        RaisePropertyChanged(nameof(RealisticPlantIcon));
+        RaisePropertyChanged(nameof(RealisticPlantTooltip));
+        RaisePropertyChanged(nameof(ShowSubtaskAssigneeInline));
         RaisePropertyChanged(nameof(SubtaskCountText));
         RaisePropertyChanged(nameof(TreeToggleTooltip));
         RaisePropertyChanged(nameof(InlinePlaceholder));
         RaisePropertyChanged(nameof(StageLabel));
         RaisePropertyChanged(nameof(HasStageLabel));
+        RaisePropertyChanged(nameof(HasDue));
         RaisePropertyChanged(nameof(DueSummary));
         RaisePropertyChanged(nameof(CompleteMenuHeader));
+        RaisePropertyChanged(nameof(ShowRealisticDelete));
+        RaisePropertyChanged(nameof(ShowMinimalistDelete));
     }
 
     public string InlineEditText
@@ -172,7 +215,8 @@ public sealed class TaskRowViewModel : ViewModelBase
         RecordKind kind,
         TimeZoneInfo displayZone,
         DateTimeOffset nowUtc,
-        Guid? parentId = null)
+        Guid? parentId = null,
+        int depth = 0)
     {
         var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
         var draftRecord = new RecordView(
@@ -189,7 +233,7 @@ public sealed class TaskRowViewModel : ViewModelBase
             nowUtc,
             null,
             null);
-        return new TaskRowViewModel(draftRecord, displayZone, nowUtc, false)
+        return new TaskRowViewModel(draftRecord, displayZone, nowUtc, false, depth: depth)
         {
             IsEditingInline = true
         };
@@ -203,7 +247,8 @@ public sealed class TaskRowViewModel : ViewModelBase
         bool isMarkedCompleted = false,
         int subtaskCount = 0,
         bool isTreeExpanded = true,
-        bool isLastSubtask = false)
+        bool isLastSubtask = false,
+        int depth = 0)
     {
         Record = record;
         _editableTitle = !string.IsNullOrWhiteSpace(record.Title) ? record.Title : record.DisplayTitle;
@@ -213,6 +258,10 @@ public sealed class TaskRowViewModel : ViewModelBase
         SubtaskCount = subtaskCount;
         IsTreeExpanded = isTreeExpanded;
         IsLastSubtask = isLastSubtask;
+        Depth = depth;
+
+        AppLocalizer.Instance.VisualStyleChanged += RefreshLocalization;
+        AppLocalizer.Instance.LanguageChanged += RefreshLocalization;
     }
 }
 
@@ -259,7 +308,7 @@ public sealed class PanelViewModel : ViewModelBase
     public bool IsTaskTab => _currentKind == RecordKind.Task;
     public bool IsNoteTab => _currentKind == RecordKind.Note;
     public string CurrentKindText => _currentKind == RecordKind.Task
-        ? Loc.T("Tasks", "待办")
+        ? Loc.T("TODO", "待办")
         : Loc.T("Notes", "笔记");
     public string KindIconData => _currentKind == RecordKind.Task
         ? "M 9 16.17 L 4.83 12 L 3.41 13.41 L 9 19 L 21 7 L 19.59 5.59 L 9 16.17 Z"
@@ -276,13 +325,13 @@ public sealed class PanelViewModel : ViewModelBase
     public bool HasFooterContent => !string.IsNullOrEmpty(WhisperStatus);
 
     public string QuickInputPlaceholder => IsTaskTab
-        ? Loc.T("Add a task, press Enter...", "添加待办，按 Enter 创建...")
+        ? Loc.T("Add a TODO, press Enter...", "添加待办，按 Enter 创建...")
         : Loc.T("Write a note, press Enter...", "记录灵感或笔记，按 Enter 创建...");
 
     public string EmptyStateTitle => HasSearchText
         ? Loc.T("No matches found", "未找到匹配内容")
         : (IsTaskTab
-            ? Loc.T("No tasks yet", "今天还没有待办事项")
+            ? Loc.T("No TODOs yet", "今天还没有待办事项")
             : Loc.T("No notes yet", "还没有笔记记录"));
 
     public string EmptyStateSubtitle => HasSearchText
@@ -321,11 +370,16 @@ public sealed class PanelViewModel : ViewModelBase
             Items.Remove(existing);
         }
 
+        var parentRow = Items.FirstOrDefault(x => x.Id == parentId);
+        int parentDepth = parentRow?.Depth ?? 0;
+        int draftDepth = parentDepth + 1;
+
         var draft = TaskRowViewModel.CreateInlineDraft(
             RecordKind.Task,
             _zoneProvider(),
             _timeProvider.GetUtcNow(),
-            parentId);
+            parentId,
+            draftDepth);
 
         int insertIndex = Items.Count;
         for (int i = 0; i < Items.Count; i++)
@@ -333,7 +387,7 @@ public sealed class PanelViewModel : ViewModelBase
             if (Items[i].Id == parentId)
             {
                 insertIndex = i + 1;
-                while (insertIndex < Items.Count && Items[insertIndex].Record.ParentId == parentId)
+                while (insertIndex < Items.Count && Items[insertIndex].Depth > parentDepth)
                 {
                     insertIndex++;
                 }
@@ -587,6 +641,7 @@ public sealed class PanelViewModel : ViewModelBase
 
         _recordService.RecordsChanged += (_, _) => _ = RefreshAsync(CancellationToken.None);
         AppLocalizer.Instance.LanguageChanged += OnLanguageChanged;
+        AppLocalizer.Instance.VisualStyleChanged += OnLanguageChanged;
     }
 
     public void SetLanguage(AppLanguage language)
@@ -595,6 +650,20 @@ public sealed class PanelViewModel : ViewModelBase
         SetTransientNotice(language == AppLanguage.Chinese
             ? "🌐 已切换为中文"
             : "🌐 Language switched to English");
+    }
+
+    public void SetVisualStyle(AppVisualStyle style)
+    {
+        AppLocalizer.Instance.SetVisualStyle(style, SettingsRepository);
+        SetTransientNotice(style == AppVisualStyle.Realistic
+            ? Loc.T("📌 Switched to Realistic Sticky Note style", "📌 已切换为「写实便利贴」样式")
+            : Loc.T("✨ Switched to Minimalist style", "✨ 已切换为「简约现代」样式"));
+    }
+
+    public void ToggleVisualStyle()
+    {
+        var next = AppLocalizer.Instance.IsRealisticStyle ? AppVisualStyle.Minimalist : AppVisualStyle.Realistic;
+        SetVisualStyle(next);
     }
 
     private void OnLanguageChanged()
@@ -657,26 +726,18 @@ public sealed class PanelViewModel : ViewModelBase
 
             Items.Clear();
 
-            // Keep subtasks grouped directly underneath their parent task when parent is present in active list
+            // Support arbitrary multi-level subtask tree traversal
             var childrenByParent = page.Items
                 .Where(x => x.ParentId.HasValue)
                 .GroupBy(x => x.ParentId!.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
-            var rootIds = page.Items
-                .Where(x => !x.ParentId.HasValue)
-                .Select(x => x.Id)
-                .ToHashSet();
+            var allIds = page.Items.Select(x => x.Id).ToHashSet();
+            var rootItems = page.Items.Where(x => !x.ParentId.HasValue || !allIds.Contains(x.ParentId.Value)).ToList();
 
-            foreach (var item in page.Items)
+            void AddNodeAndDescendants(RecordView item, int depth, bool isLastSibling)
             {
-                if (item.ParentId is { } pid && rootIds.Contains(pid))
-                {
-                    continue;
-                }
-
-                List<RecordView>? subtasks = null;
-                bool hasChildren = !item.ParentId.HasValue && childrenByParent.TryGetValue(item.Id, out subtasks);
-                int childCount = hasChildren && subtasks is not null ? subtasks.Count : 0;
+                bool hasKids = childrenByParent.TryGetValue(item.Id, out var subtasks) && subtasks.Count > 0;
+                int childCount = hasKids && subtasks is not null ? subtasks.Count : 0;
                 bool isTreeExpanded = !_collapsedTreeParentIds.Contains(item.Id);
 
                 Items.Add(new TaskRowViewModel(
@@ -687,24 +748,17 @@ public sealed class PanelViewModel : ViewModelBase
                     _markedCompletedIds.Contains(item.Id),
                     childCount,
                     isTreeExpanded,
-                    isLastSubtask: false));
+                    isLastSibling,
+                    depth));
 
-                if (hasChildren && subtasks is not null && isTreeExpanded)
+                if (hasKids && subtasks is not null && isTreeExpanded)
                 {
                     for (int i = 0; i < subtasks.Count; i++)
                     {
                         var sub = subtasks[i];
                         bool isLast = i == subtasks.Count - 1 &&
                                       (activeInlineDraft is null || activeInlineDraft.Record.ParentId != item.Id);
-                        Items.Add(new TaskRowViewModel(
-                            sub,
-                            zone,
-                            now,
-                            sub.Id == _expandedRecordId,
-                            _markedCompletedIds.Contains(sub.Id),
-                            subtaskCount: 0,
-                            isTreeExpanded: true,
-                            isLastSubtask: isLast));
+                        AddNodeAndDescendants(sub, depth + 1, isLast);
                     }
                 }
 
@@ -713,6 +767,11 @@ public sealed class PanelViewModel : ViewModelBase
                     Items.Add(activeInlineDraft);
                     activeInlineDraft = null;
                 }
+            }
+
+            foreach (var root in rootItems)
+            {
+                AddNodeAndDescendants(root, 0, false);
             }
 
             if (activeInlineDraft is not null)
@@ -908,8 +967,20 @@ public sealed class PanelViewModel : ViewModelBase
             return;
         }
 
-        // If dragged onto an existing subtask, attach to that subtask's root parent task
-        Guid newParentId = target.ParentId ?? target.Id;
+        // Prevent cyclic parenting: check target is not a descendant of source
+        Guid? curAnc = target.ParentId;
+        while (curAnc is { } ancId)
+        {
+            if (ancId == source.Id)
+            {
+                SetTransientNotice(Loc.T("Cannot move a task into its own subtask", "不能将任务拖入其自身的子任务中"));
+                return;
+            }
+            var anc = await _recordService.GetAsync(ancId, ct);
+            curAnc = anc?.ParentId;
+        }
+
+        Guid newParentId = targetTaskId;
         if (newParentId == source.Id)
         {
             return;
@@ -917,24 +988,33 @@ public sealed class PanelViewModel : ViewModelBase
 
         if (source.ParentId == newParentId)
         {
-            SetTransientNotice(Loc.T("Already a subtask under this task", "该任务已经是此父任务下的子任务"));
+            SetTransientNotice(Loc.T("Already a subtask under this task", "该任务已经是此任务下的子任务"));
             return;
         }
 
         try
         {
+            var origParentId = source.ParentId;
+            var origInherit = source.Inherit;
+            var origOwn = source.Own;
+            var origTitle = source.Title;
+            var origBody = source.Body;
+            var origKind = source.Kind;
+
             // If source itself had active subtasks, move those subtasks under newParentId as well so tree stays valid
             var sourceChildren = Items
                 .Where(x => !x.IsEditingInline && x.Record.ParentId == source.Id)
                 .Select(x => x.Id)
                 .ToList();
 
+            var childSnapshots = new List<(Guid Id, Guid? ParentId, InheritField Inherit, EffectiveFields Own, string Title, string Body, RecordKind Kind)>();
             foreach (var childId in sourceChildren)
             {
                 if (childId == newParentId) continue;
                 var childRec = await _recordService.GetAsync(childId, ct);
                 if (childRec is not null && childRec.Status == RecordStatus.Active)
                 {
+                    childSnapshots.Add((childRec.Id, childRec.ParentId, childRec.Inherit, childRec.Own, childRec.Title, childRec.Body, childRec.Kind));
                     var childInherit = ComputeSubtaskInheritanceMask(childRec);
                     var childReq = new SaveRecordRequest(
                         childRec.Id,
@@ -950,7 +1030,6 @@ public sealed class PanelViewModel : ViewModelBase
             }
 
             // Re-fetch source in case version changed, then reparent source under newParentId:
-            // Existing attributes on source are preserved (Inherit bit = 0); unset attributes inherit from parent (Inherit bit = 1)
             source = await _recordService.GetAsync(sourceTaskId, ct);
             if (source is null)
             {
@@ -970,6 +1049,49 @@ public sealed class PanelViewModel : ViewModelBase
 
             _collapsedTreeParentIds.Remove(newParentId);
             await _recordService.SaveAsync(req, ct);
+
+            // Register undo operation
+            Services.UndoService.Instance.Push(
+                Loc.T($"Convert '{source.DisplayTitle}' to sub-TODO", $"将「{source.DisplayTitle}」设为子任务"),
+                Services.UndoActionType.Reparent,
+                async undoCt =>
+                {
+                    var cur = await _recordService.GetAsync(sourceTaskId, undoCt);
+                    if (cur is not null && cur.Status == RecordStatus.Active)
+                    {
+                        var restoreReq = new SaveRecordRequest(
+                            cur.Id,
+                            cur.Version,
+                            origKind,
+                            origParentId,
+                            origTitle,
+                            origBody,
+                            origOwn,
+                            origInherit);
+                        await _recordService.SaveAsync(restoreReq, undoCt);
+                    }
+
+                    foreach (var ch in childSnapshots)
+                    {
+                        var curCh = await _recordService.GetAsync(ch.Id, undoCt);
+                        if (curCh is not null && curCh.Status == RecordStatus.Active)
+                        {
+                            var restoreChReq = new SaveRecordRequest(
+                                curCh.Id,
+                                curCh.Version,
+                                ch.Kind,
+                                ch.ParentId,
+                                ch.Title,
+                                ch.Body,
+                                ch.Own,
+                                ch.Inherit);
+                            await _recordService.SaveAsync(restoreChReq, undoCt);
+                        }
+                    }
+
+                    await RefreshAsync(undoCt);
+                });
+
             SetTransientNotice(Loc.T(
                 "↳ Converted to subtask (kept own settings, inherited rest)",
                 "↳ 已设为子任务（保留自身已有属性，未设属性继承父任务）"));
@@ -989,6 +1111,13 @@ public sealed class PanelViewModel : ViewModelBase
             return;
         }
 
+        var origParentId = existing.ParentId;
+        var origInherit = existing.Inherit;
+        var origOwn = existing.Own;
+        var origTitle = existing.Title;
+        var origBody = existing.Body;
+        var origKind = existing.Kind;
+
         try
         {
             var req = new SaveRecordRequest(
@@ -1002,7 +1131,30 @@ public sealed class PanelViewModel : ViewModelBase
                 InheritField.None);
 
             await _recordService.SaveAsync(req, ct);
-            SetTransientNotice(Loc.T("⬆️ Promoted to main task", "⬆️ 已提升为独立主任务"));
+
+            Services.UndoService.Instance.Push(
+                Loc.T($"Promote '{existing.DisplayTitle}' to root TODO", $"将「{existing.DisplayTitle}」移出为顶层任务"),
+                Services.UndoActionType.Reparent,
+                async undoCt =>
+                {
+                    var cur = await _recordService.GetAsync(subtaskId, undoCt);
+                    if (cur is not null && cur.Status == RecordStatus.Active)
+                    {
+                        var restoreReq = new SaveRecordRequest(
+                            cur.Id,
+                            cur.Version,
+                            origKind,
+                            origParentId,
+                            origTitle,
+                            origBody,
+                            origOwn,
+                            origInherit);
+                        await _recordService.SaveAsync(restoreReq, undoCt);
+                        await RefreshAsync(undoCt);
+                    }
+                });
+
+            SetTransientNotice(Loc.T("⬆️ Promoted to main TODO", "⬆️ 已提升为独立主任务"));
             await RefreshAsync(ct);
         }
         catch (Exception ex)
@@ -1064,8 +1216,52 @@ public sealed class PanelViewModel : ViewModelBase
         {
             ExpandedRecordId = null;
         }
+
+        Services.UndoService.Instance.Push(
+            Loc.T($"Move '{rec.DisplayTitle}' to trash", $"将「{rec.DisplayTitle}」移入回收站"),
+            Services.UndoActionType.Trash,
+            async undoCt =>
+            {
+                var cur = await _recordService.GetAsync(id, undoCt);
+                if (cur is not null)
+                {
+                    await _recordService.RestoreAsync(id, cur.Version, true, undoCt);
+                    await RefreshAsync(undoCt);
+                }
+            });
+
         SetTransientNotice(Loc.T("Moved to Trash", "已移入回收站"));
         await RefreshAsync(ct);
+    }
+
+    public async Task<bool> UndoLastActionAsync(CancellationToken ct)
+    {
+        if (!Services.UndoService.Instance.CanUndo)
+        {
+            SetTransientNotice(Loc.T("No recent operations to undo", "当前暂无可撤销的近期操作"));
+            return false;
+        }
+
+        string desc = Services.UndoService.Instance.LastActionDescription ?? Loc.T("operation", "操作");
+        bool ok = await Services.UndoService.Instance.UndoAsync(ct);
+        if (ok)
+        {
+            SetTransientNotice(Loc.T($"↩️ Undone: {desc}", $"↩️ 已撤销: {desc}"));
+            await RefreshAsync(ct);
+            return true;
+        }
+        else
+        {
+            SetTransientNotice(Loc.T("Failed to undo operation", "撤销操作失败"));
+            return false;
+        }
+    }
+
+    public async Task<int> EmptyTrashAsync(CancellationToken ct)
+    {
+        int count = await _recordService.PurgeTrashAsync(ct);
+        await RefreshAsync(ct);
+        return count;
     }
 
     public void ToggleCompletedMark(Guid id)

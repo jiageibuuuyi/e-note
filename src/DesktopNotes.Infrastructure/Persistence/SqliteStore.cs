@@ -133,9 +133,9 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
                     var parentRaw = LoadRawRecord(conn, parentId)
                         ?? throw new AppException(ErrorCodes.Validation, "Parent task does not exist.", new[] { request.Id, parentId });
 
-                    if (parentRaw.Kind != RecordKind.Task || parentRaw.ParentId is not null)
+                    if (parentRaw.Kind != RecordKind.Task)
                     {
-                        throw new AppException(ErrorCodes.Validation, "Parent must be a root task.", new[] { request.Id, parentId });
+                        throw new AppException(ErrorCodes.Validation, "Parent must be a task.", new[] { request.Id, parentId });
                     }
 
                     if (parentRaw.Status != RecordStatus.Active || parentRaw.DeletedUtcMs.HasValue)
@@ -143,6 +143,7 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
                         throw new AppException(ErrorCodes.ParentRequired, "Parent task must be active.", new[] { request.Id, parentId });
                     }
 
+                    CheckNoCyclicHierarchy(conn, request.Id, parentId);
                     parentEffective = LoadEffectiveFields(conn, parentId);
                 }
                 else if (request.Inherit != InheritField.None)
@@ -197,11 +198,12 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
                     var parentRow = LoadRawRecord(conn, parentId)
                         ?? throw new AppException(ErrorCodes.NotFound, "Parent task not found.", new[] { parentId });
 
-                    if (parentRow.Kind != RecordKind.Task || parentRow.ParentId.HasValue || parentRow.Status != RecordStatus.Active || parentRow.DeletedUtcMs.HasValue)
+                    if (parentRow.Kind != RecordKind.Task || parentRow.Status != RecordStatus.Active || parentRow.DeletedUtcMs.HasValue)
                     {
-                        throw new AppException(ErrorCodes.Validation, "Parent must be an active root task.", new[] { parentId });
+                        throw new AppException(ErrorCodes.Validation, "Parent must be an active task.", new[] { parentId });
                     }
 
+                    CheckNoCyclicHierarchy(conn, request.Id, parentId);
                     parentEffective = LoadEffectiveFields(conn, parentId);
                 }
                 else if (request.Inherit != InheritField.None)
@@ -224,33 +226,40 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
 
                 var changedIds = new List<Guid> { request.Id };
 
-                if (request.ParentId is null && request.Kind == RecordKind.Task)
+                if (request.Kind == RecordKind.Task)
                 {
-                    var activeChildren = LoadActiveChildren(conn, request.Id);
+                    var queue = new Queue<(Guid ParentId, EffectiveFields ParentEffective)>();
+                    queue.Enqueue((request.Id, projectedSelf.Effective));
                     var conflicts = new List<Guid>();
                     var childProjections = new List<(RawRecordRow Child, ProjectedRecord Projection)>();
 
-                    foreach (var child in activeChildren)
+                    while (queue.Count > 0)
                     {
-                        if (child.Inherit == InheritField.None)
+                        var (curParentId, curParentEffective) = queue.Dequeue();
+                        var activeChildren = LoadActiveChildren(conn, curParentId);
+                        foreach (var child in activeChildren)
                         {
-                            continue;
-                        }
+                            if (child.Inherit == InheritField.None)
+                            {
+                                continue;
+                            }
 
-                        try
-                        {
-                            var childProjected = ProjectionBuilder.BuildActive(
-                                child.Id,
-                                child.Own,
-                                projectedSelf.Effective,
-                                child.Inherit,
-                                child.Version + 1,
-                                displayZone);
-                            childProjections.Add((child, childProjected));
-                        }
-                        catch (AppException ex) when (ex.Code == ErrorCodes.Validation)
-                        {
-                            conflicts.Add(child.Id);
+                            try
+                            {
+                                var childProjected = ProjectionBuilder.BuildActive(
+                                    child.Id,
+                                    child.Own,
+                                    curParentEffective,
+                                    child.Inherit,
+                                    child.Version + 1,
+                                    displayZone);
+                                childProjections.Add((child, childProjected));
+                                queue.Enqueue((child.Id, childProjected.Effective));
+                            }
+                            catch (AppException ex) when (ex.Code == ErrorCodes.Validation)
+                            {
+                                conflicts.Add(child.Id);
+                            }
                         }
                     }
 
@@ -302,9 +311,9 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
             long nowMs = nowUtc.ToUniversalTime().ToUnixTimeMilliseconds();
             var changedIds = new List<Guid>();
 
-            if (target.ParentId is null && target.Kind == RecordKind.Task)
+            if (target.Kind == RecordKind.Task)
             {
-                var activeChildren = LoadActiveChildren(conn, id);
+                var activeChildren = LoadAllActiveDescendants(conn, id);
                 if (activeChildren.Count > 0)
                 {
                     if (!includeChildren)
@@ -491,9 +500,9 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
             string batchId = Guid.NewGuid().ToString("D");
             var changedIds = new List<Guid>();
 
-            if (target.ParentId is null && target.Kind == RecordKind.Task)
+            if (target.Kind == RecordKind.Task)
             {
-                var nonDeletedChildren = LoadNonDeletedChildren(conn, id);
+                var nonDeletedChildren = LoadAllNonDeletedDescendants(conn, id);
                 foreach (var child in nonDeletedChildren)
                 {
                     MarkRecordTrashed(conn, child.Id, child.Version + 1, nowMs, batchId, displayZone);
@@ -1353,6 +1362,134 @@ public sealed partial class SqliteStore : IRecordRepositoryPort, IAttachmentRepo
             list.Add(MapRawRecordRow(reader));
         }
         return list;
+    }
+
+    private static void CheckNoCyclicHierarchy(SqliteConnection conn, Guid recordId, Guid parentId)
+    {
+        var visited = new HashSet<Guid> { recordId };
+        Guid? current = parentId;
+        while (current is { } curId)
+        {
+            if (!visited.Add(curId))
+            {
+                throw new AppException(ErrorCodes.Validation, "Cyclic task parent hierarchy detected.", new[] { recordId, curId });
+            }
+            var raw = LoadRawRecord(conn, curId);
+            current = raw?.ParentId;
+        }
+    }
+
+    private static List<RawRecordRow> LoadAllActiveDescendants(SqliteConnection conn, Guid rootId)
+    {
+        var result = new List<RawRecordRow>();
+        var queue = new Queue<Guid>();
+        queue.Enqueue(rootId);
+        while (queue.Count > 0)
+        {
+            var parentId = queue.Dequeue();
+            var children = LoadActiveChildren(conn, parentId);
+            foreach (var child in children)
+            {
+                result.Add(child);
+                queue.Enqueue(child.Id);
+            }
+        }
+        return result;
+    }
+
+    private static List<RawRecordRow> LoadAllNonDeletedDescendants(SqliteConnection conn, Guid rootId)
+    {
+        var result = new List<RawRecordRow>();
+        var queue = new Queue<Guid>();
+        queue.Enqueue(rootId);
+        while (queue.Count > 0)
+        {
+            var parentId = queue.Dequeue();
+            var children = LoadNonDeletedChildren(conn, parentId);
+            foreach (var child in children)
+            {
+                result.Add(child);
+                queue.Enqueue(child.Id);
+            }
+        }
+        return result;
+    }
+
+    public int PurgeTrash(out IReadOnlyList<Guid> purgedIds)
+    {
+        IReadOnlyList<Guid> capturedPurged = Array.Empty<Guid>();
+        int count = Write((conn, _) =>
+        {
+            var trashedIds = new List<Guid>();
+            using (var selectCmd = conn.CreateCommand())
+            {
+                selectCmd.CommandText = "SELECT id FROM records WHERE deleted_utc_ms IS NOT NULL;";
+                using var reader = selectCmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    if (Guid.TryParse(reader.GetString(0), out var id))
+                    {
+                        trashedIds.Add(id);
+                    }
+                }
+            }
+
+            if (trashedIds.Count == 0)
+            {
+                capturedPurged = Array.Empty<Guid>();
+                return 0;
+            }
+
+            capturedPurged = trashedIds;
+
+            // Clear parent_id on trashed records to avoid ON DELETE RESTRICT on self-referencing parents
+            using (var clearParentCmd = conn.CreateCommand())
+            {
+                clearParentCmd.CommandText = "UPDATE records SET parent_id = NULL WHERE deleted_utc_ms IS NOT NULL;";
+                clearParentCmd.ExecuteNonQuery();
+            }
+
+            // Remove associated attachments and attachment jobs for trashed records
+            using (var delAttachJobItems = conn.CreateCommand())
+            {
+                delAttachJobItems.CommandText = """
+                    DELETE FROM attachment_job_items
+                    WHERE job_id IN (
+                        SELECT id FROM attachment_jobs
+                        WHERE record_id IN (SELECT id FROM records WHERE deleted_utc_ms IS NOT NULL)
+                    );
+                    """;
+                delAttachJobItems.ExecuteNonQuery();
+            }
+
+            using (var delAttachJobs = conn.CreateCommand())
+            {
+                delAttachJobs.CommandText = """
+                    DELETE FROM attachment_jobs
+                    WHERE record_id IN (SELECT id FROM records WHERE deleted_utc_ms IS NOT NULL);
+                    """;
+                delAttachJobs.ExecuteNonQuery();
+            }
+
+            using (var delAttachments = conn.CreateCommand())
+            {
+                delAttachments.CommandText = """
+                    DELETE FROM attachments
+                    WHERE record_id IN (SELECT id FROM records WHERE deleted_utc_ms IS NOT NULL);
+                    """;
+                delAttachments.ExecuteNonQuery();
+            }
+
+            // Delete the trashed records
+            using (var delRecords = conn.CreateCommand())
+            {
+                delRecords.CommandText = "DELETE FROM records WHERE deleted_utc_ms IS NOT NULL;";
+                return delRecords.ExecuteNonQuery();
+            }
+        });
+
+        purgedIds = capturedPurged;
+        return count;
     }
 
     private static RawRecordRow MapRawRecordRow(SqliteDataReader r)

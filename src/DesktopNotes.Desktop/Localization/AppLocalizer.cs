@@ -10,6 +10,12 @@ public enum AppLanguage
     Chinese = 1
 }
 
+public enum AppVisualStyle
+{
+    Realistic = 0,
+    Minimalist = 1
+}
+
 public sealed class BuildEnvironmentInfo
 {
     public string? DetectedTimeZoneId { get; set; }
@@ -22,19 +28,28 @@ public sealed class AppLocalizer : INotifyPropertyChanged
 {
     public const string LanguageSettingKey = "global.language";
     public const string TimeZoneSettingKey = "global.detected_timezone";
+    public const string VisualStyleSettingKey = "global.visual_style";
 
     public static AppLocalizer Instance { get; } = new();
 
     private AppLanguage _language = AppLanguage.English;
+    private AppVisualStyle _visualStyle = AppVisualStyle.Realistic;
     private TimeZoneInfo _activeTimeZone = TimeZoneInfo.Local;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action? LanguageChanged;
+    public event Action? VisualStyleChanged;
 
     public AppLanguage Language => _language;
     public bool IsEnglish => _language == AppLanguage.English;
     public bool IsChinese => _language == AppLanguage.Chinese;
     public string LanguageCode => IsChinese ? "zh" : "en";
+
+    public AppVisualStyle VisualStyle => _visualStyle;
+    public bool IsRealisticStyle => _visualStyle == AppVisualStyle.Realistic;
+    public bool IsMinimalistStyle => _visualStyle == AppVisualStyle.Minimalist;
+    public string VisualStyleCode => IsMinimalistStyle ? "minimalist" : "realistic";
+
     public TimeZoneInfo ActiveTimeZone => _activeTimeZone;
 
     public string T(string en, string zh) => IsChinese ? zh : en;
@@ -117,10 +132,33 @@ public sealed class AppLocalizer : INotifyPropertyChanged
             {
                 _language = AppLanguage.English;
             }
+
+            // 3. Load saved visual style preference; default to Realistic sticky note style
+            try
+            {
+                string? savedStyleJson = store.GetSettingJson(VisualStyleSettingKey);
+                if (!string.IsNullOrWhiteSpace(savedStyleJson))
+                {
+                    string? styleCode = savedStyleJson.StartsWith('"')
+                        ? JsonSerializer.Deserialize<string>(savedStyleJson)
+                        : savedStyleJson;
+                    _visualStyle = IsMinimalistCode(styleCode) ? AppVisualStyle.Minimalist : AppVisualStyle.Realistic;
+                }
+                else
+                {
+                    _visualStyle = AppVisualStyle.Realistic;
+                    store.SetSettingJson(VisualStyleSettingKey, JsonSerializer.Serialize(VisualStyleCode));
+                }
+            }
+            catch
+            {
+                _visualStyle = AppVisualStyle.Realistic;
+            }
         }
         else
         {
             _language = AppLanguage.English;
+            _visualStyle = AppVisualStyle.Realistic;
         }
 
         NotifyAllChanged();
@@ -158,16 +196,48 @@ public sealed class AppLocalizer : INotifyPropertyChanged
         NotifyAllChanged();
     }
 
+    public void SetVisualStyle(AppVisualStyle style, ISettingsRepositoryPort? store = null)
+    {
+        _visualStyle = style;
+        if (store is not null)
+        {
+            try
+            {
+                store.SetSettingJson(VisualStyleSettingKey, JsonSerializer.Serialize(VisualStyleCode));
+            }
+            catch
+            {
+            }
+        }
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        VisualStyleChanged?.Invoke();
+    }
+
+    public void ToggleVisualStyle(ISettingsRepositoryPort? store = null)
+    {
+        SetVisualStyle(
+            _visualStyle == AppVisualStyle.Realistic ? AppVisualStyle.Minimalist : AppVisualStyle.Realistic,
+            store);
+    }
+
     private static bool IsChineseCode(string? code) =>
         !string.IsNullOrWhiteSpace(code) &&
         (code.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ||
          string.Equals(code, "chinese", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsMinimalistCode(string? code) =>
+        !string.IsNullOrWhiteSpace(code) &&
+        (code.StartsWith("min", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(code, "fluent", StringComparison.OrdinalIgnoreCase));
 
     private void NotifyAllChanged()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
         LanguageChanged?.Invoke();
+        VisualStyleChanged?.Invoke();
     }
 
     public string DetectedTimeZoneSummary
@@ -184,7 +254,7 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     }
 
     // --- Common & Window Titles ---
-    public string AppTitle => T("Desktop Notes", "桌面笔记");
+    public string AppTitle => T("Sticky Notes", "电子便签");
     public string DetailWindowTitle => T("Details", "记录详情");
     public string ManagerWindowTitle => T("Calendar · Archive · Settings", "任务日历 · 历史归档 · 设置");
 
@@ -192,12 +262,15 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string HeaderDragTooltip => T(
         "Drag to move (when unlocked) · Right-click for quick menu",
         "左键按住拖动窗口（未锁定时）· 右键打开快捷设置菜单");
-    public string KindSwitchTooltip => T("Click to switch Tasks / Notes", "点击快速切换 待办 / 笔记");
+    public string PushpinTooltip => T(
+        "Click pushpin: Pin to lock window / Unpin to move freely",
+        "点击图钉：钉住锁定窗口位置 / 拔起自由拖动");
+    public string KindSwitchTooltip => T("Click to switch TODO / Notes", "点击快速切换 待办 / 笔记");
     public string AddInlineTooltip => T("Add new item at bottom (Ctrl+N)", "在列表末尾新增空白输入行 (Ctrl+N)");
     public string SearchTooltip => T("Search (Ctrl+F)", "精确搜索 (Ctrl+F)");
-    public string MoreOptionsTooltip => T("View · Sort · Window Layer · Calendar & Settings", "事务切换 · 排序方式 · 桌面层级 · 日历与归档");
-    public string HideToTrayTooltip => T("Hide to system tray (use menu to quit)", "隐藏到系统右下角托盘 (彻底退出请通过 ⋯ 菜单或托盘右键)");
-    public string SearchPlaceholder => T("Search keywords... (Esc to clear)", "输入关键词搜索... (Esc 清空)");
+    public string MoreOptionsTooltip => T("Style · View · Sort · Window Layer · Settings", "切换样式 · 事务切换 · 排序方式 · 桌面层级 · 设置");
+    public string HideToTrayTooltip => T("Hide to system tray (use menu to quit)", "隐藏到系统右下角托盘 (彻底退出请通过菜单或托盘右键)");
+    public string SearchPlaceholder => T("Search keywords... (Esc to clear)", "输入关键词搜索便签... (Esc 清空)");
     public string ClearSearchTooltip => T("Clear search", "清空搜索");
     public string EmptyAddTooltip => T("Click to add one", "点击新增一项");
     public string BottomAddText => T("+ New", "+ 新增");
@@ -207,6 +280,9 @@ public sealed class AppLocalizer : INotifyPropertyChanged
         "点击确认归档：将所有已勾选完成的任务移出主面板并存入历史归档");
 
     // --- Main Panel Menus ---
+    public string MenuStyleHeader => T("🎨  App Style (Realistic / Minimalist)", "🎨  应用样式 (写实 / 简约)");
+    public string MenuStyleRealistic => T("📌  Realistic Sticky Note", "📌  写实便利贴样式");
+    public string MenuStyleMinimalist => T("✨  Minimalist Style", "✨  简约现代样式");
     public string MenuSortHeader => T("↕️  Sort By", "↕️  排列方式");
     public string MenuSortDefault => T("Default (Priority → Due Date → Created)", "默认综合排序 (优先级 → 截止期 → 创建时间)");
     public string MenuSortDeadline => T("Due Date (Soonest First)", "按截止时间排序 (最近到期优先)");
@@ -214,19 +290,19 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string MenuSortCreated => T("Created Time (Newest First)", "按创建时间排序 (最新创建优先)");
     public string MenuLayerHeader => T("📌  Window Layer & Lock", "📌  窗口桌面层级与锁定");
     public string MenuLanguageHeader => T("🌐  Language / 语言", "🌐  语言 / Language");
-    public string MenuSwitchTasks => T("📋  Tasks", "📋  待办事项");
+    public string MenuSwitchTasks => T("📋  TODO", "📋  待办事项");
     public string MenuSwitchNotes => T("📝  Notes", "📝  随手笔记");
     public string MenuQuickAddDetail => T("➕  New in Detail Window...", "➕  详情窗口新建...");
-    public string MenuCalendarArchive => T("📅  Calendar & Archive...", "📅  任务日历与历史归档...");
-    public string MenuOpenSettings => T("⚙️  Settings...", "⚙️  打开设置面板...");
+    public string MenuCalendarArchive => T("🎁  Calendar & Archive Box...", "🎁  任务日历与已归档收纳盒...");
+    public string MenuOpenSettings => T("🎀  Settings & Style...", "🎀  打开设置与样式切换...");
     public string MenuArchiveAllDone => T("📦  Archive All Done Items", "📦  确认归档全部已完成事项");
-    public string MenuSwitchTheme => T("🌓  Switch Theme (Light / Dark)", "🌓  切换外观主题");
+    public string MenuSwitchTheme => T("🌓  Switch Theme (Light / Dark)", "🌓  切换明暗外观 (简约模式)");
     public string MenuHideToTray => T("🔽  Hide to System Tray", "🔽  隐藏到右下角系统托盘");
-    public string MenuExitApp => T("🚪  Quit Desktop Notes", "🚪  彻底退出桌面笔记");
+    public string MenuExitApp => T("🚪  Quit Sticky Notes", "🚪  彻底退出电子便签");
 
-    // --- Task Row ---
+    // --- Task Row (TODO) ---
     public string RowDragHandleTooltip => T(
-        "Drag onto another task to make this a subtask",
+        "Drag onto another TODO to make this a sub-TODO",
         "按住拖动到其他任务上，可设为该任务的子任务");
     public string RowCheckTooltip => T(
         "Mark as done (stays in list until you click Archive)",
@@ -238,15 +314,32 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string RowSaveBtn => T("Save", "保存");
     public string RowSaveTooltip => T("Save (Enter)", "保存该条记录 (Enter)");
     public string RowCancelTooltip => T("Cancel (Esc)", "取消新增 (Esc)");
-    public string RowAddSubtaskBtn => T("+ Subtask", "+ 子任务");
-    public string RowAddSubtaskTooltip => T("Add a subtask under this task", "在此父任务下方直接新增一条子任务");
+    public string RowAddSubtaskBtn => T("+ Sub-TODO", "+ 子任务");
+    public string RowAddSubtaskTooltip => T("Add a sub-TODO under this TODO", "在此父任务下方直接新增一条子任务");
     public string RowOpenDetailBtn => T("Details ↗", "查看完整详情 ↗");
     public string RowOpenDetailTooltip => T("Open detail window", "打开编辑弹窗");
-    public string RowMenuAddSubtask => T("➕  Add Subtask", "➕  添加子任务");
-    public string RowMenuPromoteSubtask => T("⬆️  Make Main Task", "⬆️  提升为独立主任务");
+    public string RowMenuAddSubtask => T("➕  Add Sub-TODO", "➕  添加子任务");
+    public string RowMenuEdit => T("✏️  Edit Content", "✏️  修改内容");
+    public string RowMenuPromoteSubtask => T("⬆️  Make Main TODO", "⬆️  提升为独立主任务");
     public string RowMenuOpenDetail => T("📝  Open Details", "📝  查看完整详情");
     public string RowMenuArchive => T("📦  Archive Now", "📦  确认归档 (移出主面板)");
     public string RowMenuTrash => T("🗑️  Move to Trash", "🗑️  移入回收站");
+    public string RowMenuCopyText => T("📋  Copy Text", "📋  复制文字");
+    public string RowMenuPasteText => T("📋  Paste Text", "📋  粘贴文字");
+    public string RowEditTooltip => T("Edit TODO details", "编辑任务详情");
+    public string RowDeleteBtn => T("🗑️ Trash", "🗑️ 移入回收站");
+    public string RowDeleteTooltip => T("Move this TODO to trash", "将此任务移入回收站");
+    public string MenuPromoteToRoot => T("⬆️  Promote to Root TODO", "⬆️  移出子任务 (转为顶层主任务)");
+    public string NoticePromotedToRoot => T("Promoted to root TODO", "已将任务移出子任务，恢复为顶层主任务");
+    public string MenuUndoAction => T("↩️  Undo (Ctrl+Z)", "↩️  撤销上一步操作 (Ctrl+Z)");
+    public string NoticeActionUndone => T("Undone: ", "已撤销: ");
+    public string NoticeNothingToUndo => T("Nothing to undo", "当前暂无可撤销的操作");
+    public string SetUndoSectionTitle => T("↩️ Action History & Undo", "↩️ 操作历史与误操作撤销");
+    public string SetUndoDesc => T(
+        "Undo recent accidental actions (such as accidentally converting a task into a subtask, or deleting a task). Supports shortcut Ctrl+Z.",
+        "支持快捷键 Ctrl+Z 或在此撤销近期误操作（如误将任务拖为子任务、误删事项等）。");
+    public string SetUndoBtn => T("↩️ Undo Last Action (Ctrl+Z)", "↩️ 撤销上一步操作 (Ctrl+Z)");
+    public string SetUndoEmpty => T("No recent operations to undo", "当前暂无可撤销的近期操作");
 
     // --- Detail Window ---
     public string DetailCloseTooltip => T("Close (Esc)", "关闭 (Esc)");
@@ -272,9 +365,9 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string DetailPublisherLabel => T("From:", "发布人:");
     public string DetailPublisherPlaceholder => T("Enter sender...", "填写发布人...");
     public string DetailBodyPlaceholder => T("Write details, steps, or notes here...", "输入详细描述、待办步骤或笔记正文...");
-    public string DetailSubtasksLabel => T("↳ Subtasks:", "↳ 子任务:");
-    public string DetailSubtaskInputPlaceholder => T("Type a subtask and press Enter...", "输入子任务名称后按 Enter 或点击右侧添加...");
-    public string DetailAddSubtaskBtn => T("+ Add", "+ 添加子任务");
+    public string DetailSubtasksLabel => T("↳ Sub-TODOs:", "↳ 子任务:");
+    public string DetailSubtaskInputPlaceholder => T("Type a sub-TODO and press Enter...", "输入子任务名称后按 Enter 或点击右侧添加...");
+    public string DetailAddSubtaskBtn => T("+ Add Sub-TODO", "+ 添加子任务");
     public string DetailSubtaskDoneBtn => T("Done", "完成");
     public string DetailDeleteBtn => T("Delete", "删除");
     public string DetailFilesLabel => T("📎 Files:", "📎 附件存储:");
@@ -296,7 +389,7 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string DetailSaveBtn => T("Save", "保存修改");
 
     // --- Manager Window (Calendar / Archive / Settings) ---
-    public string TabCalendar => T("📅 Calendar", "📅 任务日历");
+    public string TabCalendar => T("📅 TODO Calendar", "📅 任务日历");
     public string TabArchiveTrash => T("📦 Archive & Trash", "📦 历史归档与回收站");
     public string TabSettings => T("⚙️ Settings", "⚙️ 设置与偏好");
 
@@ -308,13 +401,46 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string CalAxisStart => T("Start Date", "按开始时间");
     public string CalAxisCreated => T("Created Time", "按创建时间");
     public string CalAxisClosed => T("Archived Time", "按完成归档时间");
-    public string CalEmptyTitle => T("No tasks found for this month", "当前月份与维度下暂无任务记录");
+    public string CalEmptyTitle => T("No TODOs found for this month", "当前月份与维度下暂无任务记录");
     public string CalEmptySubtitle => T(
         "Try switching to another month or time filter above",
         "可切换上方月份或时间维度（截止期 / 开始时间 / 创建时间 / 归档时间）查看历史记录");
 
+    // Weekday headers
+    public string CalMon => T("Mon", "周一");
+    public string CalTue => T("Tue", "周二");
+    public string CalWed => T("Wed", "周三");
+    public string CalThu => T("Thu", "周四");
+    public string CalFri => T("Fri", "周五");
+    public string CalSat => T("Sat", "周六");
+    public string CalSun => T("Sun", "周日");
+
+    // Calendar view switcher & markers
+    public string CalViewMonthGrid => T("📅 Month Calendar", "📅 月历视图");
+    public string CalViewList => T("📋 List Ledger", "📋 列表台账");
+    public string CalCreatedLabel => T("Created", "创建");
+    public string CalCompletedLabel => T("Completed", "完成");
+    public string CalDueLabel => T("Due", "截止");
+    public string CalHoverCreatedTitle => T("🌱 Created TODOs:", "🌱 本日创建任务:");
+    public string CalHoverCompletedTitle => T("✅ Completed TODOs:", "✅ 本日完成任务:");
+    public string CalHoverDueTitle => T("⏰ Due TODOs:", "⏰ 本日截止任务:");
+    public string CalHoverEmpty => T("No TODO activity on this day", "该日期无任务记录");
+    public string CalSelectedDateTitle => T("Selected Date TODOs", "选中日期任务清单");
+    public string CalNoTasksSelectedDay => T("No TODOs on selected day", "选中日期暂无任务记录");
+    public string TodayLabel => T("Today", "今日");
+
     public string HistArchivedBtn => T("✅ Archived Items", "✅ 已完成归档");
     public string HistTrashBtn => T("🗑️ Trash", "🗑️ 回收站");
+    public string BtnEmptyTrash => T("🗑️ Empty Trash", "🗑️ 清空回收站");
+    public string BtnEmptyTrashTooltip => T("Permanently delete all items in trash", "彻底清空回收站中的所有项目 (不可撤销)");
+    public string ConfirmEmptyTrashTitle => T("Empty Trash Confirmation", "清空回收站确认");
+    public string ConfirmEmptyTrashSubtitle => T("Permanent Deletion", "此操作不可撤销");
+    public string ConfirmEmptyTrashMessage => T(
+        "Are you sure you want to permanently empty the trash? All deleted tasks and notes will be permanently lost and cannot be recovered.",
+        "确定要彻底清空回收站吗？清空后所有已删除的任务与笔记将永久丢失，此操作无法撤销。");
+    public string ConfirmEmptyTrashBtn => T("Permanently Empty", "彻底清空");
+    public string CancelBtn => T("Cancel", "取消");
+    public string NoticeTrashEmptied => T("Trash emptied successfully", "已成功清空回收站");
     public string HistSearchPlaceholder => T("Search archive or trash...", "搜索历史归档或回收站...");
     public string HistReopenBtn => T("Reopen", "重新开启");
     public string HistReopenTooltip => T("Move back to active list", "将该已完成记录恢复到主面板列表");
@@ -326,6 +452,14 @@ public sealed class AppLocalizer : INotifyPropertyChanged
         "在主面板确认归档或删除的记录会保存在此处，可随时查阅或恢复");
 
     // --- Settings Tab ---
+    public string SetStyleSectionTitle => T("🎨 App Visual Style", "🎨 应用外观样式");
+    public string SetStyleLabel => T("Sticky Note Visual Style", "便利贴界面样式");
+    public string SetStyleDesc => T(
+        "Switch between Realistic sticky note paper (Muyao handwriting font) and Minimalist modern style",
+        "支持「写实纸质便利贴（沐瑶软笔手写体）」与「简约现代」两种样式实时切换");
+    public string SetStyleRealisticBtn => T("📌 Realistic", "📌 写实样式");
+    public string SetStyleMinimalistBtn => T("✨ Minimalist", "✨ 简约样式");
+
     public string SetLangSectionTitle => T("🌐 Language & Time Zone", "🌐 语言与时区设置");
     public string SetLangLabel => T("Display Language", "界面显示语言");
     public string SetLangDesc => T(
@@ -347,8 +481,8 @@ public sealed class AppLocalizer : INotifyPropertyChanged
         "开启后锁定面板在桌面上的位置与尺寸，禁止鼠标拖拽移动窗口");
     public string SetStartupLabel => T("Launch at Login", "开机自动启动");
     public string SetStartupDesc => T(
-        "Start Desktop Notes automatically when you sign in to Windows",
-        "Windows 登录后自动启动桌面笔记并恢复上次位置与层级");
+        "Start Sticky Notes automatically when you sign in to Windows",
+        "Windows 登录后自动启动电子便签并恢复上次位置与层级");
 
     public string SetAttachmentSectionTitle => T("📎 Default File Folder", "📎 全局默认附件存储位置");
     public string SetAttachmentDesc => T(

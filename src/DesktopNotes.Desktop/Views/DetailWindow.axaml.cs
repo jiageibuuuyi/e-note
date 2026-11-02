@@ -40,6 +40,9 @@ public partial class DetailWindow : Window
             BtnHeaderClose.Click += (_, _) => Close();
         }
 
+        AppLocalizer.Instance.VisualStyleChanged += ApplyVisualStyle;
+        ApplyVisualStyle();
+
         if (BtnPrio0 is not null)
         {
             BtnPrio0.Click += (_, _) => viewModel.SetOwnPriority(Priority.Highest);
@@ -206,6 +209,13 @@ public partial class DetailWindow : Window
                 e.Handled = true;
             }
         };
+    }
+
+    private void ApplyVisualStyle()
+    {
+        bool isRealistic = AppLocalizer.Instance.IsRealisticStyle;
+        Classes.Set("realistic", isRealistic);
+        Classes.Set("minimalist", !isRealistic);
     }
 
     private void OnWindowDragOver(object? sender, DragEventArgs e)

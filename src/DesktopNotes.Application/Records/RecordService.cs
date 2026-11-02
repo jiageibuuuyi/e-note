@@ -110,6 +110,21 @@ public sealed class RecordService : IRecordService
         return Task.Run(() => _repository.DeleteDraft(editorId), ct);
     }
 
+    public Task<int> PurgeTrashAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.Run(() =>
+        {
+            ct.ThrowIfCancellationRequested();
+            int count = _repository.PurgeTrash(out var purgedIds);
+            if (purgedIds.Count > 0)
+            {
+                RecordsChanged?.Invoke(this, purgedIds);
+            }
+            return count;
+        }, ct);
+    }
+
     private void NotifyChanged(MutationResult result)
     {
         if (result.Changed.Count > 0)

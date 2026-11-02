@@ -108,13 +108,13 @@ public partial class App : global::Avalonia.Application
 
             menu.Items.Add(new NativeMenuItemSeparator());
 
-            var itemExit = new NativeMenuItem(loc.T("Quit Desktop Notes", "退出桌面笔记"));
+            var itemExit = new NativeMenuItem(loc.T("Quit Sticky Notes", "退出电子便签"));
             itemExit.Click += (_, _) => panelWindow.ExitApplication();
             menu.Items.Add(itemExit);
 
             _trayIcon = new TrayIcon
             {
-                ToolTipText = loc.T("Desktop Notes (Click to show/hide, right-click for menu)", "桌面笔记 (单击显示/隐藏，右键更多选项)"),
+                ToolTipText = loc.T("Sticky Notes (Click to show/hide, right-click for menu)", "电子便签 (单击显示/隐藏，右键菜单)"),
                 Icon = CreateAppWindowIcon(),
                 Menu = menu,
                 IsVisible = true
@@ -127,12 +127,12 @@ public partial class App : global::Avalonia.Application
                 itemCalendar.Header = loc.T("Calendar · Archive · Settings", "任务日历 · 历史归档 · 设置");
                 itemTopmost.Header = loc.T("Always on Top", "置于所有应用最上层 (置顶)");
                 itemBottom.Header = loc.T("Send to Desktop Back", "置于所有应用最下层 (桌面层)");
-                itemExit.Header = loc.T("Quit Desktop Notes", "退出桌面笔记");
+                itemExit.Header = loc.T("Quit Sticky Notes", "退出电子便签");
                 if (_trayIcon is not null)
                 {
                     _trayIcon.ToolTipText = loc.T(
-                        "Desktop Notes (Click to show/hide, right-click for menu)",
-                        "桌面笔记 (单击显示/隐藏，右键更多选项)");
+                        "Sticky Notes (Click to show/hide, right-click for menu)",
+                        "电子便签 (单击显示/隐藏，右键菜单)");
                 }
             };
 
@@ -159,6 +159,26 @@ public partial class App : global::Avalonia.Application
 
     private static WindowIcon CreateAppWindowIcon()
     {
+        try
+        {
+            var uri = new Uri("avares://DesktopNotes.Desktop/Assets/Icons/app-icon.ico");
+            using var stream = AssetLoader.Open(uri);
+            return new WindowIcon(stream);
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var pngUri = new Uri("avares://DesktopNotes.Desktop/Assets/Icons/tray-icon.png");
+            using var stream = AssetLoader.Open(pngUri);
+            return new WindowIcon(stream);
+        }
+        catch
+        {
+        }
+
         const int size = 32;
         var bitmap = new WriteableBitmap(
             new PixelSize(size, size),
@@ -173,22 +193,32 @@ public partial class App : global::Avalonia.Application
             {
                 for (int x = 0; x < size; x++)
                 {
-                    // Rounded square background in electric blue (#2563EB -> BGRA: B=0xEB, G=0x63, R=0x25, A=0xFF)
-                    bool inside = x >= 2 && x < size - 2 && y >= 2 && y < size - 2;
+                    // Warm golden yellow note paper with red pin head
+                    bool inside = x >= 4 && x < size - 4 && y >= 4 && y < size - 4;
                     if (!inside)
                     {
                         pixels[y * size + x] = 0;
                         continue;
                     }
 
-                    // White checkmark in center
-                    bool isCheck =
-                        (x >= 8 && x <= 13 && Math.Abs((y - 16) - (x - 8)) <= 2) ||
-                        (x >= 13 && x <= 23 && Math.Abs((y - 21) + (x - 13)) <= 2);
+                    // Red pushpin at top center
+                    bool isPin = (x >= 13 && x <= 18) && (y >= 4 && y <= 9);
+                    if (isPin)
+                    {
+                        pixels[y * size + x] = unchecked((int)0xFF2333EA);
+                        continue;
+                    }
 
-                    pixels[y * size + x] = isCheck
-                        ? unchecked((int)0xFFFFFFFF)
-                        : unchecked((int)0xFF2563EB);
+                    // Peel corner at bottom right
+                    bool isPeel = (x >= size - 8) && (y >= size - 8) && (x + y >= size * 2 - 14);
+                    if (isPeel)
+                    {
+                        pixels[y * size + x] = unchecked((int)0xFFEBFDFF);
+                        continue;
+                    }
+
+                    // Golden yellow body (#FEE047)
+                    pixels[y * size + x] = unchecked((int)0xFF47E0FE);
                 }
             }
 

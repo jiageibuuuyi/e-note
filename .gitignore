@@ -25,3 +25,10 @@ TestResults/
 *.db-shm
 *.db-wal
 .desktopnotes-staging/
+
+## Installers & Executables (Do not commit installer setup files)
+*.exe
+*.msi
+dist/
+release/
+

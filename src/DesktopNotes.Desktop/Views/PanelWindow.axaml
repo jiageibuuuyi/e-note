@@ -4,292 +4,562 @@
         xmlns:controls="using:DesktopNotes.Desktop.Controls"
         x:Class="DesktopNotes.Desktop.Views.PanelWindow"
         x:DataType="vm:PanelViewModel"
-        Width="350" Height="520" MinWidth="280" MinHeight="360"
-        Background="{DynamicResource BgWindow}"
-        WindowDecorations="BorderOnly"
+        Width="370" Height="520" MinWidth="290" MinHeight="360"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        CanResize="True"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="0"
+        Icon="/Assets/Icons/app-icon.ico"
         Title="{Binding Loc.AppTitle}">
-  <Border BorderBrush="{DynamicResource BorderSubtle}"
-          BorderThickness="1"
-          Padding="10,8,10,6">
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-      <!-- 1. Ultra-Compact Top Bar: Mode Pill (Left) + Drag Region (Center) + Ghost Icons (Right) -->
-      <Grid Name="HeaderDragRegion"
-            Grid.Row="0"
-            ColumnDefinitions="Auto,*,Auto"
-            Background="Transparent"
-            Height="28"
-            Margin="0,0,0,6"
-            ToolTip.Tip="{Binding Loc.HeaderDragTooltip}">
-        <Grid.ContextMenu>
-          <ContextMenu Name="HeaderContextMenu">
-            <MenuItem Name="CtxToggleLock" Header="🔒  Lock Window Position"/>
-            <Separator/>
-            <MenuItem Name="CtxPlaceTopmost" Header="📌  Always on Top"/>
-            <MenuItem Name="CtxPlaceBottom" Header="🖥️  Send to Desktop Back"/>
-            <Separator/>
-            <MenuItem Header="{Binding Loc.MenuSortHeader}">
-              <MenuItem Name="CtxSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
-              <MenuItem Name="CtxSortDeadline" Header="{Binding Loc.MenuSortDeadline}"/>
-              <MenuItem Name="CtxSortPriority" Header="{Binding Loc.MenuSortPriority}"/>
-              <MenuItem Name="CtxSortCreated" Header="{Binding Loc.MenuSortCreated}"/>
-            </MenuItem>
-            <MenuItem Header="{Binding Loc.MenuLanguageHeader}">
-              <MenuItem Name="CtxLangEn" Header="English (Default)"/>
-              <MenuItem Name="CtxLangZh" Header="中文 (Chinese)"/>
-            </MenuItem>
-            <MenuItem Name="CtxSwitchTasks" Header="{Binding Loc.MenuSwitchTasks}"/>
-            <MenuItem Name="CtxSwitchNotes" Header="{Binding Loc.MenuSwitchNotes}"/>
-            <MenuItem Name="CtxThemeToggle" Header="{Binding Loc.MenuSwitchTheme}"/>
-            <Separator/>
-            <MenuItem Name="CtxOpenSettings" Header="{Binding Loc.MenuOpenSettings}"/>
-            <MenuItem Name="CtxOpenCalendar" Header="{Binding Loc.MenuCalendarArchive}"/>
-            <MenuItem Name="CtxArchiveAllCompleted" Header="{Binding Loc.MenuArchiveAllDone}"/>
-            <Separator/>
-            <MenuItem Name="CtxHideToTray" Header="{Binding Loc.MenuHideToTray}"/>
-            <MenuItem Name="CtxExitApp" Header="{Binding Loc.MenuExitApp}"/>
-          </ContextMenu>
-        </Grid.ContextMenu>
+  <!-- Root Canvas Container supporting Lifted Shadows and Realistic Sticky Tilt -->
+  <Panel Name="RootScenePanel" Margin="8,6,10,12" RenderTransformOrigin="50%,5%">
+    
+    <!-- Main Window Frame (Switches between Minimalist Fluent Card and Realistic Paper) -->
+    <Border Name="WindowFrameBorder"
+            Classes="minimal-frame"
+            Classes.minimal-frame="{Binding Loc.IsMinimalistStyle}"
+            Classes.paper-frame="{Binding Loc.IsRealisticStyle}">
+      
+      <Panel>
+        <!-- 0. Realistic Organic Curved Paper Sheet Layer (Rendered only in Realistic Mode) -->
+        <Panel Name="RealisticPaperBackgroundLayer"
+               IsVisible="{Binding Loc.IsRealisticStyle}"
+               IsHitTestVisible="False">
+          <!-- Hand-drawn natural curved paper shape (Cubic Bezier contours on all 4 edges) -->
+          <Path Name="RealisticPaperPath"
+                Data="M 16,7 C 105,3 255,8 344,4 C 352,5 356,11 356,20 C 354,140 358,310 354,456 C 353,468 345,486 320,494 C 230,499 100,492 16,496 C 8,495.5 3.5,490 4,480 C 5.5,315 2.5,145 5,20 C 5.5,10 10,7 16,7 Z"
+                Fill="{StaticResource PaperWarmGradient}"
+                Stroke="#C9A11E"
+                StrokeThickness="1.5"
+                Stretch="Fill" />
 
-        <!-- Mode Indicator / Toggle (Left) -->
-        <Button Name="BtnKindSelector"
-                Grid.Column="0"
-                Classes="mode-pill"
-                ToolTip.Tip="{Binding Loc.KindSwitchTooltip}">
-          <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-            <PathIcon Width="11" Height="11"
-                      Foreground="{DynamicResource AccentPrimary}"
-                      Data="{Binding KindIconData}"/>
-            <TextBlock Text="{Binding CurrentKindText}"
-                       FontSize="12"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimary}"
-                       VerticalAlignment="Center"/>
-            <Border Background="{DynamicResource BgHover}"
-                    CornerRadius="3"
-                    Padding="4,0.5"
-                    VerticalAlignment="Center">
-              <TextBlock Text="{Binding TotalCount}"
-                         Foreground="{DynamicResource TextSecondary}"
-                         FontSize="10.5"
-                         FontWeight="SemiBold"/>
-            </Border>
-          </StackPanel>
-        </Button>
+          <!-- Bottom subtle creases -->
+          <Canvas VerticalAlignment="Bottom" Height="25" Margin="30,0,55,5" Opacity="0.22">
+            <Line StartPoint="0,12" EndPoint="42,10" Stroke="#141414" StrokeThickness="1.4" StrokeLineCap="Round" />
+            <Line StartPoint="52,10" EndPoint="85,12" Stroke="#141414" StrokeThickness="1.4" StrokeLineCap="Round" />
+          </Canvas>
 
-        <!-- Right Action Icons: + Add Inline + Search + Lock + Three-dot Menu + Hide to Tray -->
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-          <!-- + Add New Blank Row at Bottom of List -->
-          <Button Name="BtnAddInline"
-                  Classes="icon-ghost"
-                  ToolTip.Tip="{Binding Loc.AddInlineTooltip}">
-            <PathIcon Width="13" Height="13"
-                      Foreground="{DynamicResource AccentPrimary}"
-                      Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
-          </Button>
+          <!-- Authentic 3D Corner Peel Flap in Bottom Right -->
+          <Canvas HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="44" Height="44">
+            <!-- Under-peel dark shadow -->
+            <Polygon Points="44,0 0,44 44,44" Fill="#BD9615" Opacity="0.9" />
+            <!-- Lifted lighter corner flap with natural peel curve -->
+            <Path Data="M 0,44 Q 20,24 44,0 Q 28,32 0,44 Z" Fill="#FFF9DA" Stroke="#C9A11E" StrokeThickness="1.2" />
+            <!-- Diagonal fold crease line -->
+            <Line StartPoint="0,44" EndPoint="44,0" Stroke="#B89014" StrokeThickness="1.5" StrokeLineCap="Round" />
+          </Canvas>
+        </Panel>
 
-          <!-- Search Toggle -->
-          <Button Name="BtnSearchToggle"
-                  Classes="icon-ghost"
-                  ToolTip.Tip="{Binding Loc.SearchTooltip}">
-            <PathIcon Width="13" Height="13"
-                      Foreground="{DynamicResource TextSecondary}"
-                      Data="M 15.5 14 L 14.71 14 L 14.43 13.73 A 6.5 6.5 0 1 0 13.73 14.43 L 14 14.71 L 14 15.5 L 19 20.49 L 20.49 19 L 15.5 14 Z M 9.5 14 A 4.5 4.5 0 1 1 14 9.5 A 4.5 4.5 0 0 1 9.5 14 Z"/>
-          </Button>
+        <!-- Foreground Content Grid -->
+        <Grid Classes.paper-content="{Binding Loc.IsRealisticStyle}"
+              RowDefinitions="Auto,Auto,Auto,*,Auto">
 
-          <!-- Lock / Unlock Position Toggle -->
-          <Button Name="BtnLockToggle"
-                  Classes="icon-ghost"
-                  ToolTip.Tip="Lock / Unlock window position">
-            <PathIcon Name="IconLockState"
-                      Width="12" Height="12"
-                      Foreground="{DynamicResource TextSecondary}"
-                      Data="M 18 8 L 17 8 L 17 6 A 5 5 0 0 0 7 6 L 9 6 A 3 3 0 0 1 15 6 L 15 8 L 6 8 A 2 2 0 0 0 4 10 L 4 20 A 2 2 0 0 0 6 22 L 18 22 A 2 2 0 0 0 20 20 L 20 10 A 2 2 0 0 0 18 8 Z"/>
-          </Button>
-
-          <!-- Three Dots Menu for Transactions, Sorting, Placement, Language & Settings -->
-          <Button Name="BtnMoreOptions"
-                  Classes="icon-ghost"
-                  ToolTip.Tip="{Binding Loc.MoreOptionsTooltip}">
-            <PathIcon Width="13" Height="13"
-                      Foreground="{DynamicResource TextSecondary}"
-                      Data="M 6 12 A 2 2 0 1 1 2 12 A 2 2 0 1 1 6 12 Z M 14 12 A 2 2 0 1 1 10 12 A 2 2 0 1 1 14 12 Z M 22 12 A 2 2 0 1 1 18 12 A 2 2 0 1 1 22 12 Z"/>
-            <Button.Flyout>
-              <MenuFlyout Placement="BottomEdgeAlignedRight">
-                <MenuItem Name="BtnTabTasks" Header="{Binding Loc.MenuSwitchTasks}">
-                  <MenuItem.Icon>
-                    <PathIcon Width="11" Height="11" Data="M 9 16.17 L 4.83 12 L 3.41 13.41 L 9 19 L 21 7 L 19.59 5.59 L 9 16.17 Z"/>
-                  </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Name="BtnTabNotes" Header="{Binding Loc.MenuSwitchNotes}">
-                  <MenuItem.Icon>
-                    <PathIcon Width="11" Height="11" Data="M 3 17.25 L 3 21 L 6.75 21 L 17.81 9.94 L 14.06 6.19 L 3 17.25 Z M 20.71 7.04 L 18.37 4.7 L 16.54 6.53 L 20.29 10.28 L 20.71 7.04 Z"/>
-                  </MenuItem.Icon>
-                </MenuItem>
-                <Separator/>
-                <MenuItem Header="{Binding Loc.MenuSortHeader}">
-                  <MenuItem Name="MenuSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
-                  <MenuItem Name="MenuSortDeadline" Header="{Binding Loc.MenuSortDeadline}"/>
-                  <MenuItem Name="MenuSortPriority" Header="{Binding Loc.MenuSortPriority}"/>
-                  <MenuItem Name="MenuSortCreated" Header="{Binding Loc.MenuSortCreated}"/>
-                </MenuItem>
-                <MenuItem Header="{Binding Loc.MenuLayerHeader}">
-                  <MenuItem Name="MenuPlaceTopmost" Header="📌 Always on Top"/>
-                  <MenuItem Name="MenuPlaceBottom" Header="🖥️ Send to Desktop Back"/>
-                  <Separator/>
-                  <MenuItem Name="MenuToggleLock" Header="🔒 Lock / Unlock Position"/>
-                </MenuItem>
-                <MenuItem Header="{Binding Loc.MenuLanguageHeader}">
-                  <MenuItem Name="MenuLangEn" Header="English (Default)"/>
-                  <MenuItem Name="MenuLangZh" Header="中文 (Chinese)"/>
-                </MenuItem>
-                <Separator/>
-                <MenuItem Name="BtnQuickAdd" Header="{Binding Loc.MenuQuickAddDetail}">
-                  <MenuItem.Icon>
-                    <PathIcon Width="11" Height="11" Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
-                  </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Name="BtnCalendar" Header="{Binding Loc.MenuCalendarArchive}">
-                  <MenuItem.Icon>
-                    <PathIcon Width="11" Height="11" Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
-                  </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Name="BtnOpenSettings" Header="{Binding Loc.MenuOpenSettings}"/>
-                <MenuItem Name="MenuArchiveAllCompleted" Header="{Binding Loc.MenuArchiveAllDone}"/>
-                <MenuItem Name="BtnThemeToggle" Header="{Binding Loc.MenuSwitchTheme}">
-                  <MenuItem.Icon>
-                    <PathIcon Width="11" Height="11" Data="M 12 3 A 9 9 0 1 0 21 12 A 5.4 5.4 0 0 1 12 3 Z"/>
-                  </MenuItem.Icon>
-                </MenuItem>
-                <Separator/>
-                <MenuItem Name="MenuHideToTray" Header="{Binding Loc.MenuHideToTray}"/>
-                <MenuItem Name="MenuExitApp" Header="{Binding Loc.MenuExitApp}"/>
-              </MenuFlyout>
-            </Button.Flyout>
-          </Button>
-
-          <!-- Minimize / Hide to Tray Button -->
-          <Button Name="BtnCloseWindow"
-                  Classes="icon-ghost"
-                  ToolTip.Tip="{Binding Loc.HideToTrayTooltip}">
-            <PathIcon Width="11" Height="11"
-                      Foreground="{DynamicResource TextMuted}"
-                      Data="M 19 6.41 L 17.59 5 L 12 10.59 L 6.41 5 L 5 6.41 L 10.59 12 L 5 17.59 L 6.41 19 L 12 13.41 L 17.59 19 L 19 17.59 L 13.41 12 L 19 6.41 Z"/>
-          </Button>
-        </StackPanel>
-      </Grid>
-
-      <!-- 2. Slim Collapsible Search Box -->
-      <Border Grid.Row="1"
-              IsVisible="{Binding IsSearchOpen}"
-              Background="{DynamicResource BgCard}"
-              BorderBrush="{DynamicResource BorderStrong}"
-              BorderThickness="1"
-              CornerRadius="6"
-              Padding="8,3"
-              Margin="0,0,0,6">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <PathIcon Grid.Column="0"
-                    Width="11" Height="11"
-                    Foreground="{DynamicResource TextMuted}"
-                    Margin="0,0,6,0"
-                    VerticalAlignment="Center"
-                    Data="M 15.5 14 L 14.71 14 L 14.43 13.73 A 6.5 6.5 0 1 0 13.73 14.43 L 14 14.71 L 14 15.5 L 19 20.49 L 20.49 19 L 15.5 14 Z M 9.5 14 A 4.5 4.5 0 1 1 14 9.5 A 4.5 4.5 0 0 1 9.5 14 Z"/>
-          <TextBox Name="SearchBox"
-                   Grid.Column="1"
-                   Classes="clean-input"
-                   Text="{Binding SearchText}"
-                   FontSize="12"
-                   PlaceholderText="{Binding Loc.SearchPlaceholder}"/>
-          <Button Name="BtnClearSearch"
-                  Grid.Column="2"
-                  Classes="icon-ghost"
-                  Width="18" Height="18"
-                  Content="✕"
-                  FontSize="10"
-                  ToolTip.Tip="{Binding Loc.ClearSearchTooltip}"/>
+        <!-- 0. Top Center Red 3D Pushpin (Realistic Mode Only, Completely Inside Paper, Hit-Testable Drag Header & Drop Target) -->
+        <Grid Name="PushpinRegion"
+              Grid.Row="0"
+              IsVisible="{Binding Loc.IsRealisticStyle}"
+              HorizontalAlignment="Stretch"
+              Height="32"
+              Background="Transparent"
+              DragDrop.AllowDrop="True"
+              Margin="0,0,0,1"
+              ToolTip.Tip="{Binding Loc.HeaderDragTooltip}">
+          <Canvas Name="PushpinCanvas" Width="34" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <!-- Soft elliptical shadow on the yellow paper -->
+            <Ellipse Name="PinShadowEllipse"
+                     Canvas.Left="13" Canvas.Top="23"
+                     Width="13" Height="4.5"
+                     Fill="#3D141414"/>
+            <!-- Pinhole subtle paper dent -->
+            <Path Name="PinHolePath"
+                  Data="M14 25.5 Q17 27 20 25.5"
+                  Stroke="#141414"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  Opacity="0.55"/>
+            <!-- Short metallic needle piercing paper -->
+            <Path Name="PinNeedlePath"
+                  Data="M17 18.5 L17 25.5"
+                  Stroke="#141414"
+                  StrokeThickness="2.5"
+                  StrokeLineCap="Round"/>
+            <!-- Chubby Round Red Thumbtack Head -->
+            <Ellipse Canvas.Left="8" Canvas.Top="2"
+                     Width="18" Height="18"
+                     Fill="#EA3323"
+                     Stroke="#141414"
+                     StrokeThickness="2"/>
+            <!-- Lower Crescent Shade Arc -->
+            <Path Data="M10 14 A7.8 7.8 0 0 0 24 14"
+                  Stroke="#B81B0E"
+                  StrokeThickness="2.2"
+                  StrokeLineCap="Round"/>
+            <!-- Glossy White Highlight Oval & Dot -->
+            <Ellipse Canvas.Left="10.5" Canvas.Top="5.5"
+                     Width="6.2" Height="3.4"
+                     Fill="#F2FFFFFF">
+              <Ellipse.RenderTransform>
+                <RotateTransform Angle="-28"/>
+              </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse Canvas.Left="10.2" Canvas.Top="10"
+                     Width="2" Height="2"
+                     Fill="#D9FFFFFF"/>
+          </Canvas>
         </Grid>
-      </Border>
 
-      <!-- 3. Virtualized Task/Note List & Calm Empty State -->
-      <Panel Grid.Row="2">
-        <ListBox Name="RecordListBox"
-                 ItemsSource="{Binding Items}"
-                 IsVisible="{Binding !IsEmpty}"
-                 Background="Transparent"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:TaskRowViewModel">
-              <controls:TaskRow/>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+        <!-- 0.5 Glue Crease Horizontal Line (Right below pushpin in Realistic mode) -->
+        <Border Name="TopGlueCreaseLine"
+                Grid.Row="0"
+                IsVisible="{Binding Loc.IsRealisticStyle}"
+                Height="1.5"
+                VerticalAlignment="Bottom"
+                CornerRadius="1"
+                Background="#73B58D12"
+                Margin="4,0,4,0"/>
 
-        <!-- Calm Empty State View with + Action -->
-        <StackPanel IsVisible="{Binding IsEmpty}"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Spacing="8"
-                    Margin="16">
-          <Button Name="BtnEmptyAdd"
-                  Width="40" Height="40"
-                  CornerRadius="20"
-                  Background="{DynamicResource BgSubtle}"
-                  BorderBrush="{DynamicResource BorderSubtle}"
-                  BorderThickness="1"
-                  HorizontalAlignment="Center"
+        <!-- 1. Header Bar: Drag Region + Mode Indicator + Actions & Drop Target -->
+        <Grid Name="HeaderDragRegion"
+              Grid.Row="1"
+              ColumnDefinitions="Auto,*,Auto"
+              Background="Transparent"
+              DragDrop.AllowDrop="True"
+              MinHeight="30"
+              Margin="0,4,0,6"
+              ToolTip.Tip="{Binding Loc.HeaderDragTooltip}">
+          <Grid.ContextMenu>
+            <ContextMenu Name="HeaderContextMenu">
+              <!-- Undo Last Action Shortcut -->
+              <MenuItem Name="CtxUndoAction" Header="{Binding Loc.MenuUndoAction}"/>
+              <Separator/>
+              <!-- Visual Style Submenu -->
+              <MenuItem Header="{Binding Loc.MenuStyleHeader}">
+                <MenuItem Name="CtxStyleRealistic" Header="{Binding Loc.MenuStyleRealistic}"/>
+                <MenuItem Name="CtxStyleMinimalist" Header="{Binding Loc.MenuStyleMinimalist}"/>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Name="CtxToggleLock" Header="🔒  Lock Window Position"/>
+              <Separator/>
+              <MenuItem Name="CtxPlaceTopmost" Header="📌  Always on Top"/>
+              <MenuItem Name="CtxPlaceBottom" Header="🖥️  Send to Desktop Back"/>
+              <Separator/>
+              <MenuItem Header="{Binding Loc.MenuSortHeader}">
+                <MenuItem Name="CtxSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
+                <MenuItem Name="CtxSortDeadline" Header="{Binding Loc.MenuSortDeadline}"/>
+                <MenuItem Name="CtxSortPriority" Header="{Binding Loc.MenuSortPriority}"/>
+                <MenuItem Name="CtxSortCreated" Header="{Binding Loc.MenuSortCreated}"/>
+              </MenuItem>
+              <MenuItem Header="{Binding Loc.MenuLanguageHeader}">
+                <MenuItem Name="CtxLangEn" Header="English (Default)"/>
+                <MenuItem Name="CtxLangZh" Header="中文 (Chinese)"/>
+              </MenuItem>
+              <MenuItem Name="CtxSwitchTasks" Header="{Binding Loc.MenuSwitchTasks}"/>
+              <MenuItem Name="CtxSwitchNotes" Header="{Binding Loc.MenuSwitchNotes}"/>
+              <MenuItem Name="CtxThemeToggle" Header="{Binding Loc.MenuSwitchTheme}"/>
+              <Separator/>
+              <MenuItem Name="CtxOpenSettings" Header="{Binding Loc.MenuOpenSettings}"/>
+              <MenuItem Name="CtxOpenCalendar" Header="{Binding Loc.MenuCalendarArchive}"/>
+              <MenuItem Name="CtxArchiveAllCompleted" Header="{Binding Loc.MenuArchiveAllDone}"/>
+              <Separator/>
+              <MenuItem Name="CtxHideToTray" Header="{Binding Loc.MenuHideToTray}"/>
+              <MenuItem Name="CtxExitApp" Header="{Binding Loc.MenuExitApp}"/>
+            </ContextMenu>
+          </Grid.ContextMenu>
+
+          <!-- Left: Mode Indicator / Toggle Button -->
+          <Button Name="BtnKindSelector"
+                  Grid.Column="0"
+                  Classes.mode-pill="{Binding Loc.IsMinimalistStyle}"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Padding="2,1"
                   Cursor="Hand"
-                  ToolTip.Tip="{Binding Loc.EmptyAddTooltip}">
-            <PathIcon Width="14" Height="14"
-                      Foreground="{DynamicResource AccentPrimary}"
-                      Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
+                  ToolTip.Tip="{Binding Loc.KindSwitchTooltip}">
+            <Panel>
+              <!-- Realistic Header Title: Sprout Leaf + Muyao Black Title + Pill Count -->
+              <StackPanel IsVisible="{Binding Loc.IsRealisticStyle}"
+                          Orientation="Horizontal"
+                          Spacing="6"
+                          VerticalAlignment="Center">
+                <Canvas Width="20" Height="20" VerticalAlignment="Center">
+                  <Path Data="M10 18 L10 9" Stroke="#141414" StrokeThickness="2" StrokeLineCap="Round"/>
+                  <Path Data="M10 11 C6 11 4 8 4 5 C7.5 5 10 7 10 11 Z"
+                        Fill="#74C69D" Stroke="#141414" StrokeThickness="1.8" StrokeJoin="Round"/>
+                  <Path Data="M10 9 C13.5 9 16 6 16 3 C12.5 3 10 5 10 9 Z"
+                        Fill="#95D5B2" Stroke="#141414" StrokeThickness="1.8" StrokeJoin="Round"/>
+                </Canvas>
+                <TextBlock Text="{Binding CurrentKindText}"
+                           FontSize="18"
+                           Foreground="#141414"
+                           VerticalAlignment="Center"/>
+                <Border Background="#1A141414"
+                        CornerRadius="9"
+                        Padding="6,1"
+                        VerticalAlignment="Center">
+                  <TextBlock Text="{Binding TotalCount}"
+                             Foreground="#141414"
+                             FontSize="13"
+                             VerticalAlignment="Center"/>
+                </Border>
+              </StackPanel>
+
+              <!-- Minimalist Header Title: Fluent Mode Pill -->
+              <StackPanel IsVisible="{Binding Loc.IsMinimalistStyle}"
+                          Orientation="Horizontal"
+                          Spacing="5"
+                          VerticalAlignment="Center">
+                <PathIcon Width="11" Height="11"
+                          Foreground="{DynamicResource AccentPrimary}"
+                          Data="{Binding KindIconData}"/>
+                <TextBlock Text="{Binding CurrentKindText}"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"
+                           VerticalAlignment="Center"/>
+                <Border Background="{DynamicResource BgHover}"
+                        CornerRadius="3"
+                        Padding="4,0.5"
+                        VerticalAlignment="Center">
+                  <TextBlock Text="{Binding TotalCount}"
+                             Foreground="{DynamicResource TextSecondary}"
+                             FontSize="10.5"
+                             FontWeight="SemiBold"/>
+                </Border>
+              </StackPanel>
+            </Panel>
           </Button>
-          <TextBlock Text="{Binding EmptyStateTitle}"
-                     Foreground="{DynamicResource TextSecondary}"
-                     FontSize="13"
-                     FontWeight="Medium"
-                     HorizontalAlignment="Center"/>
-          <TextBlock Text="{Binding EmptyStateSubtitle}"
-                     Foreground="{DynamicResource TextMuted}"
-                     FontSize="11.5"
-                     TextAlignment="Center"
-                     TextWrapping="Wrap"
-                     MaxWidth="220"
-                     HorizontalAlignment="Center"/>
-        </StackPanel>
+
+          <!-- Right Action Icons: Add, Search, Lock, More Options, Hide to Tray -->
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+            <!-- 1. Add Inline Button -->
+            <Button Name="BtnAddInline"
+                    Classes.icon-ghost="{Binding Loc.IsMinimalistStyle}"
+                    Classes.cute-icon-btn="{Binding Loc.IsRealisticStyle}"
+                    ToolTip.Tip="{Binding Loc.AddInlineTooltip}">
+              <Panel>
+                <!-- Realistic: Chubby Sparkle Star + Red Plus -->
+                <Canvas Width="18" Height="18" IsVisible="{Binding Loc.IsRealisticStyle}" VerticalAlignment="Center">
+                  <Path Data="M10 1.5 C11.2 5 12.5 6.3 16 7 C12.5 8.2 11.2 9.5 10.5 14 C9.3 10 8 8.5 4 7.6 C7.8 6.5 8.8 5 10 1.5 Z"
+                        Fill="#FFF380" Stroke="#141414" StrokeThickness="1.6" StrokeJoin="Round"/>
+                  <Path Data="M15 13 L15 17.5 M12.8 15.2 L17.2 15.2"
+                        Stroke="#EA3323" StrokeThickness="2.2" StrokeLineCap="Round"/>
+                </Canvas>
+                <!-- Minimalist: Fluent Plus Icon -->
+                <PathIcon Width="12" Height="12"
+                          IsVisible="{Binding Loc.IsMinimalistStyle}"
+                          Foreground="{DynamicResource AccentPrimary}"
+                          Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
+              </Panel>
+            </Button>
+
+            <!-- 2. Search Toggle Button -->
+            <Button Name="BtnSearchToggle"
+                    Classes.icon-ghost="{Binding Loc.IsMinimalistStyle}"
+                    Classes.cute-icon-btn="{Binding Loc.IsRealisticStyle}"
+                    ToolTip.Tip="{Binding Loc.SearchTooltip}">
+              <Panel>
+                <!-- Realistic: Smiling Cat-Ear Magnifier -->
+                <Canvas Width="18" Height="18" IsVisible="{Binding Loc.IsRealisticStyle}" VerticalAlignment="Center">
+                  <Path Data="M5.5 6.5 L3.8 2.8 L7.6 4.4 Z"
+                        Fill="#FF9EBB" Stroke="#141414" StrokeThickness="1.5" StrokeJoin="Round"/>
+                  <Path Data="M12.5 4.4 L16.3 2.8 L14.5 6.5 Z"
+                        Fill="#FF9EBB" Stroke="#141414" StrokeThickness="1.5" StrokeJoin="Round"/>
+                  <Ellipse Canvas.Left="4.8" Canvas.Top="4.8"
+                           Width="10.4" Height="10.4"
+                           Fill="#FFFFFF" Stroke="#141414" StrokeThickness="1.6"/>
+                  <Ellipse Canvas.Left="7.6" Canvas.Top="8.6" Width="1.7" Height="1.7" Fill="#141414"/>
+                  <Ellipse Canvas.Left="10.6" Canvas.Top="8.6" Width="1.7" Height="1.7" Fill="#141414"/>
+                  <Path Data="M9.2 11 Q10 11.9 10.8 11"
+                        Stroke="#EA3323" StrokeThickness="1.3" StrokeLineCap="Round"/>
+                  <Path Data="M14 14 L17.5 17.5"
+                        Stroke="#141414" StrokeThickness="2" StrokeLineCap="Round"/>
+                </Canvas>
+                <!-- Minimalist: Fluent Magnifier Icon -->
+                <PathIcon Width="12" Height="12"
+                          IsVisible="{Binding Loc.IsMinimalistStyle}"
+                          Foreground="{DynamicResource TextSecondary}"
+                          Data="M 15.5 14 L 14.71 14 L 14.43 13.73 A 6.5 6.5 0 1 0 13.73 14.43 L 14 14.71 L 14 15.5 L 19 20.49 L 20.49 19 L 15.5 14 Z M 9.5 14 A 4.5 4.5 0 1 1 14 9.5 A 4.5 4.5 0 0 1 9.5 14 Z"/>
+              </Panel>
+            </Button>
+
+            <!-- 3. Lock / Unlock Position Toggle -->
+            <Button Name="BtnLockToggle"
+                    Classes.icon-ghost="{Binding Loc.IsMinimalistStyle}"
+                    Classes.cute-icon-btn="{Binding Loc.IsRealisticStyle}"
+                    ToolTip.Tip="Lock / Unlock window position">
+              <Panel>
+                <!-- Realistic: Pink Heart Padlock -->
+                <Canvas Width="18" Height="18" IsVisible="{Binding Loc.IsRealisticStyle}" VerticalAlignment="Center">
+                  <Path Name="DoodleLockShackle"
+                        Data="M7 9 L7 6.5 C7 4.5 8.6 3 10.5 3 C12.4 3 14 4.5 14 6.5 L14 9"
+                        Stroke="#141414" StrokeThickness="1.7" StrokeLineCap="Round"/>
+                  <Border Name="DoodleLockBody"
+                          Canvas.Left="4.8" Canvas.Top="8.5"
+                          Width="11.4" Height="9.2"
+                          CornerRadius="3"
+                          Background="#FF758F"
+                          BorderBrush="#141414"
+                          BorderThickness="1.6"/>
+                  <Path Data="M10.5 11.8 C9.8 11.1 8.8 11.4 8.8 12.2 C8.8 13.2 10.5 14.4 10.5 14.4 C10.5 14.4 12.2 13.2 12.2 12.2 C12.2 11.4 11.2 11.1 10.5 11.8 Z"
+                        Fill="#FFFFFF" Stroke="#141414" StrokeThickness="1"/>
+                </Canvas>
+                <!-- Minimalist: Fluent Lock Icon -->
+                <PathIcon Name="IconLockState"
+                          Width="11" Height="11"
+                          IsVisible="{Binding Loc.IsMinimalistStyle}"
+                          Foreground="{DynamicResource TextSecondary}"
+                          Data="M 18 8 L 17 8 L 17 6 A 5 5 0 0 0 7 6 L 9 6 A 3 3 0 0 1 15 6 L 15 8 L 6 8 A 2 2 0 0 0 4 10 L 4 20 A 2 2 0 0 0 6 22 L 18 22 A 2 2 0 0 0 20 20 L 20 10 A 2 2 0 0 0 18 8 Z"/>
+              </Panel>
+            </Button>
+
+            <!-- 4. Three-Dot / Cat-Paw More Options Menu -->
+            <Button Name="BtnMoreOptions"
+                    Classes.icon-ghost="{Binding Loc.IsMinimalistStyle}"
+                    Classes.cute-icon-btn="{Binding Loc.IsRealisticStyle}"
+                    ToolTip.Tip="{Binding Loc.MoreOptionsTooltip}">
+              <Panel>
+                <!-- Realistic: Pink Cat Paw Print Icon -->
+                <Canvas Width="18" Height="18" IsVisible="{Binding Loc.IsRealisticStyle}" VerticalAlignment="Center">
+                  <Ellipse Canvas.Left="6.8" Canvas.Top="9" Width="7.4" Height="6"
+                           Fill="#FF8FA3" Stroke="#141414" StrokeThickness="1.5"/>
+                  <Ellipse Canvas.Left="3.6" Canvas.Top="5.2" Width="3" Height="3"
+                           Fill="#FF8FA3" Stroke="#141414" StrokeThickness="1.3"/>
+                  <Ellipse Canvas.Left="6.8" Canvas.Top="3.6" Width="3" Height="3"
+                           Fill="#FF8FA3" Stroke="#141414" StrokeThickness="1.3"/>
+                  <Ellipse Canvas.Left="10.2" Canvas.Top="3.6" Width="3" Height="3"
+                           Fill="#FF8FA3" Stroke="#141414" StrokeThickness="1.3"/>
+                  <Ellipse Canvas.Left="13.4" Canvas.Top="5.2" Width="3" Height="3"
+                           Fill="#FF8FA3" Stroke="#141414" StrokeThickness="1.3"/>
+                </Canvas>
+                <!-- Minimalist: Fluent Three-Dot Icon -->
+                <PathIcon Width="12" Height="12"
+                          IsVisible="{Binding Loc.IsMinimalistStyle}"
+                          Foreground="{DynamicResource TextSecondary}"
+                          Data="M 6 12 A 2 2 0 1 1 2 12 A 2 2 0 1 1 6 12 Z M 14 12 A 2 2 0 1 1 10 12 A 2 2 0 1 1 14 12 Z M 22 12 A 2 2 0 1 1 18 12 A 2 2 0 1 1 22 12 Z"/>
+              </Panel>
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                  <!-- Style Switcher -->
+                  <MenuItem Header="{Binding Loc.MenuStyleHeader}">
+                    <MenuItem Name="FlyoutStyleRealistic" Header="{Binding Loc.MenuStyleRealistic}"/>
+                    <MenuItem Name="FlyoutStyleMinimalist" Header="{Binding Loc.MenuStyleMinimalist}"/>
+                  </MenuItem>
+                  <Separator/>
+                  <MenuItem Name="BtnTabTasks" Header="{Binding Loc.MenuSwitchTasks}"/>
+                  <MenuItem Name="BtnTabNotes" Header="{Binding Loc.MenuSwitchNotes}"/>
+                  <Separator/>
+                  <MenuItem Header="{Binding Loc.MenuSortHeader}">
+                    <MenuItem Name="MenuSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
+                    <MenuItem Name="MenuSortDeadline" Header="{Binding Loc.MenuSortDeadline}"/>
+                    <MenuItem Name="MenuSortPriority" Header="{Binding Loc.MenuSortPriority}"/>
+                    <MenuItem Name="MenuSortCreated" Header="{Binding Loc.MenuSortCreated}"/>
+                  </MenuItem>
+                  <MenuItem Header="{Binding Loc.MenuLayerHeader}">
+                    <MenuItem Name="MenuPlaceTopmost" Header="📌 Always on Top"/>
+                    <MenuItem Name="MenuPlaceBottom" Header="🖥️ Send to Desktop Back"/>
+                    <Separator/>
+                    <MenuItem Name="MenuToggleLock" Header="🔒 Lock / Unlock Position"/>
+                  </MenuItem>
+                  <MenuItem Header="{Binding Loc.MenuLanguageHeader}">
+                    <MenuItem Name="MenuLangEn" Header="English (Default)"/>
+                    <MenuItem Name="MenuLangZh" Header="中文 (Chinese)"/>
+                  </MenuItem>
+                  <Separator/>
+                  <MenuItem Name="BtnQuickAdd" Header="{Binding Loc.MenuQuickAddDetail}"/>
+                  <MenuItem Name="BtnCalendar" Header="{Binding Loc.MenuCalendarArchive}"/>
+                  <MenuItem Name="BtnOpenSettings" Header="{Binding Loc.MenuOpenSettings}"/>
+                  <MenuItem Name="MenuArchiveAllCompleted" Header="{Binding Loc.MenuArchiveAllDone}"/>
+                  <MenuItem Name="BtnThemeToggle" Header="{Binding Loc.MenuSwitchTheme}"/>
+                  <Separator/>
+                  <MenuItem Name="MenuHideToTray" Header="{Binding Loc.MenuHideToTray}"/>
+                  <MenuItem Name="MenuExitApp" Header="{Binding Loc.MenuExitApp}"/>
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- 5. Minimize / Hide to Tray Button (Minimalist mode only) -->
+            <Button Name="BtnCloseWindow"
+                    IsVisible="{Binding Loc.IsMinimalistStyle}"
+                    Classes="icon-ghost"
+                    ToolTip.Tip="{Binding Loc.HideToTrayTooltip}">
+              <PathIcon Width="11" Height="11"
+                        Foreground="{DynamicResource TextMuted}"
+                        Data="M 19 6.41 L 17.59 5 L 12 10.59 L 6.41 5 L 5 6.41 L 10.59 12 L 5 17.59 L 6.41 19 L 12 13.41 L 17.59 19 L 19 17.59 L 13.41 12 L 19 6.41 Z"/>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- 2. Slim Collapsible Search Box -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding IsSearchOpen}"
+                Background="{DynamicResource BgCard}"
+                BorderBrush="{DynamicResource BorderStrong}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="8,3"
+                Margin="0,0,0,6">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <PathIcon Grid.Column="0"
+                      Width="11" Height="11"
+                      Foreground="{DynamicResource TextMuted}"
+                      Margin="0,0,6,0"
+                      VerticalAlignment="Center"
+                      Data="M 15.5 14 L 14.71 14 L 14.43 13.73 A 6.5 6.5 0 1 0 13.73 14.43 L 14 14.71 L 14 15.5 L 19 20.49 L 20.49 19 L 15.5 14 Z M 9.5 14 A 4.5 4.5 0 1 1 14 9.5 A 4.5 4.5 0 0 1 9.5 14 Z"/>
+            <TextBox Name="SearchBox"
+                     Grid.Column="1"
+                     Classes="clean-input"
+                     Text="{Binding SearchText}"
+                     FontSize="12"
+                     PlaceholderText="{Binding Loc.SearchPlaceholder}"/>
+            <Button Name="BtnClearSearch"
+                    Grid.Column="2"
+                    Classes="icon-ghost"
+                    Width="18" Height="18"
+                    Content="✕"
+                    FontSize="10"
+                    ToolTip.Tip="{Binding Loc.ClearSearchTooltip}"/>
+          </Grid>
+        </Border>
+
+        <!-- 3. Virtualized Task/Note List & Calm Empty State -->
+        <Panel Grid.Row="3">
+          <ListBox Name="RecordListBox"
+                   ItemsSource="{Binding Items}"
+                   IsVisible="{Binding !IsEmpty}"
+                   Background="Transparent"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:TaskRowViewModel">
+                <controls:TaskRow/>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <!-- Calm Empty State View with + Action -->
+          <StackPanel IsVisible="{Binding IsEmpty}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center"
+                      Spacing="8"
+                      Margin="16">
+            <Button Name="BtnEmptyAdd"
+                    Width="40" Height="40"
+                    CornerRadius="20"
+                    Background="{DynamicResource BgSubtle}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    HorizontalAlignment="Center"
+                    Cursor="Hand"
+                    ToolTip.Tip="{Binding Loc.EmptyAddTooltip}">
+              <PathIcon Width="14" Height="14"
+                        Foreground="{DynamicResource AccentPrimary}"
+                        Data="M 19 13 L 13 13 L 13 19 L 11 19 L 11 13 L 5 13 L 5 11 L 11 11 L 11 5 L 13 5 L 13 11 L 19 11 L 19 13 Z"/>
+            </Button>
+            <TextBlock Text="{Binding EmptyStateTitle}"
+                       Foreground="{DynamicResource TextSecondary}"
+                       FontSize="13"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding EmptyStateSubtitle}"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="11.5"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="220"
+                       HorizontalAlignment="Center"/>
+          </StackPanel>
+        </Panel>
+
+        <!-- 4. Bottom Footer Strip: Minimalist Actions OR Realistic Stress Creases + Ribbon Box -->
+        <Panel Grid.Row="4" Margin="0,4,0,0">
+          <!-- Minimalist Footer -->
+          <Grid IsVisible="{Binding Loc.IsMinimalistStyle}"
+                ColumnDefinitions="Auto,Auto,*,Auto"
+                Margin="2,2,2,0">
+            <Button Name="BtnBottomAdd"
+                    Grid.Column="0"
+                    Classes="ghost-link"
+                    Padding="6,2"
+                    FontSize="11.5"
+                    Content="{Binding Loc.BottomAddText}"
+                    ToolTip.Tip="{Binding Loc.BottomAddTooltip}"/>
+            <Button Name="BtnArchiveCompleted"
+                    Grid.Column="1"
+                    IsVisible="{Binding HasCompletedPendingArchive}"
+                    Classes="ghost-link"
+                    Padding="8,2"
+                    Margin="4,0,0,0"
+                    FontSize="11.5"
+                    Foreground="{DynamicResource StatusCompleted}"
+                    Content="{Binding ArchiveCompletedButtonText}"
+                    ToolTip.Tip="{Binding Loc.ArchiveCompletedTooltip}"/>
+            <TextBlock Grid.Column="3"
+                       IsVisible="{Binding HasFooterContent}"
+                       Text="{Binding WhisperStatus}"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="11"
+                       VerticalAlignment="Center"/>
+          </Grid>
+
+          <!-- Realistic Footer: Left Crease + Cute Gift Box Button + Right Crease -->
+          <Grid IsVisible="{Binding Loc.IsRealisticStyle}"
+                ColumnDefinitions="Auto,*,Auto"
+                Margin="4,4,4,0">
+            <!-- Left Crease -->
+            <Border Grid.Column="0"
+                    Width="36" Height="1.5"
+                    CornerRadius="1"
+                    Background="#33141414"
+                    VerticalAlignment="Center">
+              <Border.RenderTransform>
+                <RotateTransform Angle="-1.2"/>
+              </Border.RenderTransform>
+            </Border>
+
+            <!-- Center: Ribbon Gift Box Entry for Archived Tasks -->
+            <Button Name="BtnOpenArchiveBox"
+                    Grid.Column="1"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="4,1"
+                    HorizontalAlignment="Center"
+                    Cursor="Hand"
+                    ToolTip.Tip="{Binding Loc.MenuCalendarArchive}">
+              <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                <Canvas Width="18" Height="18" VerticalAlignment="Center">
+                  <Rectangle Canvas.Left="3" Canvas.Top="8" Width="12" Height="8" RadiusX="1.5" RadiusY="1.5"
+                             Fill="#FFCAD4" Stroke="#141414" StrokeThickness="1.5"/>
+                  <Rectangle Canvas.Left="2" Canvas.Top="5" Width="14" Height="3" RadiusX="1" RadiusY="1"
+                             Fill="#FF8FA3" Stroke="#141414" StrokeThickness="1.5"/>
+                  <Path Data="M9 5 L9 16" Stroke="#141414" StrokeThickness="1.5"/>
+                  <Path Data="M9 5 C7.5 2.5 5 3 5 4 C5 5 7 5 9 5 Z M9 5 C10.5 2.5 13 3 13 4 C13 5 11 5 9 5 Z"
+                        Fill="#FFF380" Stroke="#141414" StrokeThickness="1.3"/>
+                </Canvas>
+                <TextBlock Text="{Binding Loc.MenuCalendarArchive}"
+                           Foreground="#141414"
+                           FontSize="13.5"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+
+            <!-- Right Crease -->
+            <Border Grid.Column="2"
+                    Width="26" Height="1.5"
+                    CornerRadius="1"
+                    Background="#33141414"
+                    VerticalAlignment="Center">
+              <Border.RenderTransform>
+                <RotateTransform Angle="1.5"/>
+              </Border.RenderTransform>
+            </Border>
+          </Grid>
+        </Panel>
+
+        </Grid>
       </Panel>
+    </Border>
 
-      <!-- 4. Bottom Strip: Subtle + Add Row Button, Confirm Archive Completed & Low-Noise Counter -->
-      <Grid Grid.Row="3"
-            ColumnDefinitions="Auto,Auto,*,Auto"
-            Margin="2,4,2,0">
-        <Button Name="BtnBottomAdd"
-                Grid.Column="0"
-                Classes="ghost-link"
-                Padding="6,2"
-                FontSize="11.5"
-                Content="{Binding Loc.BottomAddText}"
-                ToolTip.Tip="{Binding Loc.BottomAddTooltip}"/>
-        <Button Name="BtnArchiveCompleted"
-                Grid.Column="1"
-                IsVisible="{Binding HasCompletedPendingArchive}"
-                Classes="ghost-link"
-                Padding="8,2"
-                Margin="4,0,0,0"
-                FontSize="11.5"
-                Foreground="{DynamicResource StatusCompleted}"
-                Content="{Binding ArchiveCompletedButtonText}"
-                ToolTip.Tip="{Binding Loc.ArchiveCompletedTooltip}"/>
-        <TextBlock Grid.Column="3"
-                   IsVisible="{Binding HasFooterContent}"
-                   Text="{Binding WhisperStatus}"
-                   Foreground="{DynamicResource TextMuted}"
-                   FontSize="11"
-                   VerticalAlignment="Center"/>
-      </Grid>
-
-    </Grid>
-  </Border>
+  </Panel>
 </Window>

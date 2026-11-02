@@ -15,6 +15,7 @@ namespace DesktopNotes.Desktop.Controls;
 public partial class TaskRow : UserControl
 {
     private static Guid? s_activeDraggedTaskId;
+    public static Guid? ActiveDraggedTaskId => s_activeDraggedTaskId;
     private TaskRowViewModel? _subscribedVm;
     private Point? _pointerPressPoint;
     private PointerPressedEventArgs? _lastPressEventArgs;
@@ -63,6 +64,83 @@ public partial class TaskRow : UserControl
         if (CompleteCheckBox is not null)
         {
             CompleteCheckBox.Click += OnCompleteCheckBoxClick;
+        }
+
+        if (RealisticPlantButton is not null)
+        {
+            RealisticPlantButton.Click += OnCompleteCheckBoxClick;
+        }
+
+        if (MenuEditRow is not null)
+        {
+            MenuEditRow.Click += OnEditRowMenuClick;
+        }
+
+        if (MenuCopyText is not null)
+        {
+            MenuCopyText.Click += OnCopyTextMenuClick;
+        }
+
+        if (MenuPasteText is not null)
+        {
+            MenuPasteText.Click += OnPasteTextMenuClick;
+        }
+
+        if (RowContainer is not null)
+        {
+            RowContainer.AddHandler(InputElement.PointerReleasedEvent, (s, e) =>
+            {
+                if (e.InitialPressMouseButton == MouseButton.Right)
+                {
+                    if (DataContext is TaskRowViewModel { IsEditingInline: true })
+                    {
+                        return;
+                    }
+
+                    if (RowContainer.ContextMenu is { } cm)
+                    {
+                        cm.DataContext = DataContext;
+                        try
+                        {
+                            if (!cm.IsOpen)
+                            {
+                                cm.Open(RowContainer);
+                            }
+                        }
+                        catch
+                        {
+                        }
+                        e.Handled = true;
+                    }
+                }
+            }, RoutingStrategies.Tunnel);
+        }
+
+
+
+        if (PencilEditButton is not null)
+        {
+            PencilEditButton.Click += OnOpenDetailButtonClick;
+        }
+
+        if (BtnRealisticDelete is not null)
+        {
+            BtnRealisticDelete.Click += OnTrashRowClick;
+        }
+
+        if (BtnMinimalistDelete is not null)
+        {
+            BtnMinimalistDelete.Click += OnTrashRowClick;
+        }
+
+        if (BtnDrawerDelete is not null)
+        {
+            BtnDrawerDelete.Click += OnTrashRowClick;
+        }
+
+        if (PromoteSubtaskButton is not null)
+        {
+            PromoteSubtaskButton.Click += OnPromoteSubtaskClick;
         }
 
         if (OpenDetailButton is not null)
@@ -336,13 +414,19 @@ public partial class TaskRow : UserControl
 
             if (isInsideTextControl)
             {
-                // When clicking inside the editable/selectable title or body:
-                // 1) Expand this row if it is not yet expanded so the user immediately sees details
-                // 2) Do NOT mark e.Handled = true so mouse drag selection (Ctrl+C copy) and text editing work natively!
-                if (!vm.IsExpanded && e.ClickCount == 1 && FindParentPanelViewModel() is { } pvm)
+                if (e.ClickCount >= 2)
                 {
-                    pvm.ExpandedRecordId = vm.Id;
+                    RowClicked?.Invoke(vm.Id, e.ClickCount);
+                    if (FindParentPanelViewModel() is { } pVm)
+                    {
+                        pVm.RowInteraction.HandleRowClick(vm.Id, e.ClickCount);
+                    }
+                    e.Handled = true;
+                    return;
                 }
+
+                // When single-clicking inside the editable/selectable title or body:
+                // Allow native caret placement and text selection without prematurely expanding drawer
                 return;
             }
 
@@ -448,6 +532,44 @@ public partial class TaskRow : UserControl
         }
     }
 
+    private void OnEditRowMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskRowViewModel vm)
+        {
+            if (vm.IsMarkedCompleted)
+            {
+                OnOpenDetailButtonClick(sender, e);
+                return;
+            }
+
+            if (TitleDisplayBox is not null)
+            {
+                TitleDisplayBox.Focus();
+                TitleDisplayBox.SelectAll();
+            }
+        }
+    }
+
+    private void OnCopyTextMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (TitleDisplayBox is not null)
+        {
+            if (string.IsNullOrEmpty(TitleDisplayBox.SelectedText))
+            {
+                TitleDisplayBox.SelectAll();
+            }
+            TitleDisplayBox.Copy();
+        }
+    }
+
+    private void OnPasteTextMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (TitleDisplayBox is not null)
+        {
+            TitleDisplayBox.Paste();
+        }
+    }
+
     private void OnAddSubtaskButtonClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is TaskRowViewModel { IsEditingInline: false, CanAddSubtask: true } vm &&
@@ -542,8 +664,7 @@ public partial class TaskRow : UserControl
 
         if (s_activeDraggedTaskId is { } draggedId)
         {
-            Guid effectiveParentId = vm.Record.ParentId ?? vm.Id;
-            if (vm.Record.Kind == RecordKind.Task && draggedId != vm.Id && draggedId != effectiveParentId)
+            if (vm.Record.Kind == RecordKind.Task && draggedId != vm.Id)
             {
                 e.DragEffects = DragDropEffects.Move;
                 SetDropTargetHighlight(true);

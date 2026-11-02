@@ -63,6 +63,16 @@ public partial class ManagerWindow : Window
                 BtnNextMonth.Click += async (_, _) => await CalendarViewModel.NextMonthAsync(CancellationToken.None);
             }
 
+            if (BtnViewMonthGrid is not null)
+            {
+                BtnViewMonthGrid.Click += (_, _) => CalendarViewModel.SetViewMode(monthGrid: true);
+            }
+
+            if (BtnViewList is not null)
+            {
+                BtnViewList.Click += (_, _) => CalendarViewModel.SetViewMode(monthGrid: false);
+            }
+
             if (BtnAxisDue is not null)
             {
                 BtnAxisDue.Click += async (_, _) => await CalendarViewModel.ChangeAxisAsync(CalendarAxis.Due, CancellationToken.None);
@@ -92,7 +102,53 @@ public partial class ManagerWindow : Window
             {
                 BtnShowTrash.Click += async (_, _) => await CalendarViewModel.SetHistoryModeAsync(showTrash: true, CancellationToken.None);
             }
+
+            if (BtnEmptyTrash is not null)
+            {
+                BtnEmptyTrash.Click += (_, _) =>
+                {
+                    if (EmptyTrashConfirmOverlay is not null)
+                    {
+                        EmptyTrashConfirmOverlay.IsVisible = true;
+                    }
+                };
+            }
+
+            if (BtnCancelEmptyTrash is not null)
+            {
+                BtnCancelEmptyTrash.Click += (_, _) =>
+                {
+                    if (EmptyTrashConfirmOverlay is not null)
+                    {
+                        EmptyTrashConfirmOverlay.IsVisible = false;
+                    }
+                };
+            }
+
+            if (BtnConfirmEmptyTrash is not null)
+            {
+                BtnConfirmEmptyTrash.Click += async (_, _) =>
+                {
+                    if (EmptyTrashConfirmOverlay is not null)
+                    {
+                        EmptyTrashConfirmOverlay.IsVisible = false;
+                    }
+                    if (CalendarViewModel is not null)
+                    {
+                        await CalendarViewModel.EmptyTrashAsync(CancellationToken.None);
+                    }
+                };
+            }
         }
+
+        KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Escape && EmptyTrashConfirmOverlay is { IsVisible: true })
+            {
+                EmptyTrashConfirmOverlay.IsVisible = false;
+                e.Handled = true;
+            }
+        };
 
         if (SettingsViewModel is not null)
         {
@@ -100,12 +156,88 @@ public partial class ManagerWindow : Window
             UpdatePlacementButtonsVisual();
             UpdateLanguageButtonsVisual();
 
+            UpdateStyleButtonsVisual();
+
+
+
+            if (BtnStyleRealistic is not null)
+
+            {
+
+                BtnStyleRealistic.Click += (_, _) =>
+
+                {
+
+                    SettingsViewModel.SetVisualStyle(AppVisualStyle.Realistic);
+
+                    UpdateStyleButtonsVisual();
+
+                };
+
+            }
+
+
+
+            if (BtnStyleMinimalist is not null)
+
+            {
+
+                BtnStyleMinimalist.Click += (_, _) =>
+
+                {
+
+                    SettingsViewModel.SetVisualStyle(AppVisualStyle.Minimalist);
+
+                    UpdateStyleButtonsVisual();
+
+                };
+
+            }
+
             if (BtnLangEn is not null)
             {
                 BtnLangEn.Click += (_, _) =>
                 {
                     SettingsViewModel.SetLanguage(AppLanguage.English);
                     UpdateLanguageButtonsVisual();
+
+            UpdateStyleButtonsVisual();
+
+
+
+            if (BtnStyleRealistic is not null)
+
+            {
+
+                BtnStyleRealistic.Click += (_, _) =>
+
+                {
+
+                    SettingsViewModel.SetVisualStyle(AppVisualStyle.Realistic);
+
+                    UpdateStyleButtonsVisual();
+
+                };
+
+            }
+
+
+
+            if (BtnStyleMinimalist is not null)
+
+            {
+
+                BtnStyleMinimalist.Click += (_, _) =>
+
+                {
+
+                    SettingsViewModel.SetVisualStyle(AppVisualStyle.Minimalist);
+
+                    UpdateStyleButtonsVisual();
+
+                };
+
+            }
                     if (SettingsStatusText is not null)
                     {
                         SettingsStatusText.Text = "🌐 Language switched to English";
@@ -119,6 +251,44 @@ public partial class ManagerWindow : Window
                 {
                     SettingsViewModel.SetLanguage(AppLanguage.Chinese);
                     UpdateLanguageButtonsVisual();
+
+            UpdateStyleButtonsVisual();
+
+
+
+            if (BtnStyleRealistic is not null)
+
+            {
+
+                BtnStyleRealistic.Click += (_, _) =>
+
+                {
+
+                    SettingsViewModel.SetVisualStyle(AppVisualStyle.Realistic);
+
+                    UpdateStyleButtonsVisual();
+
+                };
+
+            }
+
+
+
+            if (BtnStyleMinimalist is not null)
+
+            {
+
+                BtnStyleMinimalist.Click += (_, _) =>
+
+                {
+
+                    SettingsViewModel.SetVisualStyle(AppVisualStyle.Minimalist);
+
+                    UpdateStyleButtonsVisual();
+
+                };
+
+            }
                     if (SettingsStatusText is not null)
                     {
                         SettingsStatusText.Text = "🌐 已切换为中文";
@@ -212,6 +382,31 @@ public partial class ManagerWindow : Window
                     SettingsViewModel.OpenDefaultAttachmentRootDirectory();
                 };
             }
+
+            if (BtnUndoLastAction is not null)
+            {
+                void UpdateUndoUi()
+                {
+                    BtnUndoLastAction.IsEnabled = SettingsViewModel.CanUndo;
+                    if (UndoStatusTextBlock is not null)
+                    {
+                        UndoStatusTextBlock.Text = SettingsViewModel.UndoStatusText;
+                    }
+                }
+
+                UpdateUndoUi();
+                Services.UndoService.Instance.StateChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateUndoUi);
+
+                BtnUndoLastAction.Click += async (_, _) =>
+                {
+                    await SettingsViewModel.UndoLastActionAsync(CancellationToken.None);
+                    UpdateUndoUi();
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = SettingsViewModel.StatusMessage;
+                    }
+                };
+            }
         }
 
         if (BtnExportBackup is not null)
@@ -232,6 +427,36 @@ public partial class ManagerWindow : Window
         BtnModeTopmost?.Classes.Set("active", isTopmost);
         BtnModeDesktop?.Classes.Set("active", !isTopmost);
     }
+
+    private void UpdateStyleButtonsVisual()
+
+    {
+
+        bool isRealistic = AppLocalizer.Instance.IsRealisticStyle;
+
+        if (BtnStyleRealistic is not null)
+
+        {
+
+            BtnStyleRealistic.Classes.Set("active", isRealistic);
+
+        }
+
+        if (BtnStyleMinimalist is not null)
+
+        {
+
+            BtnStyleMinimalist.Classes.Set("active", !isRealistic);
+
+        }
+
+        Classes.Set("realistic", isRealistic);
+
+        Classes.Set("minimalist", !isRealistic);
+
+    }
+
+
 
     private void UpdateLanguageButtonsVisual()
     {

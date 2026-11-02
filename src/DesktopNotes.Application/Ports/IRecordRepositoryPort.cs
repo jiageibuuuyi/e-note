@@ -16,4 +16,5 @@ public interface IRecordRepositoryPort
     DraftView? GetDraft(string editorId);
     void DeleteDraft(string editorId);
     void ReprojectAll(TimeZoneInfo displayZone);
+    int PurgeTrash(out IReadOnlyList<Guid> purgedIds);
 }

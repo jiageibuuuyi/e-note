@@ -8,14 +8,16 @@
         Width="740" Height="600" MinWidth="560" MinHeight="460"
         Background="{DynamicResource BgWindow}"
         WindowStartupLocation="CenterOwner"
+        Icon="/Assets/Icons/app-icon.ico"
         Title="{Binding Loc.ManagerWindowTitle}">
-  <Border Padding="20,16">
+  <Panel>
+    <Border Padding="20,16">
     <TabControl Name="MainTabControl" Background="Transparent">
 
-      <!-- Tab 1: Live Task Calendar -->
+      <!-- Tab 1: Live Task Calendar (月历形式 + 悬浮窗显示任务 + 创建与完成标记) -->
       <TabItem Header="{Binding Loc.TabCalendar}" FontSize="13.5">
         <Grid RowDefinitions="Auto,Auto,*" Margin="0,12,0,0">
-          <!-- Month Switcher Header -->
+          <!-- Month Switcher Header & View Switcher -->
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
               <TextBlock Text="{Binding YearMonthTitle}"
@@ -31,6 +33,20 @@
                            FontSize="11.5"
                            FontWeight="Medium"/>
               </Border>
+
+              <!-- View Switcher: Month Grid vs List -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,0,0,0">
+                <Button Name="BtnViewMonthGrid"
+                        Classes="seg-pill"
+                        Classes.active="{Binding IsMonthGridView}"
+                        Padding="10,3.5" FontSize="11.5"
+                        Content="{Binding Loc.CalViewMonthGrid}"/>
+                <Button Name="BtnViewList"
+                        Classes="seg-pill"
+                        Classes.active="{Binding IsListView}"
+                        Padding="10,3.5" FontSize="11.5"
+                        Content="{Binding Loc.CalViewList}"/>
+              </StackPanel>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
@@ -40,8 +56,44 @@
             </StackPanel>
           </Grid>
 
-          <!-- Calendar Axis Selector -->
-          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
+          <!-- Row 1: Subheader (Legend in Month Grid mode, Axis selector in List mode) -->
+          <!-- A. Legend in Month Grid mode -->
+          <Grid Grid.Row="1"
+                ColumnDefinitions="*,Auto"
+                Margin="0,0,0,8"
+                IsVisible="{Binding IsMonthGridView}">
+            <TextBlock Text="💡 鼠标悬停日期即可通过悬浮窗查看任务详情，单击可查看下方清单"
+                       FontSize="11.5"
+                       Foreground="{DynamicResource TextMuted}"
+                       VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                <Border Background="#240284C7" BorderBrush="#660284C7" BorderThickness="1" CornerRadius="3" Padding="4,1">
+                  <TextBlock Text="🌱 +N" FontSize="9.5" FontWeight="SemiBold" Foreground="#0284C7"/>
+                </Border>
+                <TextBlock Text="{Binding Loc.CalCreatedLabel}" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                <Border Background="#2416A34A" BorderBrush="#6616A34A" BorderThickness="1" CornerRadius="3" Padding="4,1">
+                  <TextBlock Text="✓ N" FontSize="9.5" FontWeight="Bold" Foreground="#16A34A"/>
+                </Border>
+                <TextBlock Text="{Binding Loc.CalCompletedLabel}" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                <Border Background="#24D97706" BorderBrush="#66D97706" BorderThickness="1" CornerRadius="3" Padding="4,1">
+                  <TextBlock Text="⏰ N" FontSize="9.5" FontWeight="SemiBold" Foreground="#D97706"/>
+                </Border>
+                <TextBlock Text="{Binding Loc.CalDueLabel}" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+
+          <!-- B. Calendar Axis Selector (List View Only) -->
+          <StackPanel Grid.Row="1"
+                      Orientation="Horizontal"
+                      Spacing="6"
+                      Margin="0,0,0,10"
+                      IsVisible="{Binding IsListView}">
             <TextBlock Text="{Binding Loc.CalViewByLabel}" Foreground="{DynamicResource TextMuted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
             <Button Name="BtnAxisDue" Classes="seg-pill" Classes.active="{Binding IsAxisDue}" Padding="10,3.5" FontSize="12" Content="{Binding Loc.CalAxisDue}"/>
             <Button Name="BtnAxisStart" Classes="seg-pill" Classes.active="{Binding IsAxisStart}" Padding="10,3.5" FontSize="12" Content="{Binding Loc.CalAxisStart}"/>
@@ -49,7 +101,7 @@
             <Button Name="BtnAxisClosed" Classes="seg-pill" Classes.active="{Binding IsAxisClosed}" Padding="10,3.5" FontSize="12" Content="{Binding Loc.CalAxisClosed}"/>
           </StackPanel>
 
-          <!-- Calendar Task Entries List -->
+          <!-- Row 2: Main Body -->
           <Border Grid.Row="2"
                   Background="{DynamicResource BgCard}"
                   BorderBrush="{DynamicResource BorderSubtle}"
@@ -58,7 +110,275 @@
                   Padding="12"
                   BoxShadow="{DynamicResource CardShadow}">
             <Panel>
-              <ScrollViewer IsVisible="{Binding HasMonthEntries}">
+              <!-- 1. MONTH CALENDAR GRID VIEW (Default) -->
+              <ScrollViewer IsVisible="{Binding IsMonthGridView}">
+                <StackPanel Spacing="10">
+                  <!-- Weekday Bar (7 Columns: Mon to Sun) -->
+                  <Border Background="{DynamicResource BgSubtle}"
+                          CornerRadius="6"
+                          Padding="4,6">
+                    <UniformGrid Columns="7">
+                      <TextBlock Text="{Binding Loc.CalMon}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                      <TextBlock Text="{Binding Loc.CalTue}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                      <TextBlock Text="{Binding Loc.CalWed}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                      <TextBlock Text="{Binding Loc.CalThu}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                      <TextBlock Text="{Binding Loc.CalFri}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                      <TextBlock Text="{Binding Loc.CalSat}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}"/>
+                      <TextBlock Text="{Binding Loc.CalSun}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}"/>
+                    </UniformGrid>
+                  </Border>
+
+                  <!-- 42 Day Cells Grid (6 weeks x 7 days) -->
+                  <ItemsControl ItemsSource="{Binding MonthDays}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" Rows="6"/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CalendarDayCellViewModel">
+                        <Button Classes="cal-cell-btn"
+                                Classes.other-month="{Binding !IsCurrentMonth}"
+                                Classes.today="{Binding IsToday}"
+                                Classes.selected="{Binding IsSelected}"
+                                Command="{Binding $parent[Window].((vm:CalendarViewModel)DataContext).SelectDay}"
+                                CommandParameter="{Binding}"
+                                ToolTip.ShowDelay="80">
+                          <!-- Floating Window on Hover (悬浮窗显示任务) -->
+                          <ToolTip.Tip>
+                            <Border Background="{DynamicResource BgCard}"
+                                    BorderBrush="{DynamicResource BorderSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="9"
+                                    Padding="12,10"
+                                    BoxShadow="0 8 24 0 #40000000"
+                                    MinWidth="240"
+                                    MaxWidth="320">
+                              <StackPanel Spacing="7">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock Grid.Column="0"
+                                             Text="{Binding DayHeaderTitle}"
+                                             FontWeight="SemiBold"
+                                             FontSize="12.5"
+                                             Foreground="{DynamicResource TextPrimary}"
+                                             VerticalAlignment="Center"/>
+                                  <Border Grid.Column="1"
+                                          IsVisible="{Binding IsToday}"
+                                          Background="{DynamicResource AccentPrimary}"
+                                          CornerRadius="4"
+                                          Padding="5,1">
+                                    <TextBlock Text="{Binding $parent[Window].((vm:CalendarViewModel)DataContext).Loc.TodayLabel}"
+                                               Foreground="White"
+                                               FontSize="10.5"
+                                               FontWeight="SemiBold"/>
+                                  </Border>
+                                </Grid>
+
+                                <Separator Background="{DynamicResource BorderSubtle}" Height="1"/>
+
+                                <!-- Created Tasks in Floating Window -->
+                                <StackPanel IsVisible="{Binding HasCreatedTasks}" Spacing="3">
+                                  <TextBlock Text="{Binding CreatedSectionTitle}"
+                                             FontSize="11.5"
+                                             FontWeight="SemiBold"
+                                             Foreground="#0284C7"/>
+                                  <ItemsControl ItemsSource="{Binding CreatedTasks}">
+                                    <ItemsControl.ItemTemplate>
+                                      <DataTemplate x:DataType="contracts:RecordView">
+                                        <Grid ColumnDefinitions="Auto,*" Margin="0,1">
+                                          <TextBlock Grid.Column="0" Text="• " Foreground="#0284C7" FontSize="11.5"/>
+                                          <TextBlock Grid.Column="1"
+                                                     Text="{Binding DisplayTitle}"
+                                                     FontSize="11.5"
+                                                     Foreground="{DynamicResource TextPrimary}"
+                                                     TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                      </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                  </ItemsControl>
+                                </StackPanel>
+
+                                <!-- Completed Tasks in Floating Window -->
+                                <StackPanel IsVisible="{Binding HasCompletedTasks}" Spacing="3">
+                                  <TextBlock Text="{Binding CompletedSectionTitle}"
+                                             FontSize="11.5"
+                                             FontWeight="SemiBold"
+                                             Foreground="#16A34A"/>
+                                  <ItemsControl ItemsSource="{Binding CompletedTasks}">
+                                    <ItemsControl.ItemTemplate>
+                                      <DataTemplate x:DataType="contracts:RecordView">
+                                        <Grid ColumnDefinitions="Auto,*" Margin="0,1">
+                                          <TextBlock Grid.Column="0" Text="✓ " Foreground="#16A34A" FontSize="11.5" FontWeight="Bold"/>
+                                          <TextBlock Grid.Column="1"
+                                                     Text="{Binding DisplayTitle}"
+                                                     FontSize="11.5"
+                                                     Foreground="{DynamicResource TextPrimary}"
+                                                     TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                      </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                  </ItemsControl>
+                                </StackPanel>
+
+                                <!-- Due Tasks in Floating Window -->
+                                <StackPanel IsVisible="{Binding HasDueTasks}" Spacing="3">
+                                  <TextBlock Text="{Binding DueSectionTitle}"
+                                             FontSize="11.5"
+                                             FontWeight="SemiBold"
+                                             Foreground="#D97706"/>
+                                  <ItemsControl ItemsSource="{Binding DueTasks}">
+                                    <ItemsControl.ItemTemplate>
+                                      <DataTemplate x:DataType="contracts:RecordView">
+                                        <Grid ColumnDefinitions="Auto,*" Margin="0,1">
+                                          <TextBlock Grid.Column="0" Text="⏰ " Foreground="#D97706" FontSize="11.5"/>
+                                          <TextBlock Grid.Column="1"
+                                                     Text="{Binding DisplayTitle}"
+                                                     FontSize="11.5"
+                                                     Foreground="{DynamicResource TextPrimary}"
+                                                     TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                      </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                  </ItemsControl>
+                                </StackPanel>
+
+                                <!-- Empty State in Floating Window -->
+                                <TextBlock IsVisible="{Binding !HasTasks}"
+                                           Text="{Binding EmptyHoverText}"
+                                           FontSize="11.5"
+                                           Foreground="{DynamicResource TextMuted}"/>
+                              </StackPanel>
+                            </Border>
+                          </ToolTip.Tip>
+
+                          <!-- Day Cell Content on Calendar Grid -->
+                          <Grid RowDefinitions="Auto,*">
+                            <!-- Day Number -->
+                            <TextBlock Grid.Row="0"
+                                       Text="{Binding DayNumber}"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Top"/>
+
+                            <!-- Markers for Created and Completed Tasks -->
+                            <StackPanel Grid.Row="1"
+                                        VerticalAlignment="Bottom"
+                                        Orientation="Horizontal"
+                                        Spacing="3"
+                                        Margin="0,2,0,0">
+                              <!-- Created Tasks Marker -->
+                              <Border IsVisible="{Binding HasCreatedTasks}"
+                                      Background="#240284C7"
+                                      BorderBrush="#660284C7"
+                                      BorderThickness="1"
+                                      CornerRadius="3"
+                                      Padding="3,0.5">
+                                <TextBlock Text="{Binding CreatedCount, StringFormat='🌱+{0}'}"
+                                           FontSize="9.5"
+                                           FontWeight="SemiBold"
+                                           Foreground="#0284C7"/>
+                              </Border>
+
+                              <!-- Completed Tasks Marker -->
+                              <Border IsVisible="{Binding HasCompletedTasks}"
+                                      Background="#2416A34A"
+                                      BorderBrush="#6616A34A"
+                                      BorderThickness="1"
+                                      CornerRadius="3"
+                                      Padding="3,0.5">
+                                <TextBlock Text="{Binding CompletedCount, StringFormat='✓{0}'}"
+                                           FontSize="9.5"
+                                           FontWeight="Bold"
+                                           Foreground="#16A34A"/>
+                              </Border>
+
+                              <!-- Due Tasks Marker -->
+                              <Border IsVisible="{Binding HasDueTasks}"
+                                      Background="#24D97706"
+                                      BorderBrush="#66D97706"
+                                      BorderThickness="1"
+                                      CornerRadius="3"
+                                      Padding="3,0.5">
+                                <TextBlock Text="{Binding DueCount, StringFormat='⏰{0}'}"
+                                           FontSize="9.5"
+                                           FontWeight="SemiBold"
+                                           Foreground="#D97706"/>
+                              </Border>
+                            </StackPanel>
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <!-- Selected Date Task Drawer / List -->
+                  <Border Background="{DynamicResource BgSubtle}"
+                          BorderBrush="{DynamicResource BorderSubtle}"
+                          BorderThickness="1"
+                          CornerRadius="8"
+                          Padding="12,10"
+                          Margin="0,4,0,0">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="{Binding SelectedDayHeader}"
+                                 FontWeight="SemiBold"
+                                 FontSize="13"
+                                 Foreground="{DynamicResource TextPrimary}"/>
+
+                      <ItemsControl ItemsSource="{Binding SelectedDayItems}"
+                                    IsVisible="{Binding HasSelectedDayItems}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="contracts:RecordView">
+                            <Border Background="{DynamicResource BgCard}"
+                                    BorderBrush="{DynamicResource BorderSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,2.5">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0"
+                                        Background="{DynamicResource BgHover}"
+                                        CornerRadius="4"
+                                        Padding="5,1.5"
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center">
+                                  <TextBlock Text="{Binding Status}"
+                                             FontSize="10.5"
+                                             Foreground="{DynamicResource TextSecondary}"/>
+                                </Border>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding DisplayTitle}"
+                                           FontSize="12"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource TextPrimary}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Effective.Assignee, StringFormat='👤 {0}'}"
+                                           IsVisible="{Binding Effective.Assignee, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextMuted}"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0"/>
+                              </Grid>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+
+                      <TextBlock IsVisible="{Binding !HasSelectedDayItems}"
+                                 Text="{Binding Loc.CalNoTasksSelectedDay}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextMuted}"
+                                 Margin="2,2"/>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+
+              <!-- 2. LIST VIEW (Previous chronological ledger) -->
+              <ScrollViewer IsVisible="{Binding IsListView}">
                 <ItemsControl ItemsSource="{Binding MonthEntries}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="contracts:CalendarEntry">
@@ -156,6 +476,14 @@
                       Padding="12,4"
                       FontSize="12"
                       Content="{Binding Loc.HistTrashBtn}"/>
+              <Button Name="BtnEmptyTrash"
+                      Classes="danger-ghost-btn"
+                      IsVisible="{Binding IsTrashView}"
+                      IsEnabled="{Binding HasHistoricalItems}"
+                      Padding="10,4"
+                      FontSize="12"
+                      Content="{Binding Loc.BtnEmptyTrash}"
+                      ToolTip.Tip="{Binding Loc.BtnEmptyTrashTooltip}"/>
             </StackPanel>
 
             <Border Grid.Column="2"
@@ -268,7 +596,43 @@
       <TabItem Header="{Binding Loc.TabSettings}" FontSize="13.5">
         <ScrollViewer Margin="0,12,0,0">
           <StackPanel Spacing="12">
-            <!-- 1. Language & Time Zone Card -->
+                        <!-- 0. Visual Style Switching -->
+            <Border Background="{DynamicResource BgCard}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,14"
+                    BoxShadow="{DynamicResource CardShadow}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="{Binding Loc.SetStyleSectionTitle}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="{Binding Loc.SetStyleLabel}"
+                               FontSize="12.5" FontWeight="Medium"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="{Binding Loc.SetStyleDesc}"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource TextMuted}"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Name="BtnStyleRealistic"
+                            Classes="seg-pill"
+                            Padding="10,4"
+                            FontSize="12"
+                            Content="{Binding Loc.SetStyleRealisticBtn}"/>
+                    <Button Name="BtnStyleMinimalist"
+                            Classes="seg-pill"
+                            Padding="10,4"
+                            FontSize="12"
+                            Content="{Binding Loc.SetStyleMinimalistBtn}"/>
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+<!-- 1. Language & Time Zone Card -->
             <Border Background="{DynamicResource BgCard}"
                     BorderBrush="{DynamicResource BorderSubtle}"
                     BorderThickness="1"
@@ -428,7 +792,42 @@
               </StackPanel>
             </Border>
 
-            <!-- 4. Backup & Restore -->
+            <!-- 4. Action History & Undo (支持误操作撤销与恢复) -->
+            <Border Background="{DynamicResource BgCard}"
+                    BorderBrush="{DynamicResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,14"
+                    BoxShadow="{DynamicResource CardShadow}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="{Binding Loc.SetUndoSectionTitle}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{Binding Loc.SetUndoDesc}"
+                           FontSize="11.5"
+                           Foreground="{DynamicResource TextSecondary}"
+                           TextWrapping="Wrap"/>
+
+                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                  <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Name="UndoStatusTextBlock"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextPrimary}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock Text="快捷提示：主面板按 Ctrl+Z 亦可随时撤销上一步误操作"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextMuted}"/>
+                  </StackPanel>
+
+                  <Button Name="BtnUndoLastAction"
+                          Grid.Column="1"
+                          Classes="secondary-pill"
+                          Content="{Binding Loc.SetUndoBtn}"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- 5. Backup & Restore -->
             <Border Background="{DynamicResource BgCard}"
                     BorderBrush="{DynamicResource BorderSubtle}"
                     BorderThickness="1"
@@ -464,5 +863,57 @@
       </TabItem>
 
     </TabControl>
-  </Border>
+    </Border>
+
+    <!-- Secondary Confirmation Dialog Overlay for Emptying Trash -->
+    <Border Name="EmptyTrashConfirmOverlay"
+            IsVisible="False"
+            Background="#70000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+      <Border Background="{DynamicResource BgCard}"
+              BorderBrush="{DynamicResource BorderSubtle}"
+              BorderThickness="1.5"
+              CornerRadius="12"
+              Padding="24,20"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              MaxWidth="420"
+              BoxShadow="0 8 32 #40000000">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <Border Width="40" Height="40" CornerRadius="20" Background="#26EA3323">
+              <TextBlock Text="🗑️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding Loc.ConfirmEmptyTrashTitle}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+              <TextBlock Text="{Binding Loc.ConfirmEmptyTrashSubtitle}" FontSize="12" Foreground="{DynamicResource StatusOverdue}" FontWeight="Medium"/>
+            </StackPanel>
+          </StackPanel>
+
+          <TextBlock Text="{Binding Loc.ConfirmEmptyTrashMessage}"
+                     TextWrapping="Wrap"
+                     FontSize="13"
+                     Foreground="{DynamicResource TextSecondary}"
+                     LineHeight="20"/>
+
+          <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+            <Button Name="BtnCancelEmptyTrash"
+                    Grid.Column="1"
+                    Classes="seg-pill"
+                    Padding="16,6"
+                    Margin="0,0,10,0"
+                    FontSize="12.5"
+                    Content="{Binding Loc.CancelBtn}"/>
+            <Button Name="BtnConfirmEmptyTrash"
+                    Grid.Column="2"
+                    Classes="danger-btn"
+                    Padding="16,6"
+                    FontSize="12.5"
+                    Content="{Binding Loc.ConfirmEmptyTrashBtn}"/>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Panel>
 </Window>
