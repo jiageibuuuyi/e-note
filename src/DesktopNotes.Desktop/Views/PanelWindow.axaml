@@ -11,7 +11,7 @@
         CanResize="True"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="0"
-        Icon="/Assets/Icons/app-icon.ico"
+        Icon="avares://DesktopNotes.Desktop/Assets/Icons/app-icon.ico"
         Title="{Binding Loc.AppTitle}">
 
   <!-- Root Canvas Container supporting Lifted Shadows and Realistic Sticky Tilt -->

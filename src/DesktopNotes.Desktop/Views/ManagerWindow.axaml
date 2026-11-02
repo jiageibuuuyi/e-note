@@ -8,7 +8,7 @@
         Width="740" Height="600" MinWidth="560" MinHeight="460"
         Background="{DynamicResource BgWindow}"
         WindowStartupLocation="CenterOwner"
-        Icon="/Assets/Icons/app-icon.ico"
+        Icon="avares://DesktopNotes.Desktop/Assets/Icons/app-icon.ico"
         Title="{Binding Loc.ManagerWindowTitle}">
   <Panel>
     <Border Padding="20,16">

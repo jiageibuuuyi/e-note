@@ -14,6 +14,7 @@ public partial class DetailWindow : Window
     public DetailWindow()
     {
         InitializeComponent();
+        try { Icon = App.CreateAppWindowIcon(); } catch { }
     }
 
     public DetailWindow(DetailViewModel viewModel) : this()

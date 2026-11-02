@@ -39,6 +39,7 @@ public partial class PanelWindow : Window
     public PanelWindow()
     {
         InitializeComponent();
+        try { Icon = App.CreateAppWindowIcon(); } catch { }
         _deadlineRefreshTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(60)

@@ -26,6 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Assets\Icons\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DesktopNotes.Infrastructure\DesktopNotes.Infrastructure.csproj" />
     <ProjectReference Include="..\DesktopNotes.Platforms\DesktopNotes.Platforms.csproj" />
   </ItemGroup>

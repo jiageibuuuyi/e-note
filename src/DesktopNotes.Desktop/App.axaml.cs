@@ -157,13 +157,32 @@ public partial class App : global::Avalonia.Application
         }
     }
 
-    private static WindowIcon CreateAppWindowIcon()
+    public static WindowIcon CreateAppWindowIcon()
     {
         try
         {
             var uri = new Uri("avares://DesktopNotes.Desktop/Assets/Icons/app-icon.ico");
             using var stream = AssetLoader.Open(uri);
             return new WindowIcon(stream);
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            string localIco = Path.Combine(AppContext.BaseDirectory, "Assets", "Icons", "app-icon.ico");
+            if (File.Exists(localIco))
+            {
+                using var fs = File.OpenRead(localIco);
+                return new WindowIcon(fs);
+            }
+            string rootIco = Path.Combine(AppContext.BaseDirectory, "app-icon.ico");
+            if (File.Exists(rootIco))
+            {
+                using var fs = File.OpenRead(rootIco);
+                return new WindowIcon(fs);
+            }
         }
         catch
         {

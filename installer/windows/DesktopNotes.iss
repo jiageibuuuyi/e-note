@@ -7,9 +7,11 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "电子便签"
 #define MyAppExeName "DesktopNotes.Desktop.exe"
+#define MyAppId "{9F47E810-3C1A-4D25-9B82-6E40A11D29C0}"
+#define MyAppUserModelId "DesktopNotes.StickyNotes.V1"
 
 [Setup]
-AppId={{9F47E810-3C1A-4D25-9B82-6E40A11D29C0}
+AppId={{#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -25,7 +27,7 @@ SolidCompression=yes
 WizardStyle=modern
 DisableDirPage=no
 CloseApplications=yes
-UninstallDisplayIcon={app}\Assets\Icons\app-icon.ico
+UninstallDisplayIcon={app}\{#MyAppExeName},0
 
 [Languages]
 Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
@@ -37,10 +39,14 @@ Name: "launchatlogin"; Description: "开机自动启动电子便签 (随 Windows
 
 [Files]
 Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}"; DestName: "app-icon.ico"; Flags: ignoreversion
+Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion
+Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\tray-icon.png"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Assets\Icons\app-icon.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Assets\Icons\app-icon.ico"; Tasks: desktopicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; AppUserModelID: "{#MyAppUserModelId}"
+Name: "{group}\卸载{#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; AppUserModelID: "{#MyAppUserModelId}"; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "DesktopNotes"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: launchatlogin; Flags: uninsdeletevalue

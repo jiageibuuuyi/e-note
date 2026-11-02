@@ -20,6 +20,7 @@ public partial class ManagerWindow : Window
     public ManagerWindow()
     {
         InitializeComponent();
+        try { Icon = App.CreateAppWindowIcon(); } catch { }
     }
 
     public ManagerWindow(
