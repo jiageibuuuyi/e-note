@@ -10,6 +10,12 @@
     <Description>优雅治愈的桌面电子便签与待办事项软件</Description>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
@@ -41,5 +47,11 @@
       <_BuildEnvFile>$(OutputPath)build-env.json</_BuildEnvFile>
     </PropertyGroup>
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$tz = [System.TimeZoneInfo]::Local; $obj = @{ detectedTimeZoneId = $tz.Id; detectedTimeZoneDisplayName = $tz.DisplayName; detectedUtcOffset = $tz.BaseUtcOffset.ToString(); defaultLanguage = 'en' }; $obj | ConvertTo-Json | Set-Content -Path '$(_BuildEnvFile)' -Encoding UTF8; Write-Host ('[DesktopNotes Build Check] TimeZone=' + $tz.Id + ' (' + $tz.DisplayName + ') | DefaultLanguage=en')&quot;" />
+  </Target>
+  <Target Name="RemovePdbFromPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_PdbFiles Include="$(PublishDir)**\*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_PdbFiles)" />
   </Target>
 </Project>

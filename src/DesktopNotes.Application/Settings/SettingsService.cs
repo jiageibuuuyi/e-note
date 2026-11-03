@@ -124,6 +124,7 @@ public sealed class SettingsService
             var rootRecord = attachmentRepository.EnsureDefaultStorageRoot(fullRootPath, platform, DateTimeOffset.UtcNow);
             prefs = prefs with { DefaultStorageRootId = rootRecord.Id };
             SavePreferences(prefs);
+            _repository.SetSettingJson("global.default_attachment_root_path", JsonSerializer.Serialize(fullRootPath));
         }
 
         await _desktopIntegration.SetLoginStartupAsync(intent.LaunchAtLogin, ct);

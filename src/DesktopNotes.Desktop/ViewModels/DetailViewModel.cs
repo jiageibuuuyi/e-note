@@ -222,9 +222,10 @@ public sealed class DetailViewModel : ViewModelBase
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(_defaultAttachmentRootPath))
+            string? effectiveDefaultRoot = _attachmentService?.DefaultRootPath ?? _defaultAttachmentRootPath;
+            if (!string.IsNullOrWhiteSpace(effectiveDefaultRoot))
             {
-                return Loc.T($"Default: {_defaultAttachmentRootPath}", $"默认路径: {_defaultAttachmentRootPath}");
+                return Loc.T($"Default: {effectiveDefaultRoot}", $"默认路径: {effectiveDefaultRoot}");
             }
 
             return Loc.T("System default folder", "使用系统默认附件目录");
@@ -510,7 +511,7 @@ public sealed class DetailViewModel : ViewModelBase
             {
                 targetDir = _attachmentRepository.GetStorageRoot(rid)?.AbsolutePath;
             }
-            targetDir ??= _defaultAttachmentRootPath;
+            targetDir ??= _attachmentService?.DefaultRootPath ?? _defaultAttachmentRootPath;
 
             if (!string.IsNullOrWhiteSpace(targetDir))
             {

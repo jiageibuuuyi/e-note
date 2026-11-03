@@ -1,5 +1,6 @@
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Settings;
+using DesktopNotes.Desktop;
 using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Domain;
@@ -261,6 +262,62 @@ public sealed class SettingsAndShellTests : IDisposable
         rowVm.IsExpanded = true;
         Assert.False(rowVm.ShowSubtaskAssigneeInline);
         Assert.True(rowVm.HasDrawerMeta);
+    }
+
+    [Fact]
+    public async Task Bootstrapper_LoadsFirstRunIntent_AndSyncsAttachmentRoot()
+    {
+        string testFolder = Path.Combine(Path.GetTempPath(), "desktopnotes_intent_test_" + Guid.NewGuid().ToString("N"));
+        string dbPath = Path.Combine(testFolder, "test.db");
+        string customAttachmentPath = Path.Combine(testFolder, "CustomAttachments");
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string intentPath = Path.Combine(localAppData, "DesktopNotes", "first-run-intent.json");
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(intentPath)!);
+            Directory.CreateDirectory(customAttachmentPath);
+
+            string json = $$"""
+            {
+              "defaultAttachmentDirectory": "{{customAttachmentPath.Replace("\\", "\\\\")}}",
+              "launchAtLogin": false
+            }
+            """;
+            await File.WriteAllTextAsync(intentPath, json);
+
+            using (var bootstrapper = new Bootstrapper(dbPath))
+            {
+                await bootstrapper.InitializeAsync();
+                Assert.Equal(Path.GetFullPath(customAttachmentPath), bootstrapper.AttachmentService.DefaultRootPath);
+
+                var settingsVm = bootstrapper.CreateSettingsViewModel();
+                Assert.Equal(Path.GetFullPath(customAttachmentPath), settingsVm.DefaultAttachmentRootPath);
+
+                var detailVm = bootstrapper.CreateDetailViewModel();
+                Assert.Contains(Path.GetFullPath(customAttachmentPath), detailVm.AttachmentRootPathText);
+            }
+
+            Assert.False(File.Exists(intentPath));
+
+            // Verify persistence on second run without intent file
+            using (var rebootstrapper = new Bootstrapper(dbPath))
+            {
+                await rebootstrapper.InitializeAsync();
+                Assert.Equal(Path.GetFullPath(customAttachmentPath), rebootstrapper.AttachmentService.DefaultRootPath);
+            }
+        }
+        finally
+        {
+            if (File.Exists(intentPath))
+            {
+                try { File.Delete(intentPath); } catch { }
+            }
+            if (Directory.Exists(testFolder))
+            {
+                try { Directory.Delete(testFolder, true); } catch { }
+            }
+        }
     }
 
     private sealed class FakeDesktopIntegration : IDesktopIntegration

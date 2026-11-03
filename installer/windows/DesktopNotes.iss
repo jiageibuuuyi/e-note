@@ -38,10 +38,13 @@ Name: "desktopicon"; Description: "创建桌面快捷方式(&D)"; GroupDescripti
 Name: "launchatlogin"; Description: "开机自动启动电子便签 (随 Windows 登录启动)(&L)"; GroupDescription: "附加选项:"; Flags: checkedonce
 
 [Files]
-Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}"; DestName: "app-icon.ico"; Flags: ignoreversion
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\tray-icon.png"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; AppUserModelID: "{#MyAppUserModelId}"
@@ -76,6 +79,7 @@ procedure CurStepChanged(CurStep: TSetupStep);
 var
   DataRootDir: String;
   IntentFilePath: String;
+  AppIntentFilePath: String;
   EscapedAttachmentDir: String;
   LaunchBoolStr: String;
   JsonContent: String;
@@ -102,5 +106,49 @@ begin
 
     IntentFilePath := DataRootDir + '\first-run-intent.json';
     SaveStringToFile(IntentFilePath, JsonContent, False);
+    SaveStringToFile(DataRootDir + '\install-intent.json', JsonContent, False);
+
+    AppIntentFilePath := ExpandConstant('{app}\first-run-intent.json');
+    SaveStringToFile(AppIntentFilePath, JsonContent, False);
+  end;
+end;
+
+function InitializeUninstall(): Boolean;
+var
+  ErrorCode: Integer;
+begin
+  // 卸载前强制退出正在运行的电子便签主进程与后台托盘，释放所有文件锁
+  Exec('taskkill.exe', '/F /T /IM {#MyAppExeName}', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+  Sleep(600);
+  Result := True;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  DataRootDir: String;
+  AppDir: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    // 彻底清理安装目录残留文件与子文件夹
+    AppDir := ExpandConstant('{app}');
+    if DirExists(AppDir) then
+    begin
+      DelTree(AppDir, True, True, True);
+    end;
+
+    // 提示用户是否一并清除本地历史任务与便签数据
+    DataRootDir := ExpandConstant('{localappdata}\DesktopNotes');
+    if DirExists(DataRootDir) then
+    begin
+      if MsgBox('是否同时清理本地便签任务数据及用户配置？' + #13#10#13#10 +
+                '数据位置: ' + DataRootDir + #13#10#13#10 +
+                '【是】：彻底清空所有本地历史任务与便签数据' + #13#10 +
+                '【否】：保留历史数据，以便重新安装时恢复',
+                mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+      begin
+        DelTree(DataRootDir, True, True, True);
+      end;
+    end;
   end;
 end;

@@ -78,6 +78,7 @@ public interface ISourceCleanupPort
 
 public interface IAttachmentService
 {
+    string DefaultRootPath { get; }
     Task<IReadOnlyList<Guid>> EnqueueAsync(ImportRequest request, CancellationToken ct);
     Task<JobView> GetJobAsync(Guid jobId, CancellationToken ct);
     Task CancelAsync(Guid jobId, CancellationToken ct);

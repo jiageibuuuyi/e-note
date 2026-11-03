@@ -71,8 +71,37 @@ public sealed class Bootstrapper : IDisposable
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _ = SettingsService.GetPreferences();
-        string intentPath = Path.Combine(AppContext.BaseDirectory, "install-intent.json");
-        await SettingsService.ImportFirstRunIntentIfPresentAsync(intentPath, Store, ct);
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string[] candidateIntentPaths =
+        [
+            Path.Combine(localAppData, "DesktopNotes", "first-run-intent.json"),
+            Path.Combine(localAppData, "DesktopNotes", "install-intent.json"),
+            Path.Combine(AppContext.BaseDirectory, "first-run-intent.json"),
+            Path.Combine(AppContext.BaseDirectory, "install-intent.json")
+        ];
+
+        bool anyImported = false;
+        foreach (string candidate in candidateIntentPaths)
+        {
+            if (File.Exists(candidate))
+            {
+                bool imported = await SettingsService.ImportFirstRunIntentIfPresentAsync(candidate, Store, ct);
+                if (imported)
+                {
+                    anyImported = true;
+                }
+            }
+        }
+
+        if (anyImported)
+        {
+            string? savedCustomRoot = ReadSavedAttachmentRootPath(Store);
+            if (!string.IsNullOrWhiteSpace(savedCustomRoot))
+            {
+                AttachmentService.SetDefaultStorageRoot(savedCustomRoot);
+            }
+        }
+
         await RecoveryService.ReconcileIncompleteJobsAsync(ct);
     }
 
@@ -101,15 +130,32 @@ public sealed class Bootstrapper : IDisposable
         try
         {
             string? raw = store.GetSettingJson("global.default_attachment_root_path");
-            if (string.IsNullOrWhiteSpace(raw))
+            if (!string.IsNullOrWhiteSpace(raw))
             {
-                return null;
+                if (raw.StartsWith('"'))
+                {
+                    return System.Text.Json.JsonSerializer.Deserialize<string>(raw);
+                }
+                return raw;
             }
-            if (raw.StartsWith('"'))
+
+            string? prefsJson = store.GetSettingJson("app_preferences");
+            if (!string.IsNullOrWhiteSpace(prefsJson))
             {
-                return System.Text.Json.JsonSerializer.Deserialize<string>(raw);
+                var prefs = System.Text.Json.JsonSerializer.Deserialize<AppPreferences>(
+                    prefsJson,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (prefs?.DefaultStorageRootId.HasValue == true)
+                {
+                    var root = store.GetStorageRoot(prefs.DefaultStorageRootId.Value);
+                    if (root != null && !string.IsNullOrWhiteSpace(root.AbsolutePath))
+                    {
+                        return root.AbsolutePath;
+                    }
+                }
             }
-            return raw;
+
+            return null;
         }
         catch
         {
