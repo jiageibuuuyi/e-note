@@ -149,7 +149,7 @@
                   ToolTip.Tip="{Binding TreeToggleTooltip}"/>
 
           <!-- Col 4: Title / Inline Input (Fills remaining *) -->
-          <Panel Grid.Column="4" VerticalAlignment="Center">
+          <Panel Grid.Column="4" VerticalAlignment="Center" ClipToBounds="True">
             <!-- Normal Uncompleted Mode Title -->
             <TextBox Name="TitleDisplayBox"
                      IsVisible="{Binding IsDisplayNormal}"
@@ -363,14 +363,18 @@
                                    LineHeight="20"
                                    TextWrapping="Wrap"/>
 
-              <!-- Meta Footer Strip -->
-              <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <!-- Meta & Actions Footer Strip: Separated into two distinct lines to guarantee zero overlap -->
+              <StackPanel Spacing="6" Margin="0,4,0,0">
+                <!-- Line 1: Meta Tags (Due Date, Assignee) -->
+                <WrapPanel Orientation="Horizontal"
+                           IsVisible="{Binding HasDrawerMeta}"
+                           Margin="0,0,0,2">
                   <!-- Due Date Pill (ONLY shown when task has a due date!) -->
                   <Border IsVisible="{Binding HasDue}"
                           Background="{DynamicResource BgSubtle}"
                           CornerRadius="5"
-                          Padding="6,2.5">
+                          Padding="6,2.5"
+                          Margin="0,0,8,4">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <PathIcon Width="11" Height="11"
                                 Foreground="{DynamicResource TextMuted}"
@@ -385,7 +389,8 @@
                   <Border IsVisible="{Binding HasAssignee}"
                           Background="{DynamicResource BgSubtle}"
                           CornerRadius="5"
-                          Padding="6,2.5">
+                          Padding="6,2.5"
+                          Margin="0,0,8,4">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <PathIcon Width="11" Height="11"
                                 Foreground="{DynamicResource TextMuted}"
@@ -395,34 +400,38 @@
                                  FontSize="11.5"/>
                     </StackPanel>
                   </Border>
-                </StackPanel>
+                </WrapPanel>
 
-                <!-- Add Subtask & Open Detail Links -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <!-- Line 2: Actions Bar (Right-aligned WrapPanel) -->
+                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right">
                   <!-- Promote Subtask to Root Task Button (Visible for subtasks) -->
                   <Button Name="PromoteSubtaskButton"
                           IsVisible="{Binding IsSubtask}"
                           Classes="ghost-link"
                           Content="{Binding Loc.RowMenuPromoteSubtask}"
-                          ToolTip.Tip="{Binding Loc.NoticePromotedToRoot}"/>
+                          ToolTip.Tip="{Binding Loc.NoticePromotedToRoot}"
+                          Margin="0,0,6,2"/>
                   <!-- Delete Action Button in Drawer -->
                   <Button Name="BtnDrawerDelete"
                           Classes.ghost-link="{Binding Loc.IsMinimalistStyle}"
                           Classes.danger-ghost-btn="{Binding Loc.IsRealisticStyle}"
                           Foreground="{DynamicResource StatusOverdue}"
                           Content="{Binding Loc.RowDeleteBtn}"
-                          ToolTip.Tip="{Binding Loc.RowDeleteTooltip}"/>
+                          ToolTip.Tip="{Binding Loc.RowDeleteTooltip}"
+                          Margin="0,0,6,2"/>
                   <Button Name="AddSubtaskButton"
                           IsVisible="{Binding CanAddSubtask}"
                           Classes="ghost-link"
                           Content="{Binding Loc.RowAddSubtaskBtn}"
-                          ToolTip.Tip="{Binding Loc.RowAddSubtaskTooltip}"/>
+                          ToolTip.Tip="{Binding Loc.RowAddSubtaskTooltip}"
+                          Margin="0,0,6,2"/>
                   <Button Name="OpenDetailButton"
                           Classes="ghost-link"
                           Content="{Binding Loc.RowOpenDetailBtn}"
-                          ToolTip.Tip="{Binding Loc.RowOpenDetailTooltip}"/>
-                </StackPanel>
-              </Grid>
+                          ToolTip.Tip="{Binding Loc.RowOpenDetailTooltip}"
+                          Margin="0,0,0,2"/>
+                </WrapPanel>
+              </StackPanel>
             </StackPanel>
           </ScrollViewer>
         </Border>

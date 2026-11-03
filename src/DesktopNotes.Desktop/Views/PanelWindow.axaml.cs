@@ -33,12 +33,14 @@ public partial class PanelWindow : Window
     private bool _isPositionLocked;
     private PixelPoint _lockedPosition;
     private bool _isRestoringLockedPosition;
+    private AppPlacementMode _currentPlacementMode = AppPlacementMode.Topmost;
 
     public bool AllowExit { get; set; }
 
     public PanelWindow()
     {
         InitializeComponent();
+        ShowInTaskbar = false;
         try { Icon = App.CreateAppWindowIcon(); } catch { }
         _deadlineRefreshTimer = new DispatcherTimer
         {
@@ -512,8 +514,42 @@ public partial class PanelWindow : Window
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetWindowRect(nint hWnd, out RECT lpRect);
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWPOS
+    {
+        public nint hwnd;
+        public nint hwndInsertAfter;
+        public int x;
+        public int y;
+        public int cx;
+        public int cy;
+        public uint flags;
+    }
+
     private nint OnWndProc(nint hWnd, uint msg, nint wParam, nint lParam, ref bool handled)
     {
+        // When in EmbeddedDesktop (desktop bottom layer), enforce HWND_BOTTOM so no click or restore brings it to top
+        if (_currentPlacementMode == AppPlacementMode.EmbeddedDesktop)
+        {
+            if (msg == 0x0046 /* WM_WINDOWPOSCHANGING */ && lParam != nint.Zero)
+            {
+                try
+                {
+                    var wp = Marshal.PtrToStructure<WINDOWPOS>(lParam);
+                    wp.hwndInsertAfter = (nint)1; // HWND_BOTTOM
+                    Marshal.StructureToPtr(wp, lParam, false);
+                }
+                catch
+                {
+                }
+            }
+            else if (msg == 0x0021 /* WM_MOUSEACTIVATE */)
+            {
+                handled = true;
+                return 3; // MA_NOACTIVATE: process mouse clicks without activating above normal windows
+            }
+        }
+
         if (_isPositionLocked)
         {
             // WM_SYSCOMMAND = 0x0112, SC_MOVE = 0xF010, SC_SIZE = 0xF000
@@ -659,12 +695,24 @@ public partial class PanelWindow : Window
         {
             WindowState = WindowState.Normal;
         }
-        Activate();
+
+        var mode = _currentPlacementMode;
         if (_settingsService is not null)
         {
             var prefs = _settingsService.GetPreferences();
-            ApplyPlacementMode(prefs.PlacementMode, savePreference: false);
+            mode = prefs.PlacementMode;
             ApplyLockState(prefs.PositionLocked, savePreference: false);
+        }
+
+        if (mode == AppPlacementMode.EmbeddedDesktop)
+        {
+            // Do NOT call Activate() which brings it to the top!
+            ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop, savePreference: false);
+        }
+        else
+        {
+            Activate();
+            ApplyPlacementMode(mode, savePreference: false);
         }
     }
 
@@ -721,6 +769,7 @@ public partial class PanelWindow : Window
 
     public void ApplyPlacementMode(AppPlacementMode mode, bool savePreference = true)
     {
+        _currentPlacementMode = mode;
         if (_settingsService is not null && savePreference)
         {
             var prefs = _settingsService.GetPreferences();

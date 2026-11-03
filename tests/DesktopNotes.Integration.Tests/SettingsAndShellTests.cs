@@ -2,6 +2,7 @@ using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Settings;
 using DesktopNotes.Desktop.Localization;
 using DesktopNotes.Desktop.ViewModels;
+using DesktopNotes.Domain;
 using DesktopNotes.Infrastructure.Persistence;
 using DesktopNotes.Platforms.Windows;
 using Xunit;
@@ -191,6 +192,75 @@ public sealed class SettingsAndShellTests : IDisposable
         Assert.True(File.Exists(Path.Combine(iconsDir, "app-icon.ico")), "app-icon.ico exists");
         Assert.True(File.Exists(Path.Combine(iconsDir, "app-icon.png")), "app-icon.png exists");
         Assert.True(File.Exists(Path.Combine(iconsDir, "tray-icon.png")), "tray-icon.png exists");
+    }
+
+    [Fact]
+    public void PanelWindow_AndTaskRow_DrawerLayoutAndTaskbarProperties()
+    {
+        // 1. Verify Window XAMLs have ShowInTaskbar="False" to ensure app exists ONLY in system tray
+        string baseDir = AppContext.BaseDirectory;
+        string? projectRoot = null;
+        var dir = new DirectoryInfo(baseDir);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "DesktopNotes.sln")))
+            {
+                projectRoot = dir.FullName;
+                break;
+            }
+            dir = dir.Parent;
+        }
+
+        Assert.NotNull(projectRoot);
+        string viewsDir = Path.Combine(projectRoot, "src", "DesktopNotes.Desktop", "Views");
+        string panelXaml = File.ReadAllText(Path.Combine(viewsDir, "PanelWindow.axaml"));
+        string detailXaml = File.ReadAllText(Path.Combine(viewsDir, "DetailWindow.axaml"));
+        string managerXaml = File.ReadAllText(Path.Combine(viewsDir, "ManagerWindow.axaml"));
+
+        Assert.Contains("ShowInTaskbar=\"False\"", panelXaml);
+        Assert.Contains("ShowInTaskbar=\"False\"", detailXaml);
+        Assert.Contains("ShowInTaskbar=\"False\"", managerXaml);
+
+        // 2. Verify TaskRow drawer meta logic preventing overlap
+        var zone = TimeZoneInfo.Local;
+        var now = DateTimeOffset.UtcNow;
+        var metaFields = new EffectiveFields(
+            null,
+            "李工",
+            Priority.Normal,
+            null,
+            new DueSpec(DueKind.Date, new DateOnly(2026, 11, 3), null, null),
+            null);
+
+        var subtaskView = new RecordView(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            RecordKind.Task,
+            "子任务待办",
+            "笔记详情",
+            RecordStatus.Active,
+            metaFields,
+            metaFields,
+            InheritField.None,
+            1,
+            now,
+            null,
+            null);
+
+        var rowVm = new TaskRowViewModel(subtaskView, zone, now, false, depth: 1, isLastSubtask: true);
+        Assert.True(rowVm.HasDue);
+        Assert.True(rowVm.HasAssignee);
+        Assert.True(rowVm.HasDrawerMeta);
+
+        // When collapsed, inline assignee shows in realistic mode
+        AppLocalizer.Instance.SetVisualStyle(AppVisualStyle.Realistic);
+        rowVm.IsExpanded = false;
+        Assert.True(rowVm.ShowSubtaskAssigneeInline);
+
+        // When expanded (user clicked), inline assignee hides from top row to avoid crowding, and drawer shows meta on its own line
+        rowVm.IsExpanded = true;
+        Assert.False(rowVm.ShowSubtaskAssigneeInline);
+        Assert.True(rowVm.HasDrawerMeta);
     }
 
     private sealed class FakeDesktopIntegration : IDesktopIntegration

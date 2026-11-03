@@ -71,7 +71,7 @@ public sealed class TaskRowViewModel : ViewModelBase
         : Loc.T("Type and press Enter to save, Esc to cancel...", "输入内容后按 Enter 保存，Esc 取消...");
     public bool HasBody => !string.IsNullOrWhiteSpace(Body);
     public bool HasAssignee => IsTaskKind && !string.IsNullOrWhiteSpace(Assignee);
-    public bool ShowSubtaskAssigneeInline => IsSubtask && Loc.IsRealisticStyle && HasAssignee && !_isMarkedCompleted;
+    public bool ShowSubtaskAssigneeInline => IsSubtask && Loc.IsRealisticStyle && HasAssignee && !_isMarkedCompleted && !IsExpanded;
 
     public string StageLabel => IsMarkedCompleted
         ? Loc.T("✓ Done", "✓ 已完成")
@@ -100,6 +100,7 @@ public sealed class TaskRowViewModel : ViewModelBase
 
     public bool HasPriorityBadge => !string.IsNullOrEmpty(PriorityBadge);
     public bool HasDue => IsTaskKind && Record.Effective.Due.Kind != DueKind.None;
+    public bool HasDrawerMeta => HasDue || HasAssignee;
 
     public string DueSummary => Record.Effective.Due.Kind switch
     {
@@ -124,6 +125,7 @@ public sealed class TaskRowViewModel : ViewModelBase
             {
                 RaisePropertyChanged(nameof(ShowRealisticDelete));
                 RaisePropertyChanged(nameof(ShowMinimalistDelete));
+                RaisePropertyChanged(nameof(ShowSubtaskAssigneeInline));
             }
         }
     }
@@ -199,6 +201,7 @@ public sealed class TaskRowViewModel : ViewModelBase
         RaisePropertyChanged(nameof(StageLabel));
         RaisePropertyChanged(nameof(HasStageLabel));
         RaisePropertyChanged(nameof(HasDue));
+        RaisePropertyChanged(nameof(HasDrawerMeta));
         RaisePropertyChanged(nameof(DueSummary));
         RaisePropertyChanged(nameof(CompleteMenuHeader));
         RaisePropertyChanged(nameof(ShowRealisticDelete));

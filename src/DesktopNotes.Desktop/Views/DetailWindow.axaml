@@ -12,6 +12,7 @@
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="0"
         WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
         DragDrop.AllowDrop="True"
         Icon="avares://DesktopNotes.Desktop/Assets/Icons/app-icon.ico"
         Title="{Binding Loc.DetailWindowTitle}">

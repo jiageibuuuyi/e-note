@@ -9,6 +9,7 @@
         TransparencyLevelHint="Transparent"
         WindowDecorations="None"
         CanResize="True"
+        ShowInTaskbar="False"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="0"
         Icon="avares://DesktopNotes.Desktop/Assets/Icons/app-icon.ico"
