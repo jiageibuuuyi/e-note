@@ -320,6 +320,133 @@ public sealed class SettingsAndShellTests : IDisposable
         }
     }
 
+    [Fact]
+    public void TaskProgress_DefaultsToZero_AndAllowsCustomProgressSetting()
+    {
+        var progressService = new DesktopNotes.Desktop.Services.TaskProgressService(_store);
+        Guid taskId = Guid.NewGuid();
+        var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
+        var record = new RecordView(
+            taskId, null, RecordKind.Task, "测试任务", "", RecordStatus.Active,
+            emptyFields, emptyFields, InheritField.None, 1, DateTimeOffset.UtcNow, null, null);
+
+        // 1. Without subtasks and without custom setting -> defaults to 0
+        var (prog0, isCustom0, hasSubs0) = progressService.ComputeProgress(record, Array.Empty<RecordView>());
+        Assert.Equal(0, prog0);
+        Assert.False(isCustom0);
+        Assert.False(hasSubs0);
+
+        // 2. User sets custom progress to 65%
+        progressService.SetCustomProgress(taskId, 65);
+        Assert.Equal(65, progressService.GetCustomProgress(taskId));
+
+        var (progCustom, isCustom1, _) = progressService.ComputeProgress(record, Array.Empty<RecordView>());
+        Assert.Equal(65, progCustom);
+        Assert.True(isCustom1);
+
+        // 3. User clears custom progress -> reverts to 0
+        progressService.ClearCustomProgress(taskId);
+        Assert.Null(progressService.GetCustomProgress(taskId));
+        var (progReverted, isCustom2, _) = progressService.ComputeProgress(record, Array.Empty<RecordView>());
+        Assert.Equal(0, progReverted);
+        Assert.False(isCustom2);
+    }
+
+    [Fact]
+    public void TaskProgress_ComputesSubtaskCompletionAutomatically_AndSupportsParentOverrideAndReset()
+    {
+        var progressService = new DesktopNotes.Desktop.Services.TaskProgressService(_store);
+        Guid parentId = Guid.NewGuid();
+        Guid sub1Id = Guid.NewGuid();
+        Guid sub2Id = Guid.NewGuid();
+        var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
+
+        var parent = new RecordView(parentId, null, RecordKind.Task, "父任务", "", RecordStatus.Active, emptyFields, emptyFields, InheritField.None, 1, DateTimeOffset.UtcNow, null, null);
+        var sub1 = new RecordView(sub1Id, parentId, RecordKind.Task, "子任务1", "", RecordStatus.Active, emptyFields, emptyFields, InheritField.None, 1, DateTimeOffset.UtcNow, null, null);
+        var sub2 = new RecordView(sub2Id, parentId, RecordKind.Task, "子任务2", "", RecordStatus.Active, emptyFields, emptyFields, InheritField.None, 1, DateTimeOffset.UtcNow, null, null);
+
+        var subtasks = new List<RecordView> { sub1, sub2 };
+
+        // 1. Both subtasks active (0%) -> parent is 0%
+        var (p0, isC0, hasSubs) = progressService.ComputeProgress(parent, subtasks);
+        Assert.Equal(0, p0);
+        Assert.False(isC0);
+        Assert.True(hasSubs);
+
+        // 2. Subtask 1 marked completed (100%), Subtask 2 active (0%) -> parent is 50%
+        var (p50, isC50, _) = progressService.ComputeProgress(parent, subtasks, id => id == sub1Id);
+        Assert.Equal(50, p50);
+        Assert.False(isC50);
+
+        // 3. Subtask 2 set to 50% custom -> average = (100 + 50) / 2 = 75%
+        progressService.SetCustomProgress(sub2Id, 50);
+        var (p75, isC75, _) = progressService.ComputeProgress(parent, subtasks, id => id == sub1Id);
+        Assert.Equal(75, p75);
+        Assert.False(isC75);
+
+        // 4. User manually overrides parent to 90%
+        progressService.SetCustomProgress(parentId, 90);
+        var (pParentOverride, isCParent, _) = progressService.ComputeProgress(parent, subtasks, id => id == sub1Id);
+        Assert.Equal(90, pParentOverride);
+        Assert.True(isCParent);
+
+        // 5. User resets parent to follow subtasks -> restores 75%
+        progressService.ClearCustomProgress(parentId);
+        var (pRestored, isCRestored, _) = progressService.ComputeProgress(parent, subtasks, id => id == sub1Id);
+        Assert.Equal(75, pRestored);
+        Assert.False(isCRestored);
+
+        // 6. When both subtasks completed -> 100%
+        var (p100, _, _) = progressService.ComputeProgress(parent, subtasks, id => true);
+        Assert.Equal(100, p100);
+    }
+
+    [Fact]
+    public void TaskRowViewModel_HasDrawerMeta_IncludesProgress_AndFormatsSummary()
+    {
+        AppLocalizer.Instance.SetLanguage(AppLanguage.Chinese);
+        Guid id = Guid.NewGuid();
+        var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
+        var record = new RecordView(id, null, RecordKind.Task, "任务", "", RecordStatus.Active, emptyFields, emptyFields, InheritField.None, 1, DateTimeOffset.UtcNow, null, null);
+
+        var rowVm = new TaskRowViewModel(
+            record,
+            TimeZoneInfo.Utc,
+            DateTimeOffset.UtcNow,
+            isExpanded: true,
+            isMarkedCompleted: false,
+            subtaskCount: 2,
+            isTreeExpanded: true,
+            isLastSubtask: false,
+            depth: 0,
+            progress: 50,
+            isCustomProgress: false);
+
+        Assert.True(rowVm.HasProgress);
+        Assert.True(rowVm.HasDrawerMeta);
+        Assert.Equal("50%", rowVm.ProgressText);
+        Assert.Contains("50%", rowVm.ProgressSummary);
+        Assert.Contains("子任务", rowVm.ProgressSummary);
+        Assert.True(rowVm.ShowProgressBadge);
+
+        // When custom
+        var customRowVm = new TaskRowViewModel(
+            record,
+            TimeZoneInfo.Utc,
+            DateTimeOffset.UtcNow,
+            isExpanded: true,
+            isMarkedCompleted: false,
+            subtaskCount: 0,
+            isTreeExpanded: true,
+            isLastSubtask: false,
+            depth: 0,
+            progress: 80,
+            isCustomProgress: true);
+
+        Assert.Contains("80%", customRowVm.ProgressSummary);
+        Assert.Contains("手动", customRowVm.ProgressSummary);
+    }
+
     private sealed class FakeDesktopIntegration : IDesktopIntegration
     {
         private bool _loginStartup;

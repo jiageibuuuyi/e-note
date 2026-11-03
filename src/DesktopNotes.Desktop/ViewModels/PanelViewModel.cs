@@ -1,3 +1,4 @@
+using DesktopNotes.Desktop.Services;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using DesktopNotes.Application.Contracts;
@@ -100,7 +101,17 @@ public sealed class TaskRowViewModel : ViewModelBase
 
     public bool HasPriorityBadge => !string.IsNullOrEmpty(PriorityBadge);
     public bool HasDue => IsTaskKind && Record.Effective.Due.Kind != DueKind.None;
-    public bool HasDrawerMeta => HasDue || HasAssignee;
+    public int Progress { get; private set; }
+    public bool IsCustomProgress { get; private set; }
+    public string ProgressText => $"{Progress}%";
+    public string ProgressSummary => IsCustomProgress
+        ? Loc.T($"Progress: {Progress}% (Custom)", $"进度: {Progress}% (手动)")
+        : (HasSubtasks
+            ? Loc.T($"Progress: {Progress}% (Subtasks)", $"进度: {Progress}% (子任务)")
+            : Loc.T($"Progress: {Progress}%", $"进度: {Progress}%"));
+    public bool HasProgress => IsTaskKind;
+    public bool ShowProgressBadge => IsTaskKind && Progress > 0 && !IsMarkedCompleted;
+    public bool HasDrawerMeta => HasDue || HasAssignee || HasProgress;
 
     public string DueSummary => Record.Effective.Due.Kind switch
     {
@@ -156,6 +167,14 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(RealisticPlantTooltip));
                 RaisePropertyChanged(nameof(ShowRealisticPlantToggle));
                 RaisePropertyChanged(nameof(ShowSubtaskAssigneeInline));
+                if (value)
+                {
+                    Progress = 100;
+                }
+                RaisePropertyChanged(nameof(Progress));
+                RaisePropertyChanged(nameof(ProgressText));
+                RaisePropertyChanged(nameof(ProgressSummary));
+                RaisePropertyChanged(nameof(ShowProgressBadge));
             }
         }
     }
@@ -202,6 +221,10 @@ public sealed class TaskRowViewModel : ViewModelBase
         RaisePropertyChanged(nameof(HasStageLabel));
         RaisePropertyChanged(nameof(HasDue));
         RaisePropertyChanged(nameof(HasDrawerMeta));
+        RaisePropertyChanged(nameof(ProgressSummary));
+        RaisePropertyChanged(nameof(ProgressText));
+        RaisePropertyChanged(nameof(ShowProgressBadge));
+        RaisePropertyChanged(nameof(HasProgress));
         RaisePropertyChanged(nameof(DueSummary));
         RaisePropertyChanged(nameof(CompleteMenuHeader));
         RaisePropertyChanged(nameof(ShowRealisticDelete));
@@ -251,7 +274,9 @@ public sealed class TaskRowViewModel : ViewModelBase
         int subtaskCount = 0,
         bool isTreeExpanded = true,
         bool isLastSubtask = false,
-        int depth = 0)
+        int depth = 0,
+        int progress = 0,
+        bool isCustomProgress = false)
     {
         Record = record;
         _editableTitle = !string.IsNullOrWhiteSpace(record.Title) ? record.Title : record.DisplayTitle;
@@ -262,6 +287,8 @@ public sealed class TaskRowViewModel : ViewModelBase
         IsTreeExpanded = isTreeExpanded;
         IsLastSubtask = isLastSubtask;
         Depth = depth;
+        Progress = isMarkedCompleted ? 100 : progress;
+        IsCustomProgress = isCustomProgress;
 
         AppLocalizer.Instance.VisualStyleChanged += RefreshLocalization;
         AppLocalizer.Instance.LanguageChanged += RefreshLocalization;
@@ -743,6 +770,12 @@ public sealed class PanelViewModel : ViewModelBase
                 int childCount = hasKids && subtasks is not null ? subtasks.Count : 0;
                 bool isTreeExpanded = !_collapsedTreeParentIds.Contains(item.Id);
 
+                int prog = TaskProgressService.Instance.ComputeRecursiveProgress(
+                    item,
+                    childrenByParent,
+                    id => _markedCompletedIds.Contains(id),
+                    out bool isCustom);
+
                 Items.Add(new TaskRowViewModel(
                     item,
                     zone,
@@ -752,7 +785,9 @@ public sealed class PanelViewModel : ViewModelBase
                     childCount,
                     isTreeExpanded,
                     isLastSibling,
-                    depth));
+                    depth,
+                    prog,
+                    isCustom));
 
                 if (hasKids && subtasks is not null && isTreeExpanded)
                 {
@@ -1410,6 +1445,16 @@ public sealed class PanelViewModel : ViewModelBase
         RaisePropertyChanged(nameof(CompletedPendingArchiveCount));
         RaisePropertyChanged(nameof(HasCompletedPendingArchive));
         RaisePropertyChanged(nameof(ArchiveCompletedButtonText));
+    }
+
+    public void CycleTaskProgress(Guid taskId)
+    {
+        var row = Items.FirstOrDefault(x => x.Id == taskId);
+        if (row is null || !row.IsTaskKind) return;
+        int next = row.Progress + 25;
+        if (next > 100) next = 0;
+        TaskProgressService.Instance.SetCustomProgress(taskId, next);
+        _ = RefreshAsync(CancellationToken.None);
     }
 
     public async Task CompleteRecordAsync(Guid id, bool includeChildren, CancellationToken ct)

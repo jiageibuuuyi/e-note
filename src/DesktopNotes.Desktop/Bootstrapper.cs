@@ -6,6 +6,7 @@ using DesktopNotes.Application.Records;
 using DesktopNotes.Application.Reminders;
 using DesktopNotes.Application.Settings;
 using DesktopNotes.Desktop.Localization;
+using DesktopNotes.Desktop.Services;
 using DesktopNotes.Desktop.ViewModels;
 using DesktopNotes.Infrastructure.Backup;
 using DesktopNotes.Infrastructure.Files;
@@ -39,6 +40,7 @@ public sealed class Bootstrapper : IDisposable
 
         Store = new SqliteStore(dbPath);
         AppLocalizer.Instance.InitializeFromEnvironmentAndStore(Store);
+        TaskProgressService.Instance = new TaskProgressService(Store);
 
         string? savedCustomRoot = ReadSavedAttachmentRootPath(Store);
         _attachmentRootPath = !string.IsNullOrWhiteSpace(defaultAttachmentRoot)

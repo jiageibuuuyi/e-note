@@ -149,7 +149,7 @@
                 Classes.paper-card="{Binding Loc.IsRealisticStyle}"
                 Padding="12,8"
                 Margin="0,0,0,8">
-          <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="7">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="7">
             <!-- Row 0: Priority Selector -->
             <TextBlock Grid.Row="0" Grid.Column="0"
                        Text="{Binding Loc.DetailPriorityLabel}"
@@ -269,6 +269,60 @@
                            FontSize="12"/>
                 </Grid>
               </Border>
+            </Grid>
+
+            <!-- Row 4: Progress Management -->
+            <TextBlock Grid.Row="4" Grid.Column="0"
+                       Text="{Binding Loc.DetailProgressLabel}"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+            <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+              <!-- Current Progress Badge & Subtask/Manual Tag -->
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,10,0">
+                <Border Background="{DynamicResource BgSubtle}"
+                        CornerRadius="5"
+                        Padding="7,2"
+                        VerticalAlignment="Center">
+                  <TextBlock Text="{Binding ProgressDisplayText}"
+                             Foreground="{DynamicResource TextPrimary}"
+                             FontSize="11.5"
+                             FontWeight="SemiBold"/>
+                </Border>
+                <TextBlock Text="{Binding ProgressSourceText}"
+                           Foreground="{DynamicResource TextMuted}"
+                           FontSize="11"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+
+              <!-- Progress Slider & Quick Pills -->
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                <Slider Grid.Column="0"
+                        Minimum="0"
+                        Maximum="100"
+                        SmallChange="1"
+                        LargeChange="5"
+                        Value="{Binding Progress, Mode=TwoWay}"
+                        VerticalAlignment="Center"
+                        Margin="0,0,8,0"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                  <Button Name="BtnProgress0" Classes="seg-pill" Classes.active="{Binding IsProgress0}" Padding="5,2" FontSize="10.5" Content="0%"/>
+                  <Button Name="BtnProgress25" Classes="seg-pill" Classes.active="{Binding IsProgress25}" Padding="5,2" FontSize="10.5" Content="25%"/>
+                  <Button Name="BtnProgress50" Classes="seg-pill" Classes.active="{Binding IsProgress50}" Padding="5,2" FontSize="10.5" Content="50%"/>
+                  <Button Name="BtnProgress75" Classes="seg-pill" Classes.active="{Binding IsProgress75}" Padding="5,2" FontSize="10.5" Content="75%"/>
+                  <Button Name="BtnProgress100" Classes="seg-pill" Classes.active="{Binding IsProgress100}" Padding="5,2" FontSize="10.5" Content="100%"/>
+                </StackPanel>
+              </Grid>
+
+              <!-- Reset to Auto Button -->
+              <Button Grid.Column="2"
+                      Name="BtnResetProgress"
+                      IsVisible="{Binding CanResetProgress}"
+                      Classes="ghost-link"
+                      Content="{Binding Loc.DetailProgressReset}"
+                      FontSize="11"
+                      Margin="6,0,0,0"
+                      VerticalAlignment="Center"/>
             </Grid>
           </Grid>
         </Border>

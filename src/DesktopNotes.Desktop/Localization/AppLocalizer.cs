@@ -364,6 +364,14 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string DetailAssigneePlaceholder => T("Enter owner...", "填写责任人...");
     public string DetailPublisherLabel => T("From:", "发布人:");
     public string DetailPublisherPlaceholder => T("Enter sender...", "填写发布人...");
+    public string DetailProgressLabel => T("Progress", "进度");
+    public string DetailProgressAuto => T("Subtasks auto", "子任务统计");
+    public string DetailProgressManual => T("Custom", "手动设置");
+    public string DetailProgressDefault => T("Default (0%)", "默认 (0%)");
+    public string DetailProgressReset => T("Follow subtasks", "跟随子任务");
+    public string RowProgressLabel => T("Progress", "进度");
+    public string RowProgressTooltip => T("Task progress (Click to cycle +25%)", "任务进度 (点击快速 +25%)");
+    public string RowProgressCycleTooltip => T("Click to increment progress (+25%)", "点击增加进度 (+25%)");
     public string DetailBodyPlaceholder => T("Write details, steps, or notes here...", "输入详细描述、待办步骤或笔记正文...");
     public string DetailSubtasksLabel => T("↳ Sub-TODOs:", "↳ 子任务:");
     public string DetailSubtaskInputPlaceholder => T("Type a sub-TODO and press Enter...", "输入子任务名称后按 Enter 或点击右侧添加...");

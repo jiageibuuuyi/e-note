@@ -138,6 +138,11 @@ public partial class TaskRow : UserControl
             BtnDrawerDelete.Click += OnTrashRowClick;
         }
 
+        if (BtnQuickProgress is not null)
+        {
+            BtnQuickProgress.Click += OnQuickProgressClick;
+        }
+
         if (PromoteSubtaskButton is not null)
         {
             PromoteSubtaskButton.Click += OnPromoteSubtaskClick;
@@ -567,6 +572,16 @@ public partial class TaskRow : UserControl
         if (TitleDisplayBox is not null)
         {
             TitleDisplayBox.Paste();
+        }
+    }
+
+    private void OnQuickProgressClick(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (DataContext is TaskRowViewModel vm &&
+            FindParentPanelViewModel() is { } panelVm)
+        {
+            panelVm.CycleTaskProgress(vm.Id);
         }
     }
 

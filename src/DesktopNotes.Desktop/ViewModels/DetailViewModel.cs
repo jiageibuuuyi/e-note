@@ -3,6 +3,7 @@ using System.Diagnostics;
 using DesktopNotes.Application.Contracts;
 using DesktopNotes.Application.Ports;
 using DesktopNotes.Desktop.Localization;
+using DesktopNotes.Desktop.Services;
 using DesktopNotes.Domain;
 
 namespace DesktopNotes.Desktop.ViewModels;
@@ -33,6 +34,8 @@ public sealed class DetailViewModel : ViewModelBase
     private string _statusMessage = string.Empty;
     private bool _hasConflict;
     private CancellationTokenSource? _draftDebounceCts;
+    private int _progress;
+    private bool _isCustomProgress;
 
     public ObservableCollection<RecordView> Subtasks { get; } = new();
     public ObservableCollection<AttachmentView> Attachments { get; } = new();
@@ -158,6 +161,84 @@ public sealed class DetailViewModel : ViewModelBase
                 : inst.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
         _ => Loc.T("No due date", "无截止期")
     };
+
+    public int Progress
+    {
+        get => _progress;
+        set
+        {
+            int clamped = Math.Clamp(value, 0, 100);
+            if (_progress != clamped || !_isCustomProgress)
+            {
+                _progress = clamped;
+                _isCustomProgress = true;
+                TaskProgressService.Instance.SetCustomProgress(_recordId, clamped);
+                RaiseProgressProperties();
+            }
+        }
+    }
+
+    public string ProgressDisplayText => $"{Progress}%";
+
+    public string ProgressSourceText => _status == RecordStatus.Closed
+        ? Loc.T("(Done)", "(已完成)")
+        : (_isCustomProgress
+            ? $"({Loc.DetailProgressManual})"
+            : (HasSubtasks ? $"({Loc.DetailProgressAuto})" : $"({Loc.DetailProgressDefault})"));
+
+    public bool CanResetProgress => _isCustomProgress && HasSubtasks && _status != RecordStatus.Closed;
+
+    public bool IsProgress0 => Progress == 0;
+    public bool IsProgress25 => Progress == 25;
+    public bool IsProgress50 => Progress == 50;
+    public bool IsProgress75 => Progress == 75;
+    public bool IsProgress100 => Progress == 100;
+
+    public void SetProgress(int value)
+    {
+        Progress = value;
+    }
+
+    public void ResetProgressToAuto()
+    {
+        TaskProgressService.Instance.ClearCustomProgress(_recordId);
+        UpdateProgressState();
+    }
+
+    public void RaiseProgressProperties()
+    {
+        RaisePropertyChanged(nameof(Progress));
+        RaisePropertyChanged(nameof(ProgressDisplayText));
+        RaisePropertyChanged(nameof(ProgressSourceText));
+        RaisePropertyChanged(nameof(CanResetProgress));
+        RaisePropertyChanged(nameof(IsProgress0));
+        RaisePropertyChanged(nameof(IsProgress25));
+        RaisePropertyChanged(nameof(IsProgress50));
+        RaisePropertyChanged(nameof(IsProgress75));
+        RaisePropertyChanged(nameof(IsProgress100));
+    }
+
+    private void UpdateProgressState()
+    {
+        var dummyRecord = new RecordView(
+            _recordId,
+            _parentId,
+            _kind,
+            _title,
+            _body,
+            _status,
+            Own,
+            Effective,
+            _inheritMask,
+            _version,
+            DateTimeOffset.UtcNow,
+            null,
+            null);
+        var (prog, isCustom, _) = TaskProgressService.Instance.ComputeProgress(dummyRecord, Subtasks);
+        _progress = prog;
+        _isCustomProgress = isCustom;
+        RaiseProgressProperties();
+    }
 
     public DateTime? SelectedDueDate
     {
@@ -289,6 +370,7 @@ public sealed class DetailViewModel : ViewModelBase
         HasConflict = false;
         Attachments.Clear();
         Subtasks.Clear();
+        UpdateProgressState();
         RaiseAllProperties();
         return Task.CompletedTask;
     }
@@ -325,6 +407,7 @@ public sealed class DetailViewModel : ViewModelBase
         HasConflict = false;
         await RefreshSubtasksAsync(ct);
         await RefreshAttachmentsAsync(ct);
+        UpdateProgressState();
         RaiseAllProperties();
     }
 
@@ -347,6 +430,10 @@ public sealed class DetailViewModel : ViewModelBase
             }
         }
         RaisePropertyChanged(nameof(HasSubtasks));
+        if (!_isCustomProgress)
+        {
+            UpdateProgressState();
+        }
     }
 
     public async Task AddSubtaskAsync(CancellationToken ct)
@@ -622,6 +709,7 @@ public sealed class DetailViewModel : ViewModelBase
         RaisePriorityProperties();
         RaiseDueProperties();
         RaiseStartProperties();
+        RaiseProgressProperties();
     }
 
     public bool IsInheriting(InheritField field) => _parentId.HasValue && (_inheritMask & field) != 0;
@@ -783,6 +871,10 @@ public sealed class DetailViewModel : ViewModelBase
         RaisePropertyChanged(nameof(RecordKindTitle));
         RaisePropertyChanged(nameof(CanHaveSubtasks));
         RaisePropertyChanged(nameof(HasSubtasks));
+        if (!_isCustomProgress)
+        {
+            UpdateProgressState();
+        }
         RaisePropertyChanged(nameof(IsSubtask));
         RaisePropertyChanged(nameof(Title));
         RaisePropertyChanged(nameof(Body));
@@ -798,5 +890,6 @@ public sealed class DetailViewModel : ViewModelBase
         RaisePriorityProperties();
         RaiseDueProperties();
         RaiseStartProperties();
+        RaiseProgressProperties();
     }
 }

@@ -94,6 +94,36 @@ public partial class DetailWindow : Window
             BtnClearStart.Click += (_, _) => viewModel.ClearStart();
         }
 
+        if (BtnProgress0 is not null)
+        {
+            BtnProgress0.Click += (_, _) => viewModel.SetProgress(0);
+        }
+
+        if (BtnProgress25 is not null)
+        {
+            BtnProgress25.Click += (_, _) => viewModel.SetProgress(25);
+        }
+
+        if (BtnProgress50 is not null)
+        {
+            BtnProgress50.Click += (_, _) => viewModel.SetProgress(50);
+        }
+
+        if (BtnProgress75 is not null)
+        {
+            BtnProgress75.Click += (_, _) => viewModel.SetProgress(75);
+        }
+
+        if (BtnProgress100 is not null)
+        {
+            BtnProgress100.Click += (_, _) => viewModel.SetProgress(100);
+        }
+
+        if (BtnResetProgress is not null)
+        {
+            BtnResetProgress.Click += (_, _) => viewModel.ResetProgressToAuto();
+        }
+
         if (BtnAddSubtask is not null)
         {
             BtnAddSubtask.Click += async (_, _) => await viewModel.AddSubtaskAsync(CancellationToken.None);

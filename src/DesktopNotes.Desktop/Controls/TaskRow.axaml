@@ -179,19 +179,33 @@
                      VerticalAlignment="Center"/>
           </Panel>
 
-          <!-- Col 5: Subtask Count Badge on Parent Task (Minimalist mode) -->
-          <Border Grid.Column="5"
-                  IsVisible="{Binding HasSubtasks}"
-                  Background="{DynamicResource BgSubtle}"
-                  CornerRadius="5"
-                  Padding="5,1.5"
-                  Margin="5,0,0,0"
-                  VerticalAlignment="Center"
-                  ToolTip.Tip="包含的子任务数量">
-            <TextBlock Text="{Binding SubtaskCountText}"
-                       Foreground="{DynamicResource TextSecondary}"
-                       FontSize="10.5"/>
-          </Border>
+          <!-- Col 5: Subtask Count & Progress Badges -->
+          <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <Border IsVisible="{Binding HasSubtasks}"
+                    Background="{DynamicResource BgSubtle}"
+                    CornerRadius="5"
+                    Padding="5,1.5"
+                    Margin="5,0,0,0"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="包含的子任务数量">
+              <TextBlock Text="{Binding SubtaskCountText}"
+                         Foreground="{DynamicResource TextSecondary}"
+                         FontSize="10.5"/>
+            </Border>
+
+            <!-- Mini Progress Pill (Visible when progress > 0 and not marked completed) -->
+            <Border IsVisible="{Binding ShowProgressBadge}"
+                    Background="{DynamicResource BgSubtle}"
+                    CornerRadius="5"
+                    Padding="5,1.5"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding ProgressSummary}">
+              <TextBlock Text="{Binding ProgressText}"
+                         Foreground="{DynamicResource TextSecondary}"
+                         FontSize="10.5"
+                         FontWeight="Medium"/>
+            </Border>
+          </StackPanel>
 
           <!-- Col 6: Realistic Subtask Inline Assignee Text (e.g. 李工) -->
           <TextBlock Grid.Column="6"
@@ -398,6 +412,31 @@
                       <TextBlock Text="{Binding Assignee}"
                                  Foreground="{DynamicResource TextSecondary}"
                                  FontSize="11.5"/>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Progress Pill (归属元信息区，跟截至日期和负责人一样放置在页面上) -->
+                  <Border IsVisible="{Binding HasProgress}"
+                          Background="{DynamicResource BgSubtle}"
+                          CornerRadius="5"
+                          Padding="6,2.5"
+                          Margin="0,0,8,4"
+                          ToolTip.Tip="{Binding Loc.RowProgressTooltip}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <PathIcon Width="11" Height="11"
+                                Foreground="{DynamicResource TextMuted}"
+                                Data="M 12 2 A 10 10 0 1 0 22 12 A 10 10 0 0 0 12 2 Z M 12 20 A 8 8 0 1 1 20 12 A 8 8 0 0 1 12 20 Z M 12 6 A 6 6 0 0 1 18 12 L 12 12 Z"/>
+                      <TextBlock Text="{Binding ProgressSummary}"
+                                 Foreground="{DynamicResource TextSecondary}"
+                                 FontSize="11.5"/>
+                      <Button Name="BtnQuickProgress"
+                              Classes="icon-ghost"
+                              Width="18" Height="18"
+                              FontSize="9.5"
+                              Padding="0"
+                              Content="↻"
+                              ToolTip.Tip="{Binding Loc.RowProgressCycleTooltip}"
+                              VerticalAlignment="Center"/>
                     </StackPanel>
                   </Border>
                 </WrapPanel>
