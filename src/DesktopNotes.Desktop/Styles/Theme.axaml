@@ -371,6 +371,57 @@
     <Setter Property="Foreground" Value="{DynamicResource StatusOverdue}"/>
   </Style>
 
+  <!-- Compact Drawer Icon Button (Graphical toolbar) -->
+  <Style Selector="Button.drawer-icon-btn">
+    <Setter Property="Width" Value="26"/>
+    <Setter Property="Height" Value="26"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.drawer-icon-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentPrimary}"/>
+  </Style>
+
+  <!-- Compact Drawer Danger Icon Button (Trash icon) -->
+  <Style Selector="Button.drawer-danger-icon-btn">
+    <Setter Property="Width" Value="26"/>
+    <Setter Property="Height" Value="26"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource StatusOverdue}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.drawer-danger-icon-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StatusOverdueBg}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource StatusOverdue}"/>
+    <Setter Property="Foreground" Value="{DynamicResource StatusOverdue}"/>
+  </Style>
+
+  <!-- Drawer Chart Pill (Mini Progress Bar & Percentage Chart) -->
+  <Style Selector="Border.drawer-chart-pill">
+    <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="6,2"/>
+    <Setter Property="Height" Value="26"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
   <!-- Drawer Meta Info Pill -->
   <Style Selector="Border.meta-pill">
     <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
@@ -556,6 +607,38 @@
     <Setter Property="CornerRadius" Value="8"/>
   </Style>
 
+  <Style Selector="Window.realistic Button.drawer-icon-btn">
+    <Setter Property="Background" Value="#33FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#40141414"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+  <Style Selector="Window.realistic Button.drawer-icon-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#73FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#141414"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+
+  <Style Selector="Window.realistic Button.drawer-danger-icon-btn">
+    <Setter Property="Background" Value="#22EA3323"/>
+    <Setter Property="BorderBrush" Value="#4DEA3323"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Foreground" Value="#C92517"/>
+  </Style>
+  <Style Selector="Window.realistic Button.drawer-danger-icon-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#40EA3323"/>
+    <Setter Property="BorderBrush" Value="#EA3323"/>
+    <Setter Property="Foreground" Value="#EA3323"/>
+  </Style>
+
+  <Style Selector="Window.realistic Border.drawer-chart-pill">
+    <Setter Property="Background" Value="#1F000000"/>
+    <Setter Property="BorderBrush" Value="#33141414"/>
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+
   <!-- Panel Window Frame Styles -->
   <Style Selector="Border.minimal-frame">
     <Setter Property="Background" Value="{DynamicResource BgWindow}"/>
@@ -586,7 +669,7 @@
   </Style>
   <Style Selector="SelectableTextBlock.minimal-title">
     <Setter Property="FontSize" Value="13.5"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
   </Style>
   <Style Selector="TextBox.paper-title">
     <Setter Property="FontSize" Value="16.5"/>
@@ -594,7 +677,15 @@
   </Style>
   <Style Selector="SelectableTextBlock.paper-title">
     <Setter Property="FontSize" Value="16.5"/>
-    <Setter Property="Foreground" Value="#8C141414"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+  <Style Selector="SelectableTextBlock.completed-title">
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+    <Setter Property="Opacity" Value="0.65"/>
+  </Style>
+  <Style Selector="Window.realistic SelectableTextBlock.completed-title">
+    <Setter Property="Foreground" Value="#73141414"/>
+    <Setter Property="Opacity" Value="0.6"/>
   </Style>
 
 

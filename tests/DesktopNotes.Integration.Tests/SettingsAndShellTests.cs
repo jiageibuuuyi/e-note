@@ -116,21 +116,21 @@ public sealed class SettingsAndShellTests : IDisposable
         vm.SetLanguage(AppLanguage.English);
         Assert.True(vm.IsEnglish);
 
-        // Verify visual style switching (Realistic <-> Minimalist) and persistence
-        Assert.True(vm.IsRealisticStyle);
-        Assert.False(vm.IsMinimalistStyle);
-
-        vm.SetVisualStyle(AppVisualStyle.Minimalist);
+        // Verify visual style initial default is Minimalist (per user request) and supports switching
         Assert.True(vm.IsMinimalistStyle);
         Assert.False(vm.IsRealisticStyle);
 
-        AppLocalizer.Instance.InitializeFromEnvironmentAndStore(_store);
-        Assert.Equal(AppVisualStyle.Minimalist, AppLocalizer.Instance.VisualStyle);
-
         vm.SetVisualStyle(AppVisualStyle.Realistic);
         Assert.True(vm.IsRealisticStyle);
+        Assert.False(vm.IsMinimalistStyle);
+
         AppLocalizer.Instance.InitializeFromEnvironmentAndStore(_store);
         Assert.Equal(AppVisualStyle.Realistic, AppLocalizer.Instance.VisualStyle);
+
+        vm.SetVisualStyle(AppVisualStyle.Minimalist);
+        Assert.True(vm.IsMinimalistStyle);
+        AppLocalizer.Instance.InitializeFromEnvironmentAndStore(_store);
+        Assert.Equal(AppVisualStyle.Minimalist, AppLocalizer.Instance.VisualStyle);
 
         // Schedule rapid debounced window placement updates
         vm.ScheduleWindowPlacementSave(new WindowPlacement("primary", 100, 100, 350, 520, 1.0));
@@ -252,6 +252,8 @@ public sealed class SettingsAndShellTests : IDisposable
         Assert.True(rowVm.HasDue);
         Assert.True(rowVm.HasAssignee);
         Assert.True(rowVm.HasDrawerMeta);
+        Assert.NotNull(rowVm.CompactDueText);
+        Assert.NotNull(rowVm.AssigneeTooltip);
 
         // When collapsed, inline assignee shows in realistic mode
         AppLocalizer.Instance.SetVisualStyle(AppVisualStyle.Realistic);

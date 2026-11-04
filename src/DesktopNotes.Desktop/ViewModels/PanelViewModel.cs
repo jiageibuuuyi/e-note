@@ -124,6 +124,19 @@ public sealed class TaskRowViewModel : ViewModelBase
         _ => Loc.T("No due date", "无截止期")
     };
 
+        public string CompactDueText => Record.Effective.Due.Kind switch
+    {
+        DueKind.Date when Record.Effective.Due.Date is { } d =>
+            !string.IsNullOrEmpty(StageLabel) ? StageLabel : d.ToString("MM-dd"),
+        DueKind.Instant when Record.Effective.Due.Instant is { } inst =>
+            !string.IsNullOrEmpty(StageLabel) ? StageLabel : inst.ToLocalTime().ToString("MM-dd"),
+        _ => string.Empty
+    };
+
+    public string AssigneeTooltip => !string.IsNullOrWhiteSpace(Assignee)
+        ? Loc.T($"Assignee: {Assignee}", $"负责人: {Assignee}")
+        : string.Empty;
+
     public bool ShowRealisticDelete => IsExpanded && !IsEditingInline && Loc.IsRealisticStyle;
     public bool ShowMinimalistDelete => IsExpanded && !IsEditingInline && Loc.IsMinimalistStyle;
 

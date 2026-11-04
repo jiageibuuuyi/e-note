@@ -33,7 +33,7 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public static AppLocalizer Instance { get; } = new();
 
     private AppLanguage _language = AppLanguage.English;
-    private AppVisualStyle _visualStyle = AppVisualStyle.Realistic;
+    private AppVisualStyle _visualStyle = AppVisualStyle.Minimalist;
     private TimeZoneInfo _activeTimeZone = TimeZoneInfo.Local;
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -146,19 +146,19 @@ public sealed class AppLocalizer : INotifyPropertyChanged
                 }
                 else
                 {
-                    _visualStyle = AppVisualStyle.Realistic;
+                    _visualStyle = AppVisualStyle.Minimalist;
                     store.SetSettingJson(VisualStyleSettingKey, JsonSerializer.Serialize(VisualStyleCode));
                 }
             }
             catch
             {
-                _visualStyle = AppVisualStyle.Realistic;
+                _visualStyle = AppVisualStyle.Minimalist;
             }
         }
         else
         {
             _language = AppLanguage.English;
-            _visualStyle = AppVisualStyle.Realistic;
+            _visualStyle = AppVisualStyle.Minimalist;
         }
 
         NotifyAllChanged();
