@@ -38,7 +38,7 @@ Name: "desktopicon"; Description: "创建桌面快捷方式(&D)"; GroupDescripti
 Name: "launchatlogin"; Description: "开机自动启动电子便签 (随 Windows 登录启动)(&L)"; GroupDescription: "附加选项:"; Flags: checkedonce
 
 [Files]
-Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Excludes: "*.pdb,*.xml,*Tests*,*.dbg"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}"; DestName: "app-icon.ico"; Flags: ignoreversion
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\tray-icon.png"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion

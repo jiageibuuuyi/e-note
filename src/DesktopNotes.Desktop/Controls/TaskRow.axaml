@@ -1,480 +1,508 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
-             x:Class="DesktopNotes.Desktop.Controls.TaskRow"
-             x:DataType="vm:TaskRowViewModel">
-  <Border Name="RowContainer"
-          Classes="task-card"
-          Classes.task-card="{Binding Loc.IsMinimalistStyle}"
-          Classes.paper-row="{Binding Loc.IsRealisticStyle}"
-          Classes.subtask-tree="{Binding ShowRealisticSubtaskPlant}"
-          MinHeight="32"
-          Margin="{Binding RowMargin}"
-          Cursor="Hand"
-          DragDrop.AllowDrop="True">
-    <Border.ContextMenu>
-      <ContextMenu Name="RowContextMenu">
-        <MenuItem Name="MenuAddSubtask"
-                  Header="{Binding Loc.RowMenuAddSubtask}"
-                  IsVisible="{Binding CanAddSubtask}"/>
-        <MenuItem Name="MenuEditRow"
-                  Header="{Binding Loc.RowMenuEdit}"/>
-        <MenuItem Name="MenuPromoteSubtask"
-                  Header="{Binding Loc.RowMenuPromoteSubtask}"
-                  IsVisible="{Binding IsSubtask}"/>
-        <MenuItem Name="MenuOpenDetail"
-                  Header="{Binding Loc.RowMenuOpenDetail}"/>
-        <MenuItem Name="MenuCompleteRow"
-                  Header="{Binding CompleteMenuHeader}"/>
-        <MenuItem Name="MenuArchiveRow"
-                  Header="{Binding Loc.RowMenuArchive}"/>
-        <Separator/>
-        <MenuItem Name="MenuTrashRow"
-                  Header="{Binding Loc.RowMenuTrash}"/>
-        <Separator/>
-        <MenuItem Name="MenuCopyText"
-                  Header="{Binding Loc.RowMenuCopyText}"/>
-        <MenuItem Name="MenuPasteText"
-                  Header="{Binding Loc.RowMenuPasteText}"/>
-      </ContextMenu>
-    </Border.ContextMenu>
-    <Grid ColumnDefinitions="Auto,*">
-      <!-- Left Vertical Accent Pill for Overdue / Today / Completed (Minimalist style only) -->
-      <Panel Grid.Column="0"
-             VerticalAlignment="Stretch"
-             Margin="0,2,8,2"
-             IsVisible="{Binding Loc.IsMinimalistStyle}">
-        <Border Width="3.5" CornerRadius="2"
-                Background="{DynamicResource StatusOverdue}"
-                IsVisible="{Binding IsOverdue}"/>
-        <Border Width="3.5" CornerRadius="2"
-                Background="{DynamicResource StatusDueToday}"
-                IsVisible="{Binding IsDueToday}"/>
-        <Border Width="3.5" CornerRadius="2"
-                Background="{DynamicResource StatusCompleted}"
-                IsVisible="{Binding IsMarkedCompleted}"/>
-      </Panel>
-
-      <!-- Main Content Area -->
-      <StackPanel Grid.Column="1" Spacing="4">
-        <!-- Row Header Grid -->
-        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto">
-          <!-- Col 0: Drag Handle (Minimalist Mode Only - Hidden in Realistic Sticky Note Mode!) -->
-          <Border Name="DragHandleBorder"
-                  Grid.Column="0"
-                  IsVisible="{Binding ShowDragHandle}"
-                  Background="Transparent"
-                  Padding="2,2,4,2"
-                  Margin="-2,0,2,0"
-                  Cursor="SizeAll"
-                  VerticalAlignment="Center"
-                  ToolTip.Tip="{Binding Loc.RowDragHandleTooltip}">
-            <TextBlock Text="⠿"
-                       Foreground="{DynamicResource TextMuted}"
-                       FontSize="12"
-                       VerticalAlignment="Center"/>
-          </Border>
-
-          <!-- Col 1: Subtask Indicator: Minimalist Branch (├─ / └─) -->
-          <Panel Grid.Column="1" VerticalAlignment="Center">
-            <TextBlock Text="{Binding TreeBranchPrefix}"
-                       IsVisible="{Binding ShowMinimalistSubtaskBranch}"
-                       Foreground="{DynamicResource AccentPrimary}"
-                       FontFamily="Consolas, Microsoft YaHei UI, monospace"
-                       FontSize="12"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Center"
-                       Margin="0,0,4,0"/>
-          </Panel>
-
-          <!-- Col 2: Status Toggle: Minimalist Checkbox OR Realistic Cute Plant (Pending: Green Sprout 🌱 / Done: Pink Flower 🌸) -->
-          <Panel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,7,0">
-            <!-- Minimalist Fluent Checkbox -->
-            <CheckBox Name="CompleteCheckBox"
-                      IsVisible="{Binding Loc.IsMinimalistStyle}"
-                      Classes="task-check"
-                      IsChecked="{Binding IsMarkedCompleted, Mode=OneWay}"
-                      IsEnabled="{Binding IsDisplayMode}"
-                      VerticalAlignment="Center"
-                      ToolTip.Tip="{Binding Loc.RowCheckTooltip}"/>
-
-            <!-- Realistic Cute Plant Toggle (Pending: Green Sprout 🌱 / Done: Pink Flower 🌸) -->
-            <Button Name="RealisticPlantButton"
-                    IsVisible="{Binding ShowRealisticPlantToggle}"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="0"
-                    Cursor="Hand"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="{Binding RealisticPlantTooltip}">
-              <Panel Width="22" Height="22">
-                <!-- Uncompleted: Cute Green Sprout (绿色的嫩苗 🌱) -->
-                <Border IsVisible="{Binding !IsMarkedCompleted}"
-                        Width="22" Height="22"
-                        CornerRadius="11"
-                        Background="#2240916C">
-                  <TextBlock Text="🌱"
-                             FontFamily="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif"
-                             FontSize="14"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center"/>
-                </Border>
-
-                <!-- Completed: Cute Pink Flower (粉色的小花 🌸) -->
-                <Border IsVisible="{Binding IsMarkedCompleted}"
-                        Width="22" Height="22"
-                        CornerRadius="11"
-                        Background="#25FF758F">
-                  <TextBlock Text="🌸"
-                             FontFamily="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif"
-                             FontSize="14"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center"/>
-                </Border>
-              </Panel>
-            </Button>
-          </Panel>
-
-          <!-- Col 3: Parent Task Tree Expand/Collapse Toggle (▾ / ▸ right before title) -->
-          <Button Name="TreeToggleButton"
-                  Grid.Column="3"
-                  IsVisible="{Binding HasSubtasks}"
-                  Classes="icon-ghost"
-                  Width="18" Height="20"
-                  Padding="0"
-                  Margin="0,0,3,0"
-                  FontSize="11.5"
-                  VerticalAlignment="Center"
-                  Content="{Binding TreeToggleGlyph}"
-                  ToolTip.Tip="{Binding TreeToggleTooltip}"/>
-
-          <!-- Col 4: Title / Inline Input (Fills remaining *) -->
-          <Panel Grid.Column="4" VerticalAlignment="Center" ClipToBounds="True">
-            <!-- Normal Uncompleted Mode Title -->
-            <TextBox Name="TitleDisplayBox"
-                     IsVisible="{Binding IsDisplayNormal}"
-                     Classes="clean-input"
-                     Classes.paper-title="{Binding Loc.IsRealisticStyle}"
-                     Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
-                     Text="{Binding EditableTitle}"
-                     VerticalAlignment="Center"/>
-
-            <!-- Completed Mode Title (Strikethrough) -->
-            <SelectableTextBlock IsVisible="{Binding IsDisplayCompleted}"
-                                 Text="{Binding EditableTitle}"
-                                 TextDecorations="Strikethrough"
-                                 Classes.paper-title="{Binding Loc.IsRealisticStyle}"
-                                 Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
-                                 VerticalAlignment="Center"
-                                 TextTrimming="CharacterEllipsis"/>
-
-            <!-- Inline New Input -->
-            <TextBox Name="InlineTitleBox"
-                     IsVisible="{Binding IsEditingInline}"
-                     Classes="clean-input"
-                     Classes.paper-title="{Binding Loc.IsRealisticStyle}"
-                     Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
-                     Text="{Binding InlineEditText}"
-                     PlaceholderText="{Binding InlinePlaceholder}"
-                     VerticalAlignment="Center"/>
-          </Panel>
-
-          <!-- Col 5: Subtask Count & Progress Badges -->
-          <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <Border IsVisible="{Binding HasSubtasks}"
-                    Background="{DynamicResource BgSubtle}"
-                    CornerRadius="5"
-                    Padding="5,1.5"
-                    Margin="5,0,0,0"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="包含的子任务数量">
-              <TextBlock Text="{Binding SubtaskCountText}"
-                         Foreground="{DynamicResource TextSecondary}"
-                         FontSize="10.5"/>
-            </Border>
-
-            <!-- Mini Progress Pill (Visible when progress > 0 and not marked completed) -->
-            <Border IsVisible="{Binding ShowProgressBadge}"
-                    Background="{DynamicResource BgSubtle}"
-                    CornerRadius="5"
-                    Padding="5,1.5"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="{Binding ProgressSummary}">
-              <TextBlock Text="{Binding ProgressText}"
-                         Foreground="{DynamicResource TextSecondary}"
-                         FontSize="10.5"
-                         FontWeight="Medium"/>
-            </Border>
-          </StackPanel>
-
-          <!-- Col 6: Realistic Subtask Inline Assignee Text (e.g. 李工) -->
-          <TextBlock Grid.Column="6"
-                     IsVisible="{Binding ShowSubtaskAssigneeInline}"
-                     Text="{Binding Assignee}"
-                     Foreground="#BF141414"
-                     FontSize="13.5"
-                     Margin="6,0,2,0"
-                     VerticalAlignment="Center"/>
-
-          <!-- Col 7: Priority Indicator Pill -->
-          <Border Grid.Column="7"
-                  IsVisible="{Binding HasPriorityBadge}"
-                  Background="{DynamicResource P0_Bg}"
-                  CornerRadius="5"
-                  Padding="6,2"
-                  Margin="5,0,0,0"
-                  VerticalAlignment="Center">
-            <TextBlock Text="{Binding PriorityBadge}"
-                       Foreground="{DynamicResource P0_Highest}"
-                       FontSize="11"
-                       FontWeight="SemiBold"/>
-          </Border>
-
-          <!-- Col 8: Deadline / Completed Status Pill (Only for Overdue, Today, Completed - NEVER shows '无截止期') -->
-          <Panel Grid.Column="8"
-                 IsVisible="{Binding HasStageLabel}"
-                 Margin="5,0,0,0"
-                 VerticalAlignment="Center">
-            <Border IsVisible="{Binding IsOverdue}"
-                    Background="{DynamicResource StatusOverdueBg}"
-                    CornerRadius="5"
-                    Padding="6,2">
-              <TextBlock Text="{Binding StageLabel}"
-                         Foreground="{DynamicResource StatusOverdue}"
-                         FontSize="11"
-                         FontWeight="SemiBold"/>
-            </Border>
-            <Border IsVisible="{Binding IsDueToday}"
-                    Background="{DynamicResource StatusDueTodayBg}"
-                    CornerRadius="5"
-                    Padding="6,2">
-              <TextBlock Text="{Binding StageLabel}"
-                         Foreground="{DynamicResource StatusDueToday}"
-                         FontSize="11"
-                         FontWeight="SemiBold"/>
-            </Border>
-            <Border IsVisible="{Binding IsMarkedCompleted}"
-                    Background="{DynamicResource StatusCompletedBg}"
-                    CornerRadius="5"
-                    Padding="6,2">
-              <TextBlock Text="{Binding StageLabel}"
-                         Foreground="{DynamicResource StatusCompleted}"
-                         FontSize="11"
-                         FontWeight="SemiBold"/>
-            </Border>
-          </Panel>
-
-          <!-- Col 9: Action Buttons (Confirm Archive, Inline Save/Cancel, Eraser Delete) -->
-          <StackPanel Grid.Column="9"
-                      Orientation="Horizontal"
-                      Spacing="3"
-                      Margin="4,0,0,0"
-                      VerticalAlignment="Center">
-            <!-- Confirm Archive Button -->
-            <Button Name="ConfirmArchiveButton"
-                    IsVisible="{Binding IsMarkedCompleted}"
-                    Classes.cute-archive-pill="{Binding Loc.IsRealisticStyle}"
-                    Classes.ghost-link="{Binding Loc.IsMinimalistStyle}"
-                    Padding="6,2"
-                    FontSize="11.5"
-                    Content="{Binding Loc.RowArchiveBtn}"
-                    ToolTip.Tip="{Binding Loc.RowArchiveTooltip}"/>
-
-            <!-- Inline Edit Save / Cancel -->
-            <StackPanel IsVisible="{Binding IsEditingInline}"
-                        Orientation="Horizontal"
-                        Spacing="2"
-                        VerticalAlignment="Center">
-              <Button Name="InlineSaveButton"
-                      Classes="ghost-link"
-                      Padding="6,2"
-                      FontSize="11.5"
-                      Content="{Binding Loc.RowSaveBtn}"
-                      ToolTip.Tip="{Binding Loc.RowSaveTooltip}"/>
-              <Button Name="InlineCancelButton"
-                      Classes="icon-ghost"
-                      Width="20" Height="20"
-                      FontSize="10"
-                      Content="✕"
-                      ToolTip.Tip="{Binding Loc.RowCancelTooltip}"/>
-            </StackPanel>
-
-            <!-- Pencil Edit Button (Realistic Mode): Clearly represents "Edit" -->
-            <Button Name="PencilEditButton"
-                    IsVisible="{Binding Loc.IsRealisticStyle}"
-                    Classes="cute-icon-btn"
-                    Width="22" Height="22"
-                    Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="{Binding Loc.RowEditTooltip}">
-              <Canvas Width="16" Height="16" VerticalAlignment="Center">
-                <Path Data="M12 2 L15 5 L6 14 H3 V11 L12 2 Z"
-                      Fill="#FFF380"
-                      Stroke="#141414"
-                      StrokeThickness="1.2"
-                      StrokeJoin="Round"/>
-                <Line StartPoint="9,5" EndPoint="12,8"
-                      Stroke="#141414" StrokeThickness="1.1"/>
-                <Line StartPoint="3,11" EndPoint="6,14"
-                      Stroke="#141414" StrokeThickness="1"/>
-              </Canvas>
-            </Button>
-
-            <!-- Delete Button on Click/Selected (Realistic Mode): Cute Hand-Drawn Doodle Trashcan -->
-            <Button Name="BtnRealisticDelete"
-                    IsVisible="{Binding ShowRealisticDelete}"
-                    Classes="cute-icon-btn"
-                    Width="22" Height="22"
-                    Padding="0"
-                    Background="#33EA3323"
-                    BorderThickness="1"
-                    BorderBrush="#141414"
-                    CornerRadius="5"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="{Binding Loc.RowDeleteTooltip}">
-              <Canvas Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Path Data="M 3 5 L 13 5 M 6 5 L 7 3.2 L 9 3.2 L 10 5"
-                      Stroke="#141414" StrokeThickness="1.3" StrokeLineCap="Round"/>
-                <Path Data="M 4 5 L 4.8 13.5 Q 8 14.6 11.2 13.5 L 12 5 Z"
-                      Fill="#FFB3C1" Stroke="#141414" StrokeThickness="1.3" StrokeJoin="Round"/>
-                <Line StartPoint="6.5,7" EndPoint="6.5,12" Stroke="#141414" StrokeThickness="0.9" StrokeLineCap="Round"/>
-                <Line StartPoint="9.5,7" EndPoint="9.5,12" Stroke="#141414" StrokeThickness="0.9" StrokeLineCap="Round"/>
-              </Canvas>
-            </Button>
-
-            <!-- Delete Button on Click/Selected (Minimalist Mode): Clean Modern Fluent Trash Icon -->
-            <Button Name="BtnMinimalistDelete"
-                    IsVisible="{Binding ShowMinimalistDelete}"
-                    Classes="icon-ghost"
-                    Width="22" Height="22"
-                    Padding="0"
-                    VerticalAlignment="Center"
-                    Foreground="{DynamicResource StatusOverdue}"
-                    ToolTip.Tip="{Binding Loc.RowDeleteTooltip}">
-              <PathIcon Width="12" Height="12"
-                        Foreground="{DynamicResource StatusOverdue}"
-                        Data="M 6 19 A 2 2 0 0 0 8 21 L 16 21 A 2 2 0 0 0 18 19 L 18 7 L 6 7 L 6 19 Z M 19 4 L 15.5 4 L 14.5 3 L 9.5 3 L 8.5 4 L 5 4 L 5 6 L 19 6 L 19 4 Z"/>
-            </Button>
-          </StackPanel>
-        </Grid>
-
-        <!-- Expanded Drawer with Smooth Layout -->
-        <Border Name="ExpandedDrawerBorder"
-                IsVisible="{Binding IsExpanded}"
-                BorderBrush="{DynamicResource BorderSubtle}"
-                BorderThickness="0,1,0,0"
-                Padding="24,8,2,2"
-                MaxHeight="220">
-          <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6">
-              <!-- Body Preview (Selectable for Copy) -->
-              <SelectableTextBlock Text="{Binding Body}"
-                                   IsVisible="{Binding HasBody}"
-                                   Foreground="{DynamicResource TextSecondary}"
-                                   FontSize="12.5"
-                                   LineHeight="20"
-                                   TextWrapping="Wrap"/>
-
-              <!-- Meta & Actions Footer Strip: Separated into two distinct lines to guarantee zero overlap -->
-              <StackPanel Spacing="6" Margin="0,4,0,0">
-                <!-- Line 1: Meta Tags (Due Date, Assignee) -->
-                <WrapPanel Orientation="Horizontal"
-                           IsVisible="{Binding HasDrawerMeta}"
-                           Margin="0,0,0,2">
-                  <!-- Due Date Pill (ONLY shown when task has a due date!) -->
-                  <Border IsVisible="{Binding HasDue}"
-                          Background="{DynamicResource BgSubtle}"
-                          CornerRadius="5"
-                          Padding="6,2.5"
-                          Margin="0,0,8,4">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                      <PathIcon Width="11" Height="11"
-                                Foreground="{DynamicResource TextMuted}"
-                                Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
-                      <TextBlock Text="{Binding DueSummary}"
-                                 Foreground="{DynamicResource TextSecondary}"
-                                 FontSize="11.5"/>
-                    </StackPanel>
-                  </Border>
-
-                  <!-- Assignee Pill -->
-                  <Border IsVisible="{Binding HasAssignee}"
-                          Background="{DynamicResource BgSubtle}"
-                          CornerRadius="5"
-                          Padding="6,2.5"
-                          Margin="0,0,8,4">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                      <PathIcon Width="11" Height="11"
-                                Foreground="{DynamicResource TextMuted}"
-                                Data="M 12 12 A 4 4 0 1 0 12 4 A 4 4 0 1 0 12 12 Z M 12 14 C 9.33 14 4 15.34 4 18 L 4 20 L 20 20 L 20 18 C 20 15.34 14.67 14 12 14 Z"/>
-                      <TextBlock Text="{Binding Assignee}"
-                                 Foreground="{DynamicResource TextSecondary}"
-                                 FontSize="11.5"/>
-                    </StackPanel>
-                  </Border>
-
-                  <!-- Progress Pill (归属元信息区，跟截至日期和负责人一样放置在页面上) -->
-                  <Border IsVisible="{Binding HasProgress}"
-                          Background="{DynamicResource BgSubtle}"
-                          CornerRadius="5"
-                          Padding="6,2.5"
-                          Margin="0,0,8,4"
-                          ToolTip.Tip="{Binding Loc.RowProgressTooltip}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                      <PathIcon Width="11" Height="11"
-                                Foreground="{DynamicResource TextMuted}"
-                                Data="M 12 2 A 10 10 0 1 0 22 12 A 10 10 0 0 0 12 2 Z M 12 20 A 8 8 0 1 1 20 12 A 8 8 0 0 1 12 20 Z M 12 6 A 6 6 0 0 1 18 12 L 12 12 Z"/>
-                      <TextBlock Text="{Binding ProgressSummary}"
-                                 Foreground="{DynamicResource TextSecondary}"
-                                 FontSize="11.5"/>
-                      <Button Name="BtnQuickProgress"
-                              Classes="icon-ghost"
-                              Width="18" Height="18"
-                              FontSize="9.5"
-                              Padding="0"
-                              Content="↻"
-                              ToolTip.Tip="{Binding Loc.RowProgressCycleTooltip}"
-                              VerticalAlignment="Center"/>
-                    </StackPanel>
-                  </Border>
-                </WrapPanel>
-
-                <!-- Line 2: Actions Bar (Right-aligned WrapPanel) -->
-                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                  <!-- Promote Subtask to Root Task Button (Visible for subtasks) -->
-                  <Button Name="PromoteSubtaskButton"
-                          IsVisible="{Binding IsSubtask}"
-                          Classes="ghost-link"
-                          Content="{Binding Loc.RowMenuPromoteSubtask}"
-                          ToolTip.Tip="{Binding Loc.NoticePromotedToRoot}"
-                          Margin="0,0,6,2"/>
-                  <!-- Delete Action Button in Drawer -->
-                  <Button Name="BtnDrawerDelete"
-                          Classes.ghost-link="{Binding Loc.IsMinimalistStyle}"
-                          Classes.danger-ghost-btn="{Binding Loc.IsRealisticStyle}"
-                          Foreground="{DynamicResource StatusOverdue}"
-                          Content="{Binding Loc.RowDeleteBtn}"
-                          ToolTip.Tip="{Binding Loc.RowDeleteTooltip}"
-                          Margin="0,0,6,2"/>
-                  <Button Name="AddSubtaskButton"
-                          IsVisible="{Binding CanAddSubtask}"
-                          Classes="ghost-link"
-                          Content="{Binding Loc.RowAddSubtaskBtn}"
-                          ToolTip.Tip="{Binding Loc.RowAddSubtaskTooltip}"
-                          Margin="0,0,6,2"/>
-                  <Button Name="OpenDetailButton"
-                          Classes="ghost-link"
-                          Content="{Binding Loc.RowOpenDetailBtn}"
-                          ToolTip.Tip="{Binding Loc.RowOpenDetailTooltip}"
-                          Margin="0,0,0,2"/>
-                </WrapPanel>
-              </StackPanel>
-            </StackPanel>
-          </ScrollViewer>
-        </Border>
-      </StackPanel>
-    </Grid>
-  </Border>
-</UserControl>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DesktopNotes.Desktop.ViewModels"
+             x:Class="DesktopNotes.Desktop.Controls.TaskRow"
+             x:DataType="vm:TaskRowViewModel">
+  <Border Name="RowContainer"
+          Classes="task-card"
+          Classes.task-card="{Binding Loc.IsMinimalistStyle}"
+          Classes.paper-row="{Binding Loc.IsRealisticStyle}"
+          Classes.subtask-tree="{Binding ShowRealisticSubtaskPlant}"
+          MinHeight="32"
+          Margin="{Binding RowMargin}"
+          Cursor="Hand"
+          DragDrop.AllowDrop="True">
+    <Border.ContextMenu>
+      <ContextMenu Name="RowContextMenu">
+        <MenuItem Name="MenuAddSubtask"
+                  Header="{Binding Loc.RowMenuAddSubtask}"
+                  IsVisible="{Binding CanAddSubtask}"/>
+        <MenuItem Name="MenuEditRow"
+                  Header="{Binding Loc.RowMenuEdit}"/>
+        <MenuItem Name="MenuPromoteSubtask"
+                  Header="{Binding Loc.RowMenuPromoteSubtask}"
+                  IsVisible="{Binding IsSubtask}"/>
+        <MenuItem Name="MenuOpenDetail"
+                  Header="{Binding Loc.RowMenuOpenDetail}"/>
+        <MenuItem Name="MenuCompleteRow"
+                  Header="{Binding CompleteMenuHeader}"/>
+        <MenuItem Name="MenuArchiveRow"
+                  Header="{Binding Loc.RowMenuArchive}"/>
+        <Separator/>
+        <MenuItem Name="MenuTrashRow"
+                  Header="{Binding Loc.RowMenuTrash}"/>
+        <Separator/>
+        <MenuItem Name="MenuCopyText"
+                  Header="{Binding Loc.RowMenuCopyText}"/>
+        <MenuItem Name="MenuPasteText"
+                  Header="{Binding Loc.RowMenuPasteText}"/>
+      </ContextMenu>
+    </Border.ContextMenu>
+    <Grid ColumnDefinitions="Auto,*">
+      <!-- Left Vertical Accent Pill for Overdue / Today / Completed (Minimalist style only) -->
+      <Panel Grid.Column="0"
+             VerticalAlignment="Stretch"
+             Margin="0,2,8,2"
+             IsVisible="{Binding Loc.IsMinimalistStyle}">
+        <Border Width="3.5" CornerRadius="2"
+                Background="{DynamicResource StatusOverdue}"
+                IsVisible="{Binding IsOverdue}"/>
+        <Border Width="3.5" CornerRadius="2"
+                Background="{DynamicResource StatusDueToday}"
+                IsVisible="{Binding IsDueToday}"/>
+        <Border Width="3.5" CornerRadius="2"
+                Background="{DynamicResource StatusCompleted}"
+                IsVisible="{Binding IsMarkedCompleted}"/>
+      </Panel>
+
+      <!-- Main Content Area -->
+      <StackPanel Grid.Column="1" Spacing="4">
+        <!-- Row Header Grid -->
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto">
+          <!-- Col 0: Drag Handle (Minimalist Mode Only - Hidden in Realistic Sticky Note Mode!) -->
+          <Border Name="DragHandleBorder"
+                  Grid.Column="0"
+                  IsVisible="{Binding ShowDragHandle}"
+                  Background="Transparent"
+                  Padding="2,2,4,2"
+                  Margin="-2,0,2,0"
+                  Cursor="SizeAll"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="{Binding Loc.RowDragHandleTooltip}">
+            <TextBlock Text="⠿"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </Border>
+
+          <!-- Col 1: Subtask Indicator: Minimalist Branch (├─ / └─) -->
+          <Panel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding TreeBranchPrefix}"
+                       IsVisible="{Binding ShowMinimalistSubtaskBranch}"
+                       Foreground="{DynamicResource AccentPrimary}"
+                       FontFamily="Consolas, Microsoft YaHei UI, monospace"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Margin="0,0,4,0"/>
+          </Panel>
+
+          <!-- Col 2: Status Toggle: Minimalist Checkbox OR Realistic Cute Plant (Pending: Green Sprout 🌱 / Done: Pink Flower 🌸) -->
+          <Panel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,7,0">
+            <!-- Minimalist Fluent Checkbox -->
+            <CheckBox Name="CompleteCheckBox"
+                      IsVisible="{Binding Loc.IsMinimalistStyle}"
+                      Classes="task-check"
+                      IsChecked="{Binding IsMarkedCompleted, Mode=OneWay}"
+                      IsEnabled="{Binding IsDisplayMode}"
+                      VerticalAlignment="Center"
+                      ToolTip.Tip="{Binding Loc.RowCheckTooltip}"/>
+
+            <!-- Realistic Cute Plant Toggle (Pending: Green Sprout 🌱 / Done: Pink Flower 🌸) -->
+            <Button Name="RealisticPlantButton"
+                    IsVisible="{Binding ShowRealisticPlantToggle}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    Cursor="Hand"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding RealisticPlantTooltip}">
+              <Panel Width="22" Height="22">
+                <!-- Uncompleted: Cute Green Sprout (绿色的嫩苗 🌱) -->
+                <Border IsVisible="{Binding !IsMarkedCompleted}"
+                        Width="22" Height="22"
+                        CornerRadius="11"
+                        Background="#2240916C">
+                  <TextBlock Text="🌱"
+                             FontFamily="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif"
+                             FontSize="14"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- Completed: Cute Pink Flower (粉色的小花 🌸) -->
+                <Border IsVisible="{Binding IsMarkedCompleted}"
+                        Width="22" Height="22"
+                        CornerRadius="11"
+                        Background="#25FF758F">
+                  <TextBlock Text="🌸"
+                             FontFamily="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif"
+                             FontSize="14"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"/>
+                </Border>
+              </Panel>
+            </Button>
+          </Panel>
+
+          <!-- Col 3: Parent Task Tree Expand/Collapse Toggle (▾ / ▸ right before title) -->
+          <Button Name="TreeToggleButton"
+                  Grid.Column="3"
+                  IsVisible="{Binding HasSubtasks}"
+                  Classes="icon-ghost"
+                  Width="18" Height="20"
+                  Padding="0"
+                  Margin="0,0,3,0"
+                  FontSize="11.5"
+                  VerticalAlignment="Center"
+                  Content="{Binding TreeToggleGlyph}"
+                  ToolTip.Tip="{Binding TreeToggleTooltip}"/>
+
+          <!-- Col 4: Title / Inline Input (Fills remaining *) -->
+          <Panel Grid.Column="4" VerticalAlignment="Center" ClipToBounds="True">
+            <!-- Normal Uncompleted Mode Title (Click to toggle drawer, selectable for copy, no blinking caret) -->
+            <SelectableTextBlock Name="TitleDisplayBlock"
+                                 IsVisible="{Binding IsTitleDisplayVisible}"
+                                 Classes.paper-title="{Binding Loc.IsRealisticStyle}"
+                                 Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
+                                 Text="{Binding EditableTitle}"
+                                 Cursor="Hand"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis"/>
+
+            <!-- Editing Existing Title (Only active when user selects '修改内容' from context menu) -->
+            <TextBox Name="EditTitleBox"
+                     IsVisible="{Binding IsEditingTitle}"
+                     Classes="clean-input"
+                     Classes.paper-title="{Binding Loc.IsRealisticStyle}"
+                     Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
+                     Text="{Binding EditableTitle}"
+                     VerticalAlignment="Center"/>
+
+            <!-- Completed Mode Title (Strikethrough) -->
+            <SelectableTextBlock IsVisible="{Binding IsDisplayCompleted}"
+                                 Text="{Binding EditableTitle}"
+                                 TextDecorations="Strikethrough"
+                                 Classes.paper-title="{Binding Loc.IsRealisticStyle}"
+                                 Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
+                                 Cursor="Hand"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis"/>
+
+            <!-- Inline New Input -->
+            <TextBox Name="InlineTitleBox"
+                     IsVisible="{Binding IsEditingInline}"
+                     Classes="clean-input"
+                     Classes.paper-title="{Binding Loc.IsRealisticStyle}"
+                     Classes.minimal-title="{Binding Loc.IsMinimalistStyle}"
+                     Text="{Binding InlineEditText}"
+                     PlaceholderText="{Binding InlinePlaceholder}"
+                     VerticalAlignment="Center"/>
+          </Panel>
+
+          <!-- Col 5: Subtask Count & Progress Badges -->
+          <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <Border IsVisible="{Binding HasSubtasks}"
+                    Background="{DynamicResource BgSubtle}"
+                    CornerRadius="5"
+                    Padding="5,1.5"
+                    Margin="5,0,0,0"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="包含的子任务数量">
+              <TextBlock Text="{Binding SubtaskCountText}"
+                         Foreground="{DynamicResource TextSecondary}"
+                         FontSize="10.5"/>
+            </Border>
+
+            <!-- Mini Progress Pill (Visible when progress > 0 and not marked completed) -->
+            <Border IsVisible="{Binding ShowProgressBadge}"
+                    Background="{DynamicResource BgSubtle}"
+                    CornerRadius="5"
+                    Padding="5,1.5"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding ProgressSummary}">
+              <TextBlock Text="{Binding ProgressText}"
+                         Foreground="{DynamicResource TextSecondary}"
+                         FontSize="10.5"
+                         FontWeight="Medium"/>
+            </Border>
+          </StackPanel>
+
+          <!-- Col 6: Realistic Subtask Inline Assignee Text (e.g. 李工) -->
+          <TextBlock Grid.Column="6"
+                     IsVisible="{Binding ShowSubtaskAssigneeInline}"
+                     Text="{Binding Assignee}"
+                     Foreground="#BF141414"
+                     FontSize="13.5"
+                     Margin="6,0,2,0"
+                     VerticalAlignment="Center"/>
+
+          <!-- Col 7: Priority Indicator Pill -->
+          <Border Grid.Column="7"
+                  IsVisible="{Binding HasPriorityBadge}"
+                  Background="{DynamicResource P0_Bg}"
+                  CornerRadius="5"
+                  Padding="6,2"
+                  Margin="5,0,0,0"
+                  VerticalAlignment="Center">
+            <TextBlock Text="{Binding PriorityBadge}"
+                       Foreground="{DynamicResource P0_Highest}"
+                       FontSize="11"
+                       FontWeight="SemiBold"/>
+          </Border>
+
+          <!-- Col 8: Deadline / Completed Status Pill (Only for Overdue, Today, Completed - NEVER shows '无截止期') -->
+          <Panel Grid.Column="8"
+                 IsVisible="{Binding HasStageLabel}"
+                 Margin="5,0,0,0"
+                 VerticalAlignment="Center">
+            <Border IsVisible="{Binding IsOverdue}"
+                    Background="{DynamicResource StatusOverdueBg}"
+                    CornerRadius="5"
+                    Padding="6,2">
+              <TextBlock Text="{Binding StageLabel}"
+                         Foreground="{DynamicResource StatusOverdue}"
+                         FontSize="11"
+                         FontWeight="SemiBold"/>
+            </Border>
+            <Border IsVisible="{Binding IsDueToday}"
+                    Background="{DynamicResource StatusDueTodayBg}"
+                    CornerRadius="5"
+                    Padding="6,2">
+              <TextBlock Text="{Binding StageLabel}"
+                         Foreground="{DynamicResource StatusDueToday}"
+                         FontSize="11"
+                         FontWeight="SemiBold"/>
+            </Border>
+            <Border IsVisible="{Binding IsMarkedCompleted}"
+                    Background="{DynamicResource StatusCompletedBg}"
+                    CornerRadius="5"
+                    Padding="6,2">
+              <TextBlock Text="{Binding StageLabel}"
+                         Foreground="{DynamicResource StatusCompleted}"
+                         FontSize="11"
+                         FontWeight="SemiBold"/>
+            </Border>
+          </Panel>
+
+          <!-- Col 9: Action Buttons (Confirm Archive, Inline Save/Cancel, Eraser Delete) -->
+          <StackPanel Grid.Column="9"
+                      Orientation="Horizontal"
+                      Spacing="3"
+                      Margin="4,0,0,0"
+                      VerticalAlignment="Center">
+            <!-- Confirm Archive Button -->
+            <Button Name="ConfirmArchiveButton"
+                    IsVisible="{Binding IsMarkedCompleted}"
+                    Classes.cute-archive-pill="{Binding Loc.IsRealisticStyle}"
+                    Classes.ghost-link="{Binding Loc.IsMinimalistStyle}"
+                    Padding="6,2"
+                    FontSize="11.5"
+                    Content="{Binding Loc.RowArchiveBtn}"
+                    ToolTip.Tip="{Binding Loc.RowArchiveTooltip}"/>
+
+            <!-- Inline Edit Save / Cancel -->
+            <StackPanel IsVisible="{Binding ShowInlineEditActions}"
+                        Orientation="Horizontal"
+                        Spacing="2"
+                        VerticalAlignment="Center">
+              <Button Name="InlineSaveButton"
+                      Classes="ghost-link"
+                      Padding="6,2"
+                      FontSize="11.5"
+                      Content="{Binding Loc.RowSaveBtn}"
+                      ToolTip.Tip="{Binding Loc.RowSaveTooltip}"/>
+              <Button Name="InlineCancelButton"
+                      Classes="icon-ghost"
+                      Width="20" Height="20"
+                      FontSize="10"
+                      Content="✕"
+                      ToolTip.Tip="{Binding Loc.RowCancelTooltip}"/>
+            </StackPanel>
+
+            <!-- Pencil Edit Button (Realistic Mode): Clearly represents "Edit" -->
+            <Button Name="PencilEditButton"
+                    IsVisible="{Binding Loc.IsRealisticStyle}"
+                    Classes="cute-icon-btn"
+                    Width="22" Height="22"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding Loc.RowEditTooltip}">
+              <Canvas Width="16" Height="16" VerticalAlignment="Center">
+                <Path Data="M12 2 L15 5 L6 14 H3 V11 L12 2 Z"
+                      Fill="#FFF380"
+                      Stroke="#141414"
+                      StrokeThickness="1.2"
+                      StrokeJoin="Round"/>
+                <Line StartPoint="9,5" EndPoint="12,8"
+                      Stroke="#141414" StrokeThickness="1.1"/>
+                <Line StartPoint="3,11" EndPoint="6,14"
+                      Stroke="#141414" StrokeThickness="1"/>
+              </Canvas>
+            </Button>
+
+            <!-- Delete Button on Click/Selected (Realistic Mode): Cute Hand-Drawn Doodle Trashcan -->
+            <Button Name="BtnRealisticDelete"
+                    IsVisible="{Binding ShowRealisticDelete}"
+                    Classes="cute-icon-btn"
+                    Width="22" Height="22"
+                    Padding="0"
+                    Background="#33EA3323"
+                    BorderThickness="1"
+                    BorderBrush="#141414"
+                    CornerRadius="5"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding Loc.RowDeleteTooltip}">
+              <Canvas Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Path Data="M 3 5 L 13 5 M 6 5 L 7 3.2 L 9 3.2 L 10 5"
+                      Stroke="#141414" StrokeThickness="1.3" StrokeLineCap="Round"/>
+                <Path Data="M 4 5 L 4.8 13.5 Q 8 14.6 11.2 13.5 L 12 5 Z"
+                      Fill="#FFB3C1" Stroke="#141414" StrokeThickness="1.3" StrokeJoin="Round"/>
+                <Line StartPoint="6.5,7" EndPoint="6.5,12" Stroke="#141414" StrokeThickness="0.9" StrokeLineCap="Round"/>
+                <Line StartPoint="9.5,7" EndPoint="9.5,12" Stroke="#141414" StrokeThickness="0.9" StrokeLineCap="Round"/>
+              </Canvas>
+            </Button>
+
+            <!-- Delete Button on Click/Selected (Minimalist Mode): Clean Modern Fluent Trash Icon -->
+            <Button Name="BtnMinimalistDelete"
+                    IsVisible="{Binding ShowMinimalistDelete}"
+                    Classes="icon-ghost"
+                    Width="22" Height="22"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource StatusOverdue}"
+                    ToolTip.Tip="{Binding Loc.RowDeleteTooltip}">
+              <PathIcon Width="12" Height="12"
+                        Foreground="{DynamicResource StatusOverdue}"
+                        Data="M 6 19 A 2 2 0 0 0 8 21 L 16 21 A 2 2 0 0 0 18 19 L 18 7 L 6 7 L 6 19 Z M 19 4 L 15.5 4 L 14.5 3 L 9.5 3 L 8.5 4 L 5 4 L 5 6 L 19 6 L 19 4 Z"/>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- Expanded Drawer with Smooth Layout -->
+        <Border Name="ExpandedDrawerBorder"
+                IsVisible="{Binding IsExpanded}"
+                BorderBrush="{DynamicResource BorderSubtle}"
+                BorderThickness="0,1,0,0"
+                Margin="0,4,0,0"
+                Padding="6,8,4,4"
+                MaxHeight="240">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8">
+              <!-- Body Preview (Selectable for Copy) -->
+              <Border IsVisible="{Binding HasBody}"
+                      Background="{DynamicResource BgSubtle}"
+                      CornerRadius="6"
+                      Padding="8,6"
+                      Margin="0,0,0,2">
+                <SelectableTextBlock Text="{Binding Body}"
+                                     Foreground="{DynamicResource TextSecondary}"
+                                     FontSize="12"
+                                     LineHeight="18"
+                                     TextWrapping="Wrap"/>
+              </Border>
+
+              <!-- Meta Information Pills Area (元信息区: 截止期, 负责人, 进度) -->
+              <WrapPanel Orientation="Horizontal"
+                         IsVisible="{Binding HasDrawerMeta}"
+                         Margin="0,0,0,2">
+                <!-- Due Date Pill -->
+                <Border IsVisible="{Binding HasDue}"
+                        Classes="meta-pill"
+                        Background="{DynamicResource BgSubtle}"
+                        CornerRadius="6"
+                        Padding="7,3"
+                        Margin="0,0,6,6"
+                        VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <PathIcon Width="11" Height="11"
+                              Foreground="{DynamicResource TextMuted}"
+                              Data="M 19 4 L 18 4 L 18 2 L 16 2 L 16 4 L 8 4 L 8 2 L 6 2 L 6 4 L 5 4 A 2 2 0 0 0 3 6 L 3 20 A 2 2 0 0 0 5 22 L 19 22 A 2 2 0 0 0 21 20 L 21 6 A 2 2 0 0 0 19 4 Z M 19 20 L 5 20 L 5 10 L 19 10 L 19 20 Z M 19 8 L 5 8 L 5 6 L 19 6 L 19 8 Z"/>
+                    <TextBlock Text="{Binding DueSummary}"
+                               Foreground="{DynamicResource TextSecondary}"
+                               FontSize="11.5"
+                               VerticalAlignment="Center"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Assignee Pill -->
+                <Border IsVisible="{Binding HasAssignee}"
+                        Classes="meta-pill"
+                        Background="{DynamicResource BgSubtle}"
+                        CornerRadius="6"
+                        Padding="7,3"
+                        Margin="0,0,6,6"
+                        VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <PathIcon Width="11" Height="11"
+                              Foreground="{DynamicResource TextMuted}"
+                              Data="M 12 12 A 4 4 0 1 0 12 4 A 4 4 0 1 0 12 12 Z M 12 14 C 9.33 14 4 15.34 4 18 L 4 20 L 20 20 L 20 18 C 20 15.34 14.67 14 12 14 Z"/>
+                    <TextBlock Text="{Binding Assignee}"
+                               Foreground="{DynamicResource TextSecondary}"
+                               FontSize="11.5"
+                               VerticalAlignment="Center"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Progress Pill -->
+                <Border IsVisible="{Binding HasProgress}"
+                        Classes="meta-pill"
+                        Background="{DynamicResource BgSubtle}"
+                        CornerRadius="6"
+                        Padding="7,2"
+                        Margin="0,0,6,6"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="{Binding Loc.RowProgressTooltip}">
+                  <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <PathIcon Width="11" Height="11"
+                              Foreground="{DynamicResource TextMuted}"
+                              Data="M 12 2 A 10 10 0 1 0 22 12 A 10 10 0 0 0 12 2 Z M 12 20 A 8 8 0 1 1 20 12 A 8 8 0 0 1 12 20 Z M 12 6 A 6 6 0 0 1 18 12 L 12 12 Z"/>
+                    <TextBlock Text="{Binding ProgressSummary}"
+                               Foreground="{DynamicResource TextSecondary}"
+                               FontSize="11.5"
+                               VerticalAlignment="Center"/>
+                    <Button Name="BtnQuickProgress"
+                            Classes="icon-ghost"
+                            Width="18" Height="18"
+                            FontSize="9.5"
+                            Padding="0"
+                            Content="↻"
+                            ToolTip.Tip="{Binding Loc.RowProgressCycleTooltip}"
+                            VerticalAlignment="Center"/>
+                  </StackPanel>
+                </Border>
+              </WrapPanel>
+
+              <!-- Action Buttons Area (操作按钮区: 规整网格与右对齐工具栏) -->
+              <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                <!-- Left: Task Hierarchy & Detail Actions -->
+                <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Button Name="AddSubtaskButton"
+                          IsVisible="{Binding CanAddSubtask}"
+                          Classes="drawer-action-btn"
+                          Content="{Binding Loc.RowAddSubtaskBtn}"
+                          ToolTip.Tip="{Binding Loc.RowAddSubtaskTooltip}"
+                          Margin="0,0,6,4"/>
+
+                  <Button Name="OpenDetailButton"
+                          Classes="drawer-action-btn"
+                          Content="{Binding Loc.RowOpenDetailBtn}"
+                          ToolTip.Tip="{Binding Loc.RowOpenDetailTooltip}"
+                          Margin="0,0,6,4"/>
+
+                  <Button Name="PromoteSubtaskButton"
+                          IsVisible="{Binding IsSubtask}"
+                          Classes="drawer-action-btn"
+                          Content="{Binding Loc.RowMenuPromoteSubtask}"
+                          ToolTip.Tip="{Binding Loc.NoticePromotedToRoot}"
+                          Margin="0,0,6,4"/>
+                </WrapPanel>
+
+                <!-- Right: Safe Isolated Delete Action -->
+                <Button Grid.Column="1"
+                        Name="BtnDrawerDelete"
+                        Classes="drawer-delete-btn"
+                        Content="{Binding Loc.RowDeleteBtn}"
+                        ToolTip.Tip="{Binding Loc.RowDeleteTooltip}"
+                        Margin="0,0,0,4"
+                        VerticalAlignment="Center"/>
+              </Grid>
+            </StackPanel>
+          </ScrollViewer>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

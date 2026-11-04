@@ -447,6 +447,69 @@ public sealed class SettingsAndShellTests : IDisposable
         Assert.Contains("手动", customRowVm.ProgressSummary);
     }
 
+    [Fact]
+    public void TaskRowViewModel_TitleDisplayAndInlineEditState_EnforcesRightClickOnlyEdit()
+    {
+        AppLocalizer.Instance.SetLanguage(AppLanguage.Chinese);
+        Guid id = Guid.NewGuid();
+        var emptyFields = new EffectiveFields(null, null, Priority.Normal, null, DueSpec.Empty, null);
+        var record = new RecordView(id, null, RecordKind.Task, "任务标题", "任务详情正文", RecordStatus.Active, emptyFields, emptyFields, InheritField.None, 1, DateTimeOffset.UtcNow, null, null);
+
+        var rowVm = new TaskRowViewModel(
+            record,
+            TimeZoneInfo.Utc,
+            DateTimeOffset.UtcNow,
+            isExpanded: false,
+            isMarkedCompleted: false,
+            subtaskCount: 0,
+            isTreeExpanded: true,
+            isLastSubtask: false,
+            depth: 0,
+            progress: 0,
+            isCustomProgress: false);
+
+        // 1. Initial Normal State: Read-only title block is visible, no blinking caret, no edit actions
+        Assert.False(rowVm.IsEditingTitle);
+        Assert.False(rowVm.IsEditingInline);
+        Assert.True(rowVm.IsTitleDisplayVisible);
+        Assert.True(rowVm.IsDisplayNormal);
+        Assert.False(rowVm.ShowInlineEditActions);
+        Assert.False(rowVm.IsTitleDirty);
+        Assert.False(rowVm.IsExpanded);
+
+        // 2. Simulating Right-Click Menu -> '修改内容'
+        rowVm.IsEditingTitle = true;
+        Assert.True(rowVm.IsEditingTitle);
+        Assert.False(rowVm.IsTitleDisplayVisible);
+        Assert.False(rowVm.IsDisplayNormal);
+        Assert.True(rowVm.ShowInlineEditActions);
+
+        // Modify title in edit mode
+        rowVm.EditableTitle = "新修改的任务标题";
+        Assert.True(rowVm.IsTitleDirty);
+
+        // 3. Simulating Save or Esc cancel
+        rowVm.IsEditingTitle = false;
+        Assert.False(rowVm.IsEditingTitle);
+        Assert.True(rowVm.IsTitleDisplayVisible);
+        Assert.True(rowVm.IsDisplayNormal);
+        Assert.False(rowVm.ShowInlineEditActions);
+
+        // 4. Drawer & Meta Area
+        rowVm.IsExpanded = true;
+        Assert.True(rowVm.IsExpanded);
+        Assert.True(rowVm.HasBody);
+        Assert.True(rowVm.HasDrawerMeta);
+        Assert.True(rowVm.CanAddSubtask);
+        Assert.False(rowVm.IsSubtask);
+
+        // 5. Completed Mode
+        rowVm.IsMarkedCompleted = true;
+        Assert.False(rowVm.IsTitleDisplayVisible);
+        Assert.True(rowVm.IsDisplayCompleted);
+        Assert.Equal(100, rowVm.Progress);
+    }
+
     private sealed class FakeDesktopIntegration : IDesktopIntegration
     {
         private bool _loginStartup;

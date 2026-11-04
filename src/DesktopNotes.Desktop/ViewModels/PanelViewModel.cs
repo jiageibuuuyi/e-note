@@ -42,7 +42,7 @@ public sealed class TaskRowViewModel : ViewModelBase
     public int Depth { get; }
     public bool IsSubtask => Depth > 0 || Record.ParentId.HasValue;
     public bool CanAddSubtask => Record.Kind == RecordKind.Task;
-    public bool IsTaskRow => Record.Kind == RecordKind.Task && !IsEditingInline;
+    public bool IsTaskRow => Record.Kind == RecordKind.Task && !IsEditingInline && !IsEditingTitle;
     public bool ShowDragHandle => Depth == 0 && !IsSubtask && IsTaskRow && Loc.IsMinimalistStyle;
     public bool ShowRealisticSubtaskPlant => IsSubtask && Loc.IsRealisticStyle;
     public bool ShowMinimalistSubtaskBranch => IsSubtask && Loc.IsMinimalistStyle;
@@ -143,6 +143,27 @@ public sealed class TaskRowViewModel : ViewModelBase
 
     private bool _isMarkedCompleted;
     private bool _isEditingInline;
+    private bool _isEditingTitle;
+
+    public bool IsEditingTitle
+    {
+        get => _isEditingTitle;
+        set
+        {
+            if (SetProperty(ref _isEditingTitle, value))
+            {
+                RaisePropertyChanged(nameof(IsDisplayMode));
+                RaisePropertyChanged(nameof(IsDisplayNormal));
+                RaisePropertyChanged(nameof(IsDisplayCompleted));
+                RaisePropertyChanged(nameof(IsTitleDisplayVisible));
+                RaisePropertyChanged(nameof(ShowInlineEditActions));
+                RaisePropertyChanged(nameof(IsTaskRow));
+            }
+        }
+    }
+
+    public bool IsTitleDisplayVisible => !_isEditingInline && !_isEditingTitle && !_isMarkedCompleted;
+    public bool ShowInlineEditActions => _isEditingInline || _isEditingTitle;
     private string _inlineEditText = string.Empty;
 
     public bool IsMarkedCompleted
@@ -154,6 +175,8 @@ public sealed class TaskRowViewModel : ViewModelBase
             {
                 RaisePropertyChanged(nameof(IsDisplayNormal));
                 RaisePropertyChanged(nameof(IsDisplayCompleted));
+                RaisePropertyChanged(nameof(IsTitleDisplayVisible));
+                RaisePropertyChanged(nameof(ShowInlineEditActions));
                 RaisePropertyChanged(nameof(StageLabel));
                 RaisePropertyChanged(nameof(HasStageLabel));
                 RaisePropertyChanged(nameof(IsOverdue));
@@ -189,15 +212,17 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(IsDisplayMode));
                 RaisePropertyChanged(nameof(IsDisplayNormal));
                 RaisePropertyChanged(nameof(IsDisplayCompleted));
+                RaisePropertyChanged(nameof(IsTitleDisplayVisible));
+                RaisePropertyChanged(nameof(ShowInlineEditActions));
                 RaisePropertyChanged(nameof(ShowRealisticDelete));
                 RaisePropertyChanged(nameof(ShowMinimalistDelete));
             }
         }
     }
 
-    public bool IsDisplayMode => !_isEditingInline;
-    public bool IsDisplayNormal => !_isEditingInline && !_isMarkedCompleted;
-    public bool IsDisplayCompleted => !_isEditingInline && _isMarkedCompleted;
+    public bool IsDisplayMode => !_isEditingInline && !_isEditingTitle;
+    public bool IsDisplayNormal => !_isEditingInline && !_isEditingTitle && !_isMarkedCompleted;
+    public bool IsDisplayCompleted => !_isEditingInline && !_isEditingTitle && _isMarkedCompleted;
     public string CompleteMenuHeader => _isMarkedCompleted
         ? Loc.T("↩️  Unmark as Done", "↩️  取消完成标记")
         : Loc.T("✅  Mark as Done", "✅  标记为已完成");
@@ -936,6 +961,7 @@ public sealed class PanelViewModel : ViewModelBase
 
     public async Task SaveEditedTitleAsync(TaskRowViewModel row, CancellationToken ct)
     {
+        row.IsEditingTitle = false;
         if (row.IsEditingInline || !row.IsTitleDirty)
         {
             return;

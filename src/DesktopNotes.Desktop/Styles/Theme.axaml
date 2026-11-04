@@ -335,6 +335,50 @@
     <Setter Property="Foreground" Value="#EA3323"/>
   </Style>
 
+  <!-- Drawer Action Button (Refined compact pill button) -->
+  <Style Selector="Button.drawer-action-btn">
+    <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="9,3"/>
+    <Setter Property="FontSize" Value="11.5"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.drawer-action-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BgHover}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentPrimary}"/>
+  </Style>
+
+  <!-- Drawer Delete Button (Clear danger style, separated) -->
+  <Style Selector="Button.drawer-delete-btn">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource StatusOverdue}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="9,3"/>
+    <Setter Property="FontSize" Value="11.5"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.drawer-delete-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StatusOverdueBg}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource StatusOverdue}"/>
+    <Setter Property="Foreground" Value="{DynamicResource StatusOverdue}"/>
+  </Style>
+
+  <!-- Drawer Meta Info Pill -->
+  <Style Selector="Border.meta-pill">
+    <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="7,3"/>
+    <Setter Property="Margin" Value="0,0,6,6"/>
+  </Style>
+
   <!-- Clean Borderless TextBox -->
   <Style Selector="TextBox.clean-input">
     <Setter Property="Background" Value="Transparent"/>
@@ -474,6 +518,42 @@
   <Style Selector="Button.cute-icon-btn:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="#D9FFFFFF"/>
     <Setter Property="BorderBrush" Value="#141414"/>
+  </Style>
+
+  <!-- Realistic Drawer Buttons & Badges -->
+  <Style Selector="Window.realistic Button.drawer-action-btn">
+    <Setter Property="Background" Value="#33FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#40141414"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="9,3"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+  <Style Selector="Window.realistic Button.drawer-action-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#73FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#141414"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+
+  <Style Selector="Window.realistic Button.drawer-delete-btn">
+    <Setter Property="Background" Value="#22EA3323"/>
+    <Setter Property="BorderBrush" Value="#4DEA3323"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="9,3"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="Foreground" Value="#C92517"/>
+  </Style>
+  <Style Selector="Window.realistic Button.drawer-delete-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#40EA3323"/>
+    <Setter Property="BorderBrush" Value="#EA3323"/>
+    <Setter Property="Foreground" Value="#EA3323"/>
+  </Style>
+
+  <Style Selector="Window.realistic Border.meta-pill">
+    <Setter Property="Background" Value="#1F000000"/>
+    <Setter Property="CornerRadius" Value="8"/>
   </Style>
 
   <!-- Panel Window Frame Styles -->
