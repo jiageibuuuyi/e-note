@@ -478,6 +478,9 @@ public sealed class SettingsAndShellTests : IDisposable
         Assert.False(rowVm.ShowInlineEditActions);
         Assert.False(rowVm.IsTitleDirty);
         Assert.False(rowVm.IsExpanded);
+        Assert.True(rowVm.ShowProgressBadge);
+        Assert.Equal("0%", rowVm.ProgressText);
+        Assert.Equal("修改任务标题", AppLocalizer.Instance.RowEditTooltip);
 
         // 2. Simulating Right-Click Menu -> '修改内容'
         rowVm.IsEditingTitle = true;

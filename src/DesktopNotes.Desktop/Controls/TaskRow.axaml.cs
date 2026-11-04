@@ -125,24 +125,19 @@ public partial class TaskRow : UserControl
             PencilEditButton.Click += OnPencilEditButtonClick;
         }
 
-        if (BtnRealisticDelete is not null)
+        if (MinimalistPencilButton is not null)
         {
-            BtnRealisticDelete.Click += OnTrashRowClick;
+            MinimalistPencilButton.Click += OnPencilEditButtonClick;
         }
 
-        if (BtnMinimalistDelete is not null)
+        if (BtnRowProgress is not null)
         {
-            BtnMinimalistDelete.Click += OnTrashRowClick;
+            BtnRowProgress.Click += OnQuickProgressClick;
         }
 
         if (BtnDrawerDelete is not null)
         {
             BtnDrawerDelete.Click += OnTrashRowClick;
-        }
-
-        if (BtnQuickProgress is not null)
-        {
-            BtnQuickProgress.Click += OnQuickProgressClick;
         }
 
         if (PromoteSubtaskButton is not null)

@@ -204,18 +204,16 @@
                          FontSize="10.5"/>
             </Border>
 
-            <!-- Mini Progress Pill (Visible when progress > 0 and not marked completed) -->
-            <Border IsVisible="{Binding ShowProgressBadge}"
-                    Background="{DynamicResource BgSubtle}"
-                    CornerRadius="5"
-                    Padding="5,1.5"
+            <!-- Uniform Progress Pill (Visible on every task, 0% to 100%, clickable to cycle) -->
+            <Button Name="BtnRowProgress"
+                    IsVisible="{Binding ShowProgressBadge}"
+                    Classes="progress-badge-btn"
                     VerticalAlignment="Center"
                     ToolTip.Tip="{Binding ProgressSummary}">
               <TextBlock Text="{Binding ProgressText}"
-                         Foreground="{DynamicResource TextSecondary}"
                          FontSize="10.5"
                          FontWeight="Medium"/>
-            </Border>
+            </Button>
           </StackPanel>
 
           <!-- Col 6: Realistic Subtask Inline Assignee Text (e.g. 李工) -->
@@ -275,7 +273,7 @@
             </Border>
           </Panel>
 
-          <!-- Col 9: Action Buttons (Confirm Archive, Inline Save/Cancel, Eraser Delete) -->
+          <!-- Col 9: Action Buttons (Confirm Archive, Inline Save/Cancel, Pencil Edit) -->
           <StackPanel Grid.Column="9"
                       Orientation="Horizontal"
                       Spacing="3"
@@ -310,9 +308,9 @@
                       ToolTip.Tip="{Binding Loc.RowCancelTooltip}"/>
             </StackPanel>
 
-            <!-- Pencil Edit Button (Realistic Mode): Clearly represents "Edit" -->
+            <!-- Pencil Edit Button (Realistic Mode): Cute Hand-Drawn Yellow Pencil -->
             <Button Name="PencilEditButton"
-                    IsVisible="{Binding Loc.IsRealisticStyle}"
+                    IsVisible="{Binding ShowRealisticPencil}"
                     Classes="cute-icon-btn"
                     Width="22" Height="22"
                     Padding="0"
@@ -333,105 +331,51 @@
               </Canvas>
             </Button>
 
-            <!-- Delete Button on Click/Selected (Realistic Mode): Cute Hand-Drawn Doodle Trashcan -->
-            <Button Name="BtnRealisticDelete"
-                    IsVisible="{Binding ShowRealisticDelete}"
-                    Classes="cute-icon-btn"
-                    Width="22" Height="22"
-                    Padding="0"
-                    Background="#33EA3323"
-                    BorderThickness="1"
-                    BorderBrush="#141414"
-                    CornerRadius="5"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="{Binding Loc.RowDeleteTooltip}">
-              <Canvas Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Path Data="M 3 5 L 13 5 M 6 5 L 7 3.2 L 9 3.2 L 10 5"
-                      Stroke="#141414" StrokeThickness="1.3" StrokeLineCap="Round"/>
-                <Path Data="M 4 5 L 4.8 13.5 Q 8 14.6 11.2 13.5 L 12 5 Z"
-                      Fill="#FFB3C1" Stroke="#141414" StrokeThickness="1.3" StrokeJoin="Round"/>
-                <Line StartPoint="6.5,7" EndPoint="6.5,12" Stroke="#141414" StrokeThickness="0.9" StrokeLineCap="Round"/>
-                <Line StartPoint="9.5,7" EndPoint="9.5,12" Stroke="#141414" StrokeThickness="0.9" StrokeLineCap="Round"/>
-              </Canvas>
-            </Button>
-
-            <!-- Delete Button on Click/Selected (Minimalist Mode): Clean Modern Fluent Trash Icon -->
-            <Button Name="BtnMinimalistDelete"
-                    IsVisible="{Binding ShowMinimalistDelete}"
+            <!-- Pencil Edit Button (Minimalist Mode): Clean Modern Fluent Pencil -->
+            <Button Name="MinimalistPencilButton"
+                    IsVisible="{Binding ShowMinimalistPencil}"
                     Classes="icon-ghost"
                     Width="22" Height="22"
                     Padding="0"
                     VerticalAlignment="Center"
-                    Foreground="{DynamicResource StatusOverdue}"
-                    ToolTip.Tip="{Binding Loc.RowDeleteTooltip}">
+                    Foreground="{DynamicResource TextMuted}"
+                    ToolTip.Tip="{Binding Loc.RowEditTooltip}">
               <PathIcon Width="12" Height="12"
-                        Foreground="{DynamicResource StatusOverdue}"
-                        Data="M 6 19 A 2 2 0 0 0 8 21 L 16 21 A 2 2 0 0 0 18 19 L 18 7 L 6 7 L 6 19 Z M 19 4 L 15.5 4 L 14.5 3 L 9.5 3 L 8.5 4 L 5 4 L 5 6 L 19 6 L 19 4 Z"/>
+                        Foreground="{DynamicResource TextMuted}"
+                        Data="M 3 17.25 V 21 H 6.75 L 17.81 9.94 L 14.06 6.19 L 3 17.25 Z M 20.71 7.04 C 21.1 6.65 21.1 6.02 20.71 5.63 L 18.37 3.29 C 17.98 2.9 17.35 2.9 16.96 3.29 L 15.13 5.12 L 18.88 8.87 L 20.71 7.04 Z"/>
             </Button>
           </StackPanel>
         </Grid>
 
-        <!-- Expanded Drawer with Graphical Chart & Icon Layout -->
+        <!-- Expanded Drawer with Meta & Action Toolbar -->
         <Border Name="ExpandedDrawerBorder"
                 IsVisible="{Binding IsExpanded}"
-                BorderBrush="{DynamicResource BorderSubtle}"
-                BorderThickness="0,1,0,0"
+                Classes="drawer-container"
                 Margin="0,4,0,0"
                 Padding="6,8,4,4"
                 MaxHeight="240">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="6">
               <!-- Body Preview (Selectable for Copy) -->
-              <Border IsVisible="{Binding HasBody}"
-                      Background="{DynamicResource BgSubtle}"
-                      CornerRadius="6"
+              <Border Name="BodyPreviewBorder"
+                      IsVisible="{Binding HasBody}"
+                      Classes="drawer-body-card"
                       Padding="8,6"
                       Margin="0,0,0,2">
                 <SelectableTextBlock Text="{Binding Body}"
-                                     Foreground="{DynamicResource TextSecondary}"
+                                     Classes="drawer-body-text"
                                      FontSize="12"
                                      LineHeight="18"
                                      TextWrapping="Wrap"/>
               </Border>
 
-              <!-- Unified Graphical Toolbar: Chart & Meta Pills on Left, Icon Actions on Right -->
+              <!-- Single-Row Toolbar: Meta Pills Left, Actions Right -->
               <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center" Margin="0,2,0,0">
-                <!-- Left: Graphical Meta & Progress Chart Widgets -->
-                <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                  <!-- Progress Visual Chart Pill (图表进度胶囊) -->
-                  <Border IsVisible="{Binding HasProgress}"
-                          Classes="drawer-chart-pill"
-                          Margin="0,0,6,4"
-                          ToolTip.Tip="{Binding ProgressSummary}">
-                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                      <PathIcon Width="11" Height="11"
-                                Foreground="{DynamicResource AccentPrimary}"
-                                Data="M 19 3 H 5 A 2 2 0 0 0 3 5 V 19 A 2 2 0 0 0 5 21 H 19 A 2 2 0 0 0 21 19 V 5 A 2 2 0 0 0 19 3 Z M 9 17 H 7 V 10 H 9 Z M 13 17 H 11 V 7 H 13 Z M 17 17 H 15 V 13 H 17 Z"/>
-                      <ProgressBar Value="{Binding Progress}"
-                                   Minimum="0" Maximum="100"
-                                   Width="38" Height="5"
-                                   CornerRadius="2.5"
-                                   VerticalAlignment="Center"/>
-                      <TextBlock Text="{Binding ProgressText}"
-                                 Foreground="{DynamicResource TextPrimary}"
-                                 FontSize="11"
-                                 FontWeight="SemiBold"
-                                 VerticalAlignment="Center"/>
-                      <Button Name="BtnQuickProgress"
-                              Classes="icon-ghost"
-                              Width="18" Height="18"
-                              FontSize="9.5"
-                              Padding="0"
-                              Content="↻"
-                              ToolTip.Tip="{Binding Loc.RowProgressCycleTooltip}"
-                              VerticalAlignment="Center"/>
-                    </StackPanel>
-                  </Border>
-
-                  <!-- Compact Due Date Icon Pill (截止期紧凑图标胶囊) -->
+                <!-- Left: Due Date & Assignee -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <!-- Compact Due Date Icon Pill -->
                   <Border IsVisible="{Binding HasDue}"
                           Classes="meta-pill"
-                          Margin="0,0,6,4"
                           ToolTip.Tip="{Binding DueSummary}"
                           VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -445,10 +389,9 @@
                     </StackPanel>
                   </Border>
 
-                  <!-- Assignee Icon Pill (负责人紧凑图标胶囊) -->
+                  <!-- Assignee Icon Pill -->
                   <Border IsVisible="{Binding HasAssignee}"
                           Classes="meta-pill"
-                          Margin="0,0,6,4"
                           ToolTip.Tip="{Binding AssigneeTooltip}"
                           VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -461,10 +404,10 @@
                                  VerticalAlignment="Center"/>
                     </StackPanel>
                   </Border>
-                </WrapPanel>
+                </StackPanel>
 
-                <!-- Right: Sleek Graphical Icon Actions (纯图标精炼工具栏) -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,0,4">
+                <!-- Right: Sleek Graphical Icon Actions (Add Subtask, Detail, Promote, Delete) -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
                   <!-- Add Subtask Icon Button -->
                   <Button Name="AddSubtaskButton"
                           IsVisible="{Binding CanAddSubtask}"

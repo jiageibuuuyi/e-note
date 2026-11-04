@@ -110,7 +110,7 @@ public sealed class TaskRowViewModel : ViewModelBase
             ? Loc.T($"Progress: {Progress}% (Subtasks)", $"进度: {Progress}% (子任务)")
             : Loc.T($"Progress: {Progress}%", $"进度: {Progress}%"));
     public bool HasProgress => IsTaskKind;
-    public bool ShowProgressBadge => IsTaskKind && Progress > 0 && !IsMarkedCompleted;
+    public bool ShowProgressBadge => IsTaskKind && !IsMarkedCompleted;
     public bool HasDrawerMeta => HasDue || HasAssignee || HasProgress;
 
     public string DueSummary => Record.Effective.Due.Kind switch
@@ -139,6 +139,8 @@ public sealed class TaskRowViewModel : ViewModelBase
 
     public bool ShowRealisticDelete => IsExpanded && !IsEditingInline && Loc.IsRealisticStyle;
     public bool ShowMinimalistDelete => IsExpanded && !IsEditingInline && Loc.IsMinimalistStyle;
+    public bool ShowRealisticPencil => Loc.IsRealisticStyle && !IsEditingTitle && !IsEditingInline && !IsMarkedCompleted;
+    public bool ShowMinimalistPencil => Loc.IsMinimalistStyle && !IsEditingTitle && !IsEditingInline && !IsMarkedCompleted;
 
     public bool IsExpanded
     {
@@ -171,6 +173,8 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(IsTitleDisplayVisible));
                 RaisePropertyChanged(nameof(ShowInlineEditActions));
                 RaisePropertyChanged(nameof(IsTaskRow));
+                RaisePropertyChanged(nameof(ShowRealisticPencil));
+                RaisePropertyChanged(nameof(ShowMinimalistPencil));
             }
         }
     }
@@ -203,6 +207,8 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(RealisticPlantTooltip));
                 RaisePropertyChanged(nameof(ShowRealisticPlantToggle));
                 RaisePropertyChanged(nameof(ShowSubtaskAssigneeInline));
+                RaisePropertyChanged(nameof(ShowRealisticPencil));
+                RaisePropertyChanged(nameof(ShowMinimalistPencil));
                 if (value)
                 {
                     Progress = 100;
@@ -229,6 +235,8 @@ public sealed class TaskRowViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(ShowInlineEditActions));
                 RaisePropertyChanged(nameof(ShowRealisticDelete));
                 RaisePropertyChanged(nameof(ShowMinimalistDelete));
+                RaisePropertyChanged(nameof(ShowRealisticPencil));
+                RaisePropertyChanged(nameof(ShowMinimalistPencil));
             }
         }
     }

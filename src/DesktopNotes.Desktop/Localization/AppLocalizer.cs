@@ -326,7 +326,7 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string RowMenuTrash => T("🗑️  Move to Trash", "🗑️  移入回收站");
     public string RowMenuCopyText => T("📋  Copy Text", "📋  复制文字");
     public string RowMenuPasteText => T("📋  Paste Text", "📋  粘贴文字");
-    public string RowEditTooltip => T("Edit TODO details", "编辑任务详情");
+    public string RowEditTooltip => T("Edit TODO title", "修改任务标题");
     public string RowDeleteBtn => T("🗑️ Trash", "🗑️ 移入回收站");
     public string RowDeleteTooltip => T("Move this TODO to trash", "将此任务移入回收站");
     public string MenuPromoteToRoot => T("⬆️  Promote to Root TODO", "⬆️  移出子任务 (转为顶层主任务)");

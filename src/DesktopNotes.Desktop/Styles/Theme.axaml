@@ -422,12 +422,45 @@
     <Setter Property="VerticalAlignment" Value="Center"/>
   </Style>
 
+  <!-- Row Progress Badge Button (0%, 25%, 50%, etc.) -->
+  <Style Selector="Button.progress-badge-btn">
+    <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="5"/>
+    <Setter Property="Padding" Value="5,1.5"/>
+    <Setter Property="MinHeight" Value="18"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+  </Style>
+  <Style Selector="Button.progress-badge-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+
   <!-- Drawer Meta Info Pill -->
   <Style Selector="Border.meta-pill">
     <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
     <Setter Property="CornerRadius" Value="6"/>
     <Setter Property="Padding" Value="7,3"/>
-    <Setter Property="Margin" Value="0,0,6,6"/>
+    <Setter Property="Margin" Value="0"/>
+  </Style>
+
+  <!-- Drawer Container Divider -->
+  <Style Selector="Border.drawer-container">
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="0,1,0,0"/>
+  </Style>
+
+  <!-- Drawer Body Preview Card -->
+  <Style Selector="Border.drawer-body-card">
+    <Setter Property="Background" Value="{DynamicResource BgSubtle}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+  </Style>
+
+  <Style Selector="SelectableTextBlock.drawer-body-text">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
   </Style>
 
   <!-- Clean Borderless TextBox -->
@@ -602,9 +635,44 @@
     <Setter Property="Foreground" Value="#EA3323"/>
   </Style>
 
+  <Style Selector="Window.realistic Button.progress-badge-btn">
+    <Setter Property="Background" Value="#1C000000"/>
+    <Setter Property="Foreground" Value="#141414"/>
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+  </Style>
+  <Style Selector="Window.realistic Button.progress-badge-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#33000000"/>
+    <Setter Property="Foreground" Value="#141414"/>
+  </Style>
+
   <Style Selector="Window.realistic Border.meta-pill">
     <Setter Property="Background" Value="#1F000000"/>
     <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+  <Style Selector="Window.realistic Border.meta-pill TextBlock">
+    <Setter Property="Foreground" Value="#141414"/>
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
+  </Style>
+  <Style Selector="Window.realistic Border.meta-pill PathIcon">
+    <Setter Property="Foreground" Value="#8C141414"/>
+  </Style>
+
+  <Style Selector="Window.realistic Border.drawer-container">
+    <Setter Property="BorderBrush" Value="#4DB58D12"/>
+    <Setter Property="BorderThickness" Value="0,1,0,0"/>
+  </Style>
+
+  <!-- Realistic Body Detail Card: Translucent warm paper tint with subtle kraft/amber border -->
+  <Style Selector="Window.realistic Border.drawer-body-card">
+    <Setter Property="Background" Value="#1A8C640A"/>
+    <Setter Property="BorderBrush" Value="#408C640A"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+  </Style>
+
+  <Style Selector="Window.realistic SelectableTextBlock.drawer-body-text">
+    <Setter Property="Foreground" Value="#141414"/>
+    <Setter Property="FontFamily" Value="{StaticResource MuyaoFont}"/>
   </Style>
 
   <Style Selector="Window.realistic Button.drawer-icon-btn">
