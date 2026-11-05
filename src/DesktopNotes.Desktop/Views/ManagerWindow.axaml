@@ -5,7 +5,7 @@
         xmlns:contracts="using:DesktopNotes.Application.Contracts"
         x:Class="DesktopNotes.Desktop.Views.ManagerWindow"
         x:DataType="vm:CalendarViewModel"
-        Width="740" Height="600" MinWidth="560" MinHeight="460"
+        Width="760" Height="660" MinWidth="580" MinHeight="480"
         Background="{DynamicResource BgWindow}"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
@@ -252,30 +252,44 @@
                             </Border>
                           </ToolTip.Tip>
 
-                          <!-- Day Cell Content on Calendar Grid -->
+                          <!-- Day Cell Content on Calendar Grid (Fixed Area & Proportions) -->
                           <Grid RowDefinitions="Auto,*">
-                            <!-- Day Number -->
-                            <TextBlock Grid.Row="0"
-                                       Text="{Binding DayNumber}"
-                                       FontSize="11.5"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimary}"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Top"/>
+                            <!-- Top Bar: Day Number & Today indicator -->
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                              <TextBlock Grid.Column="0"
+                                         Text="{Binding DayNumber}"
+                                         FontSize="12"
+                                         FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimary}"
+                                         HorizontalAlignment="Left"
+                                         VerticalAlignment="Center"/>
+                              <Border Grid.Column="1"
+                                      IsVisible="{Binding IsToday}"
+                                      Background="{DynamicResource AccentPrimary}"
+                                      CornerRadius="3"
+                                      Padding="4,0.5"
+                                      VerticalAlignment="Center">
+                                <TextBlock Text="{Binding $parent[Window].((vm:CalendarViewModel)DataContext).Loc.TodayLabel}"
+                                           Foreground="White"
+                                           FontSize="9"
+                                           FontWeight="Bold"/>
+                              </Border>
+                            </Grid>
 
-                            <!-- Markers for Created and Completed Tasks -->
-                            <StackPanel Grid.Row="1"
-                                        VerticalAlignment="Bottom"
-                                        Orientation="Horizontal"
-                                        Spacing="3"
-                                        Margin="0,2,0,0">
+                            <!-- Bottom Badges: Created, Completed, Due Tasks -->
+                            <WrapPanel Grid.Row="1"
+                                       VerticalAlignment="Bottom"
+                                       HorizontalAlignment="Left"
+                                       Orientation="Horizontal"
+                                       Margin="0,4,0,0">
                               <!-- Created Tasks Marker -->
                               <Border IsVisible="{Binding HasCreatedTasks}"
                                       Background="#240284C7"
                                       BorderBrush="#660284C7"
                                       BorderThickness="1"
                                       CornerRadius="3"
-                                      Padding="3,0.5">
+                                      Padding="3.5,1"
+                                      Margin="0,1,3,1">
                                 <TextBlock Text="{Binding CreatedCount, StringFormat='🌱+{0}'}"
                                            FontSize="9.5"
                                            FontWeight="SemiBold"
@@ -288,7 +302,8 @@
                                       BorderBrush="#6616A34A"
                                       BorderThickness="1"
                                       CornerRadius="3"
-                                      Padding="3,0.5">
+                                      Padding="3.5,1"
+                                      Margin="0,1,3,1">
                                 <TextBlock Text="{Binding CompletedCount, StringFormat='✓{0}'}"
                                            FontSize="9.5"
                                            FontWeight="Bold"
@@ -301,13 +316,14 @@
                                       BorderBrush="#66D97706"
                                       BorderThickness="1"
                                       CornerRadius="3"
-                                      Padding="3,0.5">
+                                      Padding="3.5,1"
+                                      Margin="0,1,3,1">
                                 <TextBlock Text="{Binding DueCount, StringFormat='⏰{0}'}"
                                            FontSize="9.5"
                                            FontWeight="SemiBold"
                                            Foreground="#D97706"/>
                               </Border>
-                            </StackPanel>
+                            </WrapPanel>
                           </Grid>
                         </Button>
                       </DataTemplate>

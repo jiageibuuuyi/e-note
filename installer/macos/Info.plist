@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>电子便签</string>
+    <string>e-note</string>
     <key>CFBundleDisplayName</key>
-    <string>电子便签</string>
+    <string>e-note</string>
     <key>CFBundleIdentifier</key>
-    <string>com.desktopnotes.app</string>
+    <string>com.desktopnotes.enote</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>

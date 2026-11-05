@@ -31,21 +31,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${SCRIPT_DIR}"
 
 if [ "$(id -u)" -eq 0 ]; then
-    INSTALL_PREFIX="/opt/desktopnotes"
+    INSTALL_PREFIX="/opt/e-note"
     BIN_DIR="/usr/bin"
     APP_DESKTOP_DIR="/usr/share/applications"
     ICON_DIR="/usr/share/icons/hicolor/256x256/apps"
 else
-    INSTALL_PREFIX="${HOME}/.local/share/desktopnotes"
+    INSTALL_PREFIX="${HOME}/.local/share/e-note"
     BIN_DIR="${HOME}/.local/bin"
     APP_DESKTOP_DIR="${HOME}/.local/share/applications"
     ICON_DIR="${HOME}/.local/share/icons/hicolor/256x256/apps"
 fi
 
 echo "=========================================="
-echo " 安装 电子便签 (DesktopNotes)"
-echo " 安装目录: ${INSTALL_PREFIX}"
-echo " 命令目录: ${BIN_DIR}"
+echo " Installing e-note (Desktop Notes)"
+echo " Target directory: ${INSTALL_PREFIX}"
+echo " Binary directory: ${BIN_DIR}"
 echo "=========================================="
 
 mkdir -p "${INSTALL_PREFIX}"
@@ -53,39 +53,39 @@ mkdir -p "${BIN_DIR}"
 mkdir -p "${APP_DESKTOP_DIR}"
 mkdir -p "${ICON_DIR}"
 
-echo "正在复制程序文件..."
+echo "Copying application binaries..."
 cp -r "${APP_DIR}/bin/"* "${INSTALL_PREFIX}/"
 chmod 755 "${INSTALL_PREFIX}/DesktopNotes.Desktop"
 
-echo "正在安装快捷方式与图标..."
-cp "${APP_DIR}/desktopnotes.png" "${ICON_DIR}/desktopnotes.png"
+echo "Installing launcher & desktop icon..."
+cp "${APP_DIR}/e-note.png" "${ICON_DIR}/e-note.png"
 
-# 创建或配置 desktop 文件
-cat <<EOF > "${APP_DESKTOP_DIR}/desktopnotes.desktop"
+# Create standard desktop file
+cat <<EOF > "${APP_DESKTOP_DIR}/e-note.desktop"
 [Desktop Entry]
 Type=Application
-Name=电子便签
-Name[en]=DesktopNotes
-GenericName=桌面便签与备忘录
-GenericName[en]=Desktop Todo and Notes
-Comment=轻量高效的跨平台桌面待办与便签软件
-Comment[en]=Lightweight desktop todo list and note manager
+Name=e-note
+GenericName=Desktop Todo and Notes
+Comment=Lightweight desktop todo list and note manager
 Exec=${INSTALL_PREFIX}/DesktopNotes.Desktop
-Icon=desktopnotes
+Icon=e-note
 Terminal=false
 Categories=Utility;Office;
 StartupNotify=false
 EOF
-chmod 644 "${APP_DESKTOP_DIR}/desktopnotes.desktop"
+chmod 644 "${APP_DESKTOP_DIR}/e-note.desktop"
 
-# 创建命令行启动包装
-cat <<EOF > "${BIN_DIR}/desktopnotes"
+# Create command runner scripts
+cat <<EOF > "${BIN_DIR}/e-note"
 #!/bin/sh
 exec "${INSTALL_PREFIX}/DesktopNotes.Desktop" "\\$@"
 EOF
-chmod 755 "${BIN_DIR}/desktopnotes"
+chmod 755 "${BIN_DIR}/e-note"
 
-# 刷新系统缓存
+# Symlink alias desktopnotes for backwards compatibility
+ln -sf "${BIN_DIR}/e-note" "${BIN_DIR}/desktopnotes" 2>/dev/null || true
+
+# Refresh desktop database & icon cache
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "${APP_DESKTOP_DIR}" >/dev/null 2>&1 || true
 fi
@@ -94,9 +94,9 @@ if command -v gtk-update-icon-cache >/dev/null 2>&1; then
 fi
 
 echo "=========================================="
-echo " 安装完成！"
-echo " 您可以在桌面应用菜单中搜索『电子便签』启动，"
-echo " 或在终端中输入 desktopnotes 运行。"
+echo " Installation complete!"
+echo " You can launch 'e-note' from your application menu,"
+echo " or run 'e-note' from the terminal."
 echo "=========================================="
 """.encode("utf-8")
 
@@ -104,20 +104,23 @@ echo "=========================================="
 set -e
 
 if [ "$(id -u)" -eq 0 ]; then
-    INSTALL_PREFIX="/opt/desktopnotes"
-    BIN_LINK="/usr/bin/desktopnotes"
-    DESKTOP_FILE="/usr/share/applications/desktopnotes.desktop"
-    ICON_FILE="/usr/share/icons/hicolor/256x256/apps/desktopnotes.png"
+    INSTALL_PREFIX="/opt/e-note"
+    BIN_LINK="/usr/bin/e-note"
+    BIN_ALIAS="/usr/bin/desktopnotes"
+    DESKTOP_FILE="/usr/share/applications/e-note.desktop"
+    ICON_FILE="/usr/share/icons/hicolor/256x256/apps/e-note.png"
 else
-    INSTALL_PREFIX="${HOME}/.local/share/desktopnotes"
-    BIN_LINK="${HOME}/.local/bin/desktopnotes"
-    DESKTOP_FILE="${HOME}/.local/share/applications/desktopnotes.desktop"
-    ICON_FILE="${HOME}/.local/share/icons/hicolor/256x256/apps/desktopnotes.png"
+    INSTALL_PREFIX="${HOME}/.local/share/e-note"
+    BIN_LINK="${HOME}/.local/bin/e-note"
+    BIN_ALIAS="${HOME}/.local/bin/desktopnotes"
+    DESKTOP_FILE="${HOME}/.local/share/applications/e-note.desktop"
+    ICON_FILE="${HOME}/.local/share/icons/hicolor/256x256/apps/e-note.png"
 fi
 
-echo "正在卸载 电子便签 (DesktopNotes)..."
+echo "Uninstalling e-note..."
 rm -rf "${INSTALL_PREFIX}"
 rm -f "${BIN_LINK}"
+rm -f "${BIN_ALIAS}"
 rm -f "${DESKTOP_FILE}"
 rm -f "${ICON_FILE}"
 
@@ -125,26 +128,26 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$(dirname "${DESKTOP_FILE}")" >/dev/null 2>&1 || true
 fi
 
-echo "卸载完成！"
+echo "Uninstallation complete!"
 """.encode("utf-8")
 
-    readme_content = """电子便签 (DesktopNotes) Linux 版本使用说明
+    readme_content = """e-note (Desktop Notes) Linux Release
 ======================================================
-系统要求: 常见 64 位 Linux 发行版 (Ubuntu, Debian, Fedora, Arch Linux, openSUSE 等)
+Requirements: 64-bit Linux distribution (Ubuntu, Debian, Fedora, Arch Linux, openSUSE, etc.)
 
-安装方式 1 (一键安装):
-  - 全局系统安装: sudo ./install.sh
-  - 当前用户安装: ./install.sh (无需 root/sudo 权限)
+Method 1 (One-click Installation):
+  - System-wide install: sudo ./install.sh
+  - Current user install: ./install.sh (No root/sudo required)
 
-运行方式 2 (绿色免安装直接运行):
-  - 直接执行 ./bin/DesktopNotes.Desktop 即可运行。
+Method 2 (Portable / Run Directly):
+  - Run ./bin/DesktopNotes.Desktop directly.
 
-卸载方式:
-  - 若执行了 install.sh，可运行 ./uninstall.sh 彻底卸载。
+Uninstallation:
+  - Run ./uninstall.sh (use sudo if installed globally).
 ======================================================
 """.encode("utf-8")
 
-    prefix = "电子便签-v1.0-linux-x64"
+    prefix = "e-note-v1.0-linux-x64"
 
     with tarfile.open(output_tar, "w:gz") as tar:
         # Add root folder
@@ -179,10 +182,10 @@ echo "卸载完成！"
         ti.gname = "root"
         tar.addfile(ti, io.BytesIO(readme_content))
 
-        # Add desktopnotes.desktop
+        # Add e-note.desktop
         with open(desktop_file, "rb") as f:
             dbytes = f.read()
-        ti = tarfile.TarInfo(name=f"{prefix}/desktopnotes.desktop")
+        ti = tarfile.TarInfo(name=f"{prefix}/e-note.desktop")
         ti.size = len(dbytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -192,7 +195,7 @@ echo "卸载完成！"
         # Add icon
         with open(icon_file, "rb") as f:
             ibytes = f.read()
-        ti = tarfile.TarInfo(name=f"{prefix}/desktopnotes.png")
+        ti = tarfile.TarInfo(name=f"{prefix}/e-note.png")
         ti.size = len(ibytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -251,24 +254,26 @@ def build_deb_package(repo_root: Path, publish_dir: Path, output_deb: Path):
     total_size = sum(f.stat().st_size for f in publish_dir.rglob("*") if f.is_file())
     installed_size_kb = int(total_size / 1024)
 
-    control_content = f"""Package: desktopnotes
+    control_content = f"""Package: e-note
 Version: 1.0.0
 Architecture: amd64
-Maintainer: DesktopNotes Team <support@desktopnotes.app>
+Maintainer: e-note Team <support@desktopnotes.app>
 Installed-Size: {installed_size_kb}
 Depends: libc6 (>= 2.27), libgcc-s1 | libgcc1
+Provides: desktopnotes
 Section: utils
 Priority: optional
 Homepage: https://github.com/desktopnotes/desktopnotes
-Description: 电子便签 (DesktopNotes) - 轻量高效的桌面待办与便签软件
- 一款兼具写实与简约风格的跨平台桌面便签和待办事项管理工具，支持便签固定、子任务管理、进度跟踪、快捷回收站等功能。
+Description: e-note - Lightweight desktop todo and note manager
+ A lightweight, cross-platform desktop sticky note and task management application supporting pinning, subtasks, progress tracking, and recycle bin.
 """.encode("utf-8")
 
     postinst_content = b"""#!/bin/sh
 set -e
 
-chmod 755 /opt/desktopnotes/DesktopNotes.Desktop || true
-chmod 755 /usr/bin/desktopnotes || true
+chmod 755 /opt/e-note/DesktopNotes.Desktop || true
+chmod 755 /usr/bin/e-note || true
+ln -sf /usr/bin/e-note /usr/bin/desktopnotes 2>/dev/null || true
 
 if [ -x /usr/bin/update-desktop-database ]; then
     /usr/bin/update-desktop-database -q /usr/share/applications || true
@@ -283,8 +288,9 @@ exit 0
 set -e
 
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    rm -f /usr/bin/e-note
     rm -f /usr/bin/desktopnotes
-    rm -rf /opt/desktopnotes
+    rm -rf /opt/e-note
     if [ -x /usr/bin/update-desktop-database ]; then
         /usr/bin/update-desktop-database -q /usr/share/applications || true
     fi
@@ -298,7 +304,6 @@ exit 0
     # 1. Build control.tar.gz in memory
     control_buf = io.BytesIO()
     with tarfile.open(fileobj=control_buf, mode="w:gz") as tar:
-        # ./control
         ti = tarfile.TarInfo(name="./control")
         ti.size = len(control_content)
         ti.mode = 0o644
@@ -306,7 +311,6 @@ exit 0
         ti.gname = "root"
         tar.addfile(ti, io.BytesIO(control_content))
 
-        # ./postinst
         ti = tarfile.TarInfo(name="./postinst")
         ti.size = len(postinst_content)
         ti.mode = 0o755
@@ -314,7 +318,6 @@ exit 0
         ti.gname = "root"
         tar.addfile(ti, io.BytesIO(postinst_content))
 
-        # ./postrm
         ti = tarfile.TarInfo(name="./postrm")
         ti.size = len(postrm_content)
         ti.mode = 0o755
@@ -327,10 +330,9 @@ exit 0
     # 2. Build data.tar.gz in memory
     data_buf = io.BytesIO()
     with tarfile.open(fileobj=data_buf, mode="w:gz") as tar:
-        # Directories
         for dname in [
             "./opt",
-            "./opt/desktopnotes",
+            "./opt/e-note",
             "./usr",
             "./usr/bin",
             "./usr/share",
@@ -347,11 +349,11 @@ exit 0
             ti.gname = "root"
             tar.addfile(ti)
 
-        # Launcher script /usr/bin/desktopnotes
+        # Launcher script /usr/bin/e-note
         launcher_content = b"""#!/bin/sh
-exec /opt/desktopnotes/DesktopNotes.Desktop "$@"
+exec /opt/e-note/DesktopNotes.Desktop "$@"
 """
-        ti = tarfile.TarInfo(name="./usr/bin/desktopnotes")
+        ti = tarfile.TarInfo(name="./usr/bin/e-note")
         ti.size = len(launcher_content)
         ti.mode = 0o755
         ti.uname = "root"
@@ -361,7 +363,7 @@ exec /opt/desktopnotes/DesktopNotes.Desktop "$@"
         # .desktop file
         with open(desktop_file, "rb") as f:
             dbytes = f.read()
-        ti = tarfile.TarInfo(name="./usr/share/applications/desktopnotes.desktop")
+        ti = tarfile.TarInfo(name="./usr/share/applications/e-note.desktop")
         ti.size = len(dbytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -371,18 +373,18 @@ exec /opt/desktopnotes/DesktopNotes.Desktop "$@"
         # icon
         with open(icon_file, "rb") as f:
             ibytes = f.read()
-        ti = tarfile.TarInfo(name="./usr/share/icons/hicolor/256x256/apps/desktopnotes.png")
+        ti = tarfile.TarInfo(name="./usr/share/icons/hicolor/256x256/apps/e-note.png")
         ti.size = len(ibytes)
         ti.mode = 0o644
         ti.uname = "root"
         ti.gname = "root"
         tar.addfile(ti, io.BytesIO(ibytes))
 
-        # All files in publish_dir into ./opt/desktopnotes/
+        # All files in publish_dir into ./opt/e-note/
         for root, dirs, files in os.walk(publish_dir):
             rel_root = Path(root).relative_to(publish_dir)
             for d in dirs:
-                dir_arc = f"./opt/desktopnotes/{rel_root / d}".replace("\\", "/")
+                dir_arc = f"./opt/e-note/{rel_root / d}".replace("\\", "/")
                 ti = tarfile.TarInfo(name=dir_arc)
                 ti.type = tarfile.DIRTYPE
                 ti.mode = 0o755
@@ -393,7 +395,7 @@ exec /opt/desktopnotes/DesktopNotes.Desktop "$@"
             for f in files:
                 file_path = Path(root) / f
                 sub_file = rel_root / f if str(rel_root) != "." else Path(f)
-                file_arc = f"./opt/desktopnotes/{sub_file}".replace("\\", "/")
+                file_arc = f"./opt/e-note/{sub_file}".replace("\\", "/")
                 is_exec = (f == "DesktopNotes.Desktop" or f == "createdump" or f.endswith(".so"))
                 
                 with open(file_path, "rb") as fp:
@@ -413,20 +415,16 @@ exec /opt/desktopnotes/DesktopNotes.Desktop "$@"
 
     with open(output_deb, "wb") as deb:
         deb.write(b"!<arch>\n")
-
-        # Member 1: debian-binary
         deb.write(make_ar_header("debian-binary", len(deb_binary)))
         deb.write(deb_binary)
         if len(deb_binary) % 2 != 0:
             deb.write(b"\n")
 
-        # Member 2: control.tar.gz
         deb.write(make_ar_header("control.tar.gz", len(control_tar_gz)))
         deb.write(control_tar_gz)
         if len(control_tar_gz) % 2 != 0:
             deb.write(b"\n")
 
-        # Member 3: data.tar.gz
         deb.write(make_ar_header("data.tar.gz", len(data_tar_gz)))
         deb.write(data_tar_gz)
         if len(data_tar_gz) % 2 != 0:
@@ -443,5 +441,5 @@ if __name__ == "__main__":
         print(f"Error: {pub_linux} does not exist.")
         sys.exit(1)
 
-    build_portable_tarball(repo, pub_linux, repo / "电子便签-v1.0-linux-x64.tar.gz")
-    build_deb_package(repo, pub_linux, repo / "电子便签_1.0.0_amd64.deb")
+    build_portable_tarball(repo, pub_linux, repo / "e-note-v1.0-linux-x64.tar.gz")
+    build_deb_package(repo, pub_linux, repo / "e-note_1.0.0_amd64.deb")

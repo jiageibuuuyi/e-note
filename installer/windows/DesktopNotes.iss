@@ -1,11 +1,11 @@
-; 电子便签 (Sticky Notes) Windows Setup Script (Inno Setup 6+)
+; e-note Windows Setup Script (Inno Setup 6+)
 ; Packages the complete self-contained win-x64 build.
 ; Supports custom install directory, desktop shortcut, and launch at Windows login.
 
-#define MyAppName "电子便签"
-#define MyAppEnglishName "Sticky Notes"
+#define MyAppName "e-note"
+#define MyAppEnglishName "e-note"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "电子便签"
+#define MyAppPublisher "e-note"
 #define MyAppExeName "DesktopNotes.Desktop.exe"
 #define MyAppId "{9F47E810-3C1A-4D25-9B82-6E40A11D29C0}"
 #define MyAppUserModelId "DesktopNotes.StickyNotes.V1"
@@ -20,7 +20,7 @@ DefaultGroupName={#MyAppName}
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\..\
-OutputBaseFilename=电子便签-v1.0-Setup
+OutputBaseFilename=e-note-v1.0-Setup
 SetupIconFile=..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico
 Compression=lzma2/max
 SolidCompression=yes
@@ -35,7 +35,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式(&D)"; GroupDescription: "附加选项:"; Flags: checkedonce
-Name: "launchatlogin"; Description: "开机自动启动电子便签 (随 Windows 登录启动)(&L)"; GroupDescription: "附加选项:"; Flags: checkedonce
+Name: "launchatlogin"; Description: "开机自动启动 e-note (随 Windows 登录启动)(&L)"; GroupDescription: "附加选项:"; Flags: checkedonce
 
 [Files]
 Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Excludes: "*.pdb,*.xml,*Tests*,*.dbg"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -48,14 +48,14 @@ Type: filesandordirs; Name: "{app}"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; AppUserModelID: "{#MyAppUserModelId}"
-Name: "{group}\卸载{#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; AppUserModelID: "{#MyAppUserModelId}"; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "DesktopNotes"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: launchatlogin; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "立即运行 电子便签"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "立即运行 e-note"; Flags: nowait postinstall skipifsilent
 
 [Code]
 var
@@ -117,7 +117,7 @@ function InitializeUninstall(): Boolean;
 var
   ErrorCode: Integer;
 begin
-  // 卸载前强制退出正在运行的电子便签主进程与后台托盘，释放所有文件锁
+  // 卸载前强制退出正在运行的 e-note 主进程与后台托盘，释放所有文件锁
   Exec('taskkill.exe', '/F /T /IM {#MyAppExeName}', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
   Sleep(600);
   Result := True;
