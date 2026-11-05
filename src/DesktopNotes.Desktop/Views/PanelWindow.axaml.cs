@@ -205,10 +205,11 @@ public partial class PanelWindow : Window
         {
             MenuPlaceTopmost.Click += (_, _) =>
             {
-                ApplyPlacementMode(AppPlacementMode.Topmost);
-                viewModel.SetTransientNotice(AppLocalizer.Instance.T(
-                    "📌 Mode: Always on Top",
-                    "已切换至: 悬浮在所有应用最上层 (置顶)"));
+                bool willBeTopmost = _currentPlacementMode != AppPlacementMode.Topmost;
+                TogglePlacementMode(AppPlacementMode.Topmost);
+                viewModel.SetTransientNotice(willBeTopmost
+                    ? AppLocalizer.Instance.T("📌 Mode: Always on Top", "已切换至: 悬浮在所有应用最上层 (置顶)")
+                    : AppLocalizer.Instance.T("🪟 Mode: Standard Window", "已取消置顶: 恢复为标准应用层级 (正常窗口)"));
             };
         }
 
@@ -216,10 +217,22 @@ public partial class PanelWindow : Window
         {
             MenuPlaceBottom.Click += (_, _) =>
             {
-                ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
+                bool willBeBottom = _currentPlacementMode != AppPlacementMode.EmbeddedDesktop;
+                TogglePlacementMode(AppPlacementMode.EmbeddedDesktop);
+                viewModel.SetTransientNotice(willBeBottom
+                    ? AppLocalizer.Instance.T("🖥️ Mode: Desktop Back", "已切换至: 置于所有应用最下层 (桌面底层)")
+                    : AppLocalizer.Instance.T("🪟 Mode: Standard Window", "已取消桌面底层: 恢复为标准应用层级 (正常窗口)"));
+            };
+        }
+
+        if (MenuPlaceNormal is not null)
+        {
+            MenuPlaceNormal.Click += (_, _) =>
+            {
+                ApplyPlacementMode(AppPlacementMode.Normal);
                 viewModel.SetTransientNotice(AppLocalizer.Instance.T(
-                    "🖥️ Mode: Desktop Back",
-                    "已切换至: 置于所有应用最下层 (桌面底层)"));
+                    "🪟 Mode: Standard Window",
+                    "已恢复为标准应用层级 (正常窗口)"));
             };
         }
 
@@ -256,10 +269,11 @@ public partial class PanelWindow : Window
         {
             CtxPlaceTopmost.Click += (_, _) =>
             {
-                ApplyPlacementMode(AppPlacementMode.Topmost);
-                viewModel.SetTransientNotice(AppLocalizer.Instance.T(
-                    "📌 Mode: Always on Top",
-                    "已切换至: 悬浮在所有应用最上层 (置顶)"));
+                bool willBeTopmost = _currentPlacementMode != AppPlacementMode.Topmost;
+                TogglePlacementMode(AppPlacementMode.Topmost);
+                viewModel.SetTransientNotice(willBeTopmost
+                    ? AppLocalizer.Instance.T("📌 Mode: Always on Top", "已切换至: 悬浮在所有应用最上层 (置顶)")
+                    : AppLocalizer.Instance.T("🪟 Mode: Standard Window", "已取消置顶: 恢复为标准应用层级 (正常窗口)"));
             };
         }
 
@@ -267,10 +281,22 @@ public partial class PanelWindow : Window
         {
             CtxPlaceBottom.Click += (_, _) =>
             {
-                ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
+                bool willBeBottom = _currentPlacementMode != AppPlacementMode.EmbeddedDesktop;
+                TogglePlacementMode(AppPlacementMode.EmbeddedDesktop);
+                viewModel.SetTransientNotice(willBeBottom
+                    ? AppLocalizer.Instance.T("🖥️ Mode: Desktop Back", "已切换至: 置于所有应用最下层 (桌面底层)")
+                    : AppLocalizer.Instance.T("🪟 Mode: Standard Window", "已取消桌面底层: 恢复为标准应用层级 (正常窗口)"));
+            };
+        }
+
+        if (CtxPlaceNormal is not null)
+        {
+            CtxPlaceNormal.Click += (_, _) =>
+            {
+                ApplyPlacementMode(AppPlacementMode.Normal);
                 viewModel.SetTransientNotice(AppLocalizer.Instance.T(
-                    "🖥️ Mode: Desktop Back",
-                    "已切换至: 置于所有应用最下层 (桌面底层)"));
+                    "🪟 Mode: Standard Window",
+                    "已恢复为标准应用层级 (正常窗口)"));
             };
         }
 
@@ -767,6 +793,17 @@ public partial class PanelWindow : Window
         UpdateMenuStatusIndicators();
     }
 
+    public AppPlacementMode CurrentPlacementMode => _currentPlacementMode;
+    public event Action<AppPlacementMode>? PlacementModeChanged;
+
+    public void TogglePlacementMode(AppPlacementMode targetMode)
+    {
+        var newMode = _currentPlacementMode == targetMode
+            ? AppPlacementMode.Normal
+            : targetMode;
+        ApplyPlacementMode(newMode);
+    }
+
     public void ApplyPlacementMode(AppPlacementMode mode, bool savePreference = true)
     {
         _currentPlacementMode = mode;
@@ -791,6 +828,7 @@ public partial class PanelWindow : Window
         }
 
         UpdateMenuStatusIndicators();
+        PlacementModeChanged?.Invoke(mode);
     }
 
     private void UpdateMenuStatusIndicators()
@@ -801,9 +839,12 @@ public partial class PanelWindow : Window
             var prefs = _settingsService.GetPreferences();
             _isPositionLocked = prefs.PositionLocked;
             bool isTopmost = prefs.PlacementMode == AppPlacementMode.Topmost;
+            bool isBottom = prefs.PlacementMode == AppPlacementMode.EmbeddedDesktop;
+            bool isNormal = prefs.PlacementMode == AppPlacementMode.Normal;
 
             string topText = loc.T("📌  Always on Top", "📌  悬浮在所有应用最上层 (置顶)");
             string bottomText = loc.T("🖥️  Send to Desktop Back", "🖥️  置于所有应用最下层 (桌面底层)");
+            string normalText = loc.T("🪟  Standard Window", "🪟  标准应用层级 (正常窗口)");
 
             if (CtxPlaceTopmost is not null)
             {
@@ -812,7 +853,12 @@ public partial class PanelWindow : Window
 
             if (CtxPlaceBottom is not null)
             {
-                CtxPlaceBottom.Header = !isTopmost ? $"✓ {bottomText}" : bottomText;
+                CtxPlaceBottom.Header = isBottom ? $"✓ {bottomText}" : bottomText;
+            }
+
+            if (CtxPlaceNormal is not null)
+            {
+                CtxPlaceNormal.Header = isNormal ? $"✓ {normalText}" : normalText;
             }
 
             if (MenuPlaceTopmost is not null)
@@ -822,7 +868,12 @@ public partial class PanelWindow : Window
 
             if (MenuPlaceBottom is not null)
             {
-                MenuPlaceBottom.Header = !isTopmost ? $"✓ {bottomText}" : bottomText;
+                MenuPlaceBottom.Header = isBottom ? $"✓ {bottomText}" : bottomText;
+            }
+
+            if (MenuPlaceNormal is not null)
+            {
+                MenuPlaceNormal.Header = isNormal ? $"✓ {normalText}" : normalText;
             }
         }
 

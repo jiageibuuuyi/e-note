@@ -301,9 +301,18 @@ public partial class ManagerWindow : Window
             {
                 BtnModeTopmost.Click += (_, _) =>
                 {
-                    SettingsViewModel.PlacementMode = AppPlacementMode.Topmost;
+                    var newMode = SettingsViewModel.PlacementMode == AppPlacementMode.Topmost
+                        ? AppPlacementMode.Normal
+                        : AppPlacementMode.Topmost;
+                    SettingsViewModel.PlacementMode = newMode;
                     UpdatePlacementButtonsVisual();
-                    _onPlacementModeChanged?.Invoke(AppPlacementMode.Topmost);
+                    _onPlacementModeChanged?.Invoke(newMode);
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = newMode == AppPlacementMode.Topmost
+                            ? "📌 已切换至: 悬浮在所有应用最上层 (置顶)"
+                            : "🪟 已切换至: 标准应用层级 (正常窗口)";
+                    }
                 };
             }
 
@@ -311,9 +320,32 @@ public partial class ManagerWindow : Window
             {
                 BtnModeDesktop.Click += (_, _) =>
                 {
-                    SettingsViewModel.PlacementMode = AppPlacementMode.EmbeddedDesktop;
+                    var newMode = SettingsViewModel.PlacementMode == AppPlacementMode.EmbeddedDesktop
+                        ? AppPlacementMode.Normal
+                        : AppPlacementMode.EmbeddedDesktop;
+                    SettingsViewModel.PlacementMode = newMode;
                     UpdatePlacementButtonsVisual();
-                    _onPlacementModeChanged?.Invoke(AppPlacementMode.EmbeddedDesktop);
+                    _onPlacementModeChanged?.Invoke(newMode);
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = newMode == AppPlacementMode.EmbeddedDesktop
+                            ? "🖥️ 已切换至: 置于所有应用最下层 (桌面底层)"
+                            : "🪟 已切换至: 标准应用层级 (正常窗口)";
+                    }
+                };
+            }
+
+            if (BtnModeNormal is not null)
+            {
+                BtnModeNormal.Click += (_, _) =>
+                {
+                    SettingsViewModel.PlacementMode = AppPlacementMode.Normal;
+                    UpdatePlacementButtonsVisual();
+                    _onPlacementModeChanged?.Invoke(AppPlacementMode.Normal);
+                    if (SettingsStatusText is not null)
+                    {
+                        SettingsStatusText.Text = "🪟 已切换至: 标准应用层级 (正常窗口)";
+                    }
                 };
             }
 
@@ -425,8 +457,11 @@ public partial class ManagerWindow : Window
     {
         if (SettingsViewModel is null) return;
         bool isTopmost = SettingsViewModel.PlacementMode == AppPlacementMode.Topmost;
+        bool isBottom = SettingsViewModel.PlacementMode == AppPlacementMode.EmbeddedDesktop;
+        bool isNormal = SettingsViewModel.PlacementMode == AppPlacementMode.Normal;
         BtnModeTopmost?.Classes.Set("active", isTopmost);
-        BtnModeDesktop?.Classes.Set("active", !isTopmost);
+        BtnModeDesktop?.Classes.Set("active", isBottom);
+        BtnModeNormal?.Classes.Set("active", isNormal);
     }
 
     private void UpdateStyleButtonsVisual()

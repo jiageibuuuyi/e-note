@@ -162,6 +162,21 @@ public sealed class DesktopHostProbe : IDesktopIntegration
             return Task.CompletedTask;
         }
 
+        if (mode == PlacementMode.Normal)
+        {
+            DetachFromDesktopHost(windowHandle);
+            SetWindowPos(
+                windowHandle,
+                HWND_NOTOPMOST,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+            _currentMode = PlacementMode.Normal;
+            return Task.CompletedTask;
+        }
+
         var discovery = ProbeDesktopHost();
         if (!discovery.Found)
         {

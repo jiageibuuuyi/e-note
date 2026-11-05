@@ -479,10 +479,12 @@ public sealed class AppLocalizer : INotifyPropertyChanged
     public string SetWindowSectionTitle => T("Window & Desktop Behavior", "桌面悬浮层级与窗口行为");
     public string SetLayerLabel => T("Desktop Layer", "窗口桌面层级");
     public string SetLayerDesc => T(
-        "Keep window always on top, or pin it to the desktop background",
-        "支持悬浮在所有应用最上层（置顶），或嵌入在所有应用最下层（桌面层）");
+        "Always on top, desktop background layer, or standard normal window level (click selected mode to toggle off)",
+        "支持置顶悬浮、桌面底层嵌入，或恢复为正常应用层级（点击已选模式可取消）");
     public string SetModeTopmostBtn => T("📌 Always on Top", "📌 最上层 (置顶)");
     public string SetModeDesktopBtn => T("🖥️ Desktop Back", "🖥️ 最下层 (桌面层)");
+    public string SetModeNormalBtn => T("🪟 Standard", "🪟 标准层级");
+    public string MenuPlaceNormal => T("🪟  Standard Window", "🪟  标准应用层级 (正常窗口)");
     public string SetLockLabel => T("Lock Window Position", "窗口位置锁定（禁止拖动应用）");
     public string SetLockDesc => T(
         "Prevent moving or resizing the main window on your desktop",

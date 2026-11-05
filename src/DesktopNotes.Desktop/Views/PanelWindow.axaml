@@ -146,6 +146,7 @@
               <Separator/>
               <MenuItem Name="CtxPlaceTopmost" Header="📌  Always on Top"/>
               <MenuItem Name="CtxPlaceBottom" Header="🖥️  Send to Desktop Back"/>
+              <MenuItem Name="CtxPlaceNormal" Header="{Binding Loc.MenuPlaceNormal}"/>
               <Separator/>
               <MenuItem Header="{Binding Loc.MenuSortHeader}">
                 <MenuItem Name="CtxSortDefault" Header="{Binding Loc.MenuSortDefault}"/>
@@ -361,6 +362,7 @@
                   <MenuItem Header="{Binding Loc.MenuLayerHeader}">
                     <MenuItem Name="MenuPlaceTopmost" Header="📌 Always on Top"/>
                     <MenuItem Name="MenuPlaceBottom" Header="🖥️ Send to Desktop Back"/>
+                    <MenuItem Name="MenuPlaceNormal" Header="{Binding Loc.MenuPlaceNormal}"/>
                     <Separator/>
                     <MenuItem Name="MenuToggleLock" Header="🔒 Lock / Unlock Position"/>
                   </MenuItem>

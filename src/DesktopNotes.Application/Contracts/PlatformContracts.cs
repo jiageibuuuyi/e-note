@@ -3,7 +3,8 @@ namespace DesktopNotes.Application.Contracts;
 public enum PlacementMode
 {
     Topmost = 0,
-    EmbeddedDesktop = 1
+    EmbeddedDesktop = 1,
+    Normal = 2
 }
 
 public enum VisibilityMode

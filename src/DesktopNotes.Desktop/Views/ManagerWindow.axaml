@@ -709,6 +709,7 @@
                   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Button Name="BtnModeTopmost" Classes="seg-pill" Padding="10,4" FontSize="12" Content="{Binding Loc.SetModeTopmostBtn}"/>
                     <Button Name="BtnModeDesktop" Classes="seg-pill" Padding="10,4" FontSize="12" Content="{Binding Loc.SetModeDesktopBtn}"/>
+                    <Button Name="BtnModeNormal" Classes="seg-pill" Padding="10,4" FontSize="12" Content="{Binding Loc.SetModeNormalBtn}"/>
                   </StackPanel>
                 </Grid>
 

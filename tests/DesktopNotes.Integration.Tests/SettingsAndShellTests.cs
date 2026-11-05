@@ -52,6 +52,15 @@ public sealed class SettingsAndShellTests : IDisposable
         Assert.True(reloaded.PositionLocked);
         Assert.Equal("Dark", reloaded.ThemeVariant);
         Assert.Equal(16.0, reloaded.FontSizeDip);
+
+        // Verify switching to Normal mode (canceling both Topmost and EmbeddedDesktop)
+        service.SavePreferences(reloaded with
+        {
+            PlacementMode = PlacementMode.Normal
+        });
+
+        AppPreferences normalPrefs = service.GetPreferences();
+        Assert.Equal(PlacementMode.Normal, normalPrefs.PlacementMode);
     }
 
     [Fact]

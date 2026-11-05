@@ -99,12 +99,43 @@ public partial class App : global::Avalonia.Application
             menu.Items.Add(new NativeMenuItemSeparator());
 
             var itemTopmost = new NativeMenuItem(loc.T("Always on Top", "置于所有应用最上层 (置顶)"));
-            itemTopmost.Click += (_, _) => panelWindow.ApplyPlacementMode(AppPlacementMode.Topmost);
-            menu.Items.Add(itemTopmost);
-
             var itemBottom = new NativeMenuItem(loc.T("Send to Desktop Back", "置于所有应用最下层 (桌面层)"));
-            itemBottom.Click += (_, _) => panelWindow.ApplyPlacementMode(AppPlacementMode.EmbeddedDesktop);
+            var itemNormal = new NativeMenuItem(loc.T("Standard Window", "标准窗口层级 (正常应用)"));
+
+            void UpdateTrayPlacementHeaders(AppPlacementMode mode)
+            {
+                string topTitle = loc.T("Always on Top", "置于所有应用最上层 (置顶)");
+                string bottomTitle = loc.T("Send to Desktop Back", "置于所有应用最下层 (桌面层)");
+                string normalTitle = loc.T("Standard Window", "标准窗口层级 (正常应用)");
+                itemTopmost.Header = mode == AppPlacementMode.Topmost ? $"✓ {topTitle}" : topTitle;
+                itemBottom.Header = mode == AppPlacementMode.EmbeddedDesktop ? $"✓ {bottomTitle}" : bottomTitle;
+                itemNormal.Header = mode == AppPlacementMode.Normal ? $"✓ {normalTitle}" : normalTitle;
+            }
+
+            itemTopmost.Click += (_, _) =>
+            {
+                panelWindow.TogglePlacementMode(AppPlacementMode.Topmost);
+                UpdateTrayPlacementHeaders(panelWindow.CurrentPlacementMode);
+            };
+
+            itemBottom.Click += (_, _) =>
+            {
+                panelWindow.TogglePlacementMode(AppPlacementMode.EmbeddedDesktop);
+                UpdateTrayPlacementHeaders(panelWindow.CurrentPlacementMode);
+            };
+
+            itemNormal.Click += (_, _) =>
+            {
+                panelWindow.ApplyPlacementMode(AppPlacementMode.Normal);
+                UpdateTrayPlacementHeaders(panelWindow.CurrentPlacementMode);
+            };
+
+            panelWindow.PlacementModeChanged += mode => UpdateTrayPlacementHeaders(mode);
+            UpdateTrayPlacementHeaders(panelWindow.CurrentPlacementMode);
+
+            menu.Items.Add(itemTopmost);
             menu.Items.Add(itemBottom);
+            menu.Items.Add(itemNormal);
 
             menu.Items.Add(new NativeMenuItemSeparator());
 
@@ -125,8 +156,7 @@ public partial class App : global::Avalonia.Application
                 itemShow.Header = loc.T("Show / Hide Main Window", "显示 / 隐藏主面板");
                 itemNew.Header = loc.T("New Task / Note", "新建待办 / 笔记");
                 itemCalendar.Header = loc.T("Calendar · Archive · Settings", "任务日历 · 历史归档 · 设置");
-                itemTopmost.Header = loc.T("Always on Top", "置于所有应用最上层 (置顶)");
-                itemBottom.Header = loc.T("Send to Desktop Back", "置于所有应用最下层 (桌面层)");
+                UpdateTrayPlacementHeaders(panelWindow.CurrentPlacementMode);
                 itemExit.Header = loc.T("Quit Sticky Notes", "退出电子便签");
                 if (_trayIcon is not null)
                 {
