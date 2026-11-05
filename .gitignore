@@ -29,6 +29,9 @@ TestResults/
 ## Installers & Executables (Do not commit installer setup files)
 *.exe
 *.msi
+*.deb
+*.tar.gz
+*.zip
 dist/
 release/
 

@@ -1,8 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=DesktopNotes
-GenericName=Desktop Todo and Notes
-Comment=Lightweight desktop todo list and note manager
+Name=电子便签
+Name[en]=DesktopNotes
+GenericName=桌面便签与备忘录
+GenericName[en]=Desktop Todo and Notes
+Comment=轻量高效的跨平台桌面待办与便签软件
+Comment[en]=Lightweight desktop todo list and note manager
 Exec=/opt/desktopnotes/DesktopNotes.Desktop
 Icon=desktopnotes
 Terminal=false
