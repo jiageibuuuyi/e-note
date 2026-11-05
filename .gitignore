@@ -35,3 +35,10 @@ TestResults/
 dist/
 release/
 
+## Python / MCP artifacts
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+

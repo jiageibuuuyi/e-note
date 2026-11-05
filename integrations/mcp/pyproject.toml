@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "desktopnotes-mcp"
+version = "1.0.0"
+description = "DesktopNotes Model Context Protocol (MCP) Server for AI Coding Agents"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+desktopnotes-mcp = "desktopnotes_mcp:run_cli"

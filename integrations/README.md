@@ -1,132 +1,131 @@
-# 电子便签 (DesktopNotes) · AI Agent 跨平台接入插件套件
+# 电子便签 (DesktopNotes) · AI Agent 跨平台 MCP 插件
 
-> **支持环境**：Google Antigravity、OpenCode、OpenAI Codex / Copilot、DSH (DeepSeek Harness)  
-> **底层协议**：Model Context Protocol (MCP) 标准 JSON-RPC 2.0 + Agent Skill  
-> **数据源**：`%LOCALAPPDATA%\DesktopNotes\data\app.db`（SQLite WAL 事务安全 / 只读连接无冲突）
+面向多智能体与 AI 编程助手的开放接口扩展包，支持一键接入 **OpenCode**、**OpenAI Codex**、**DSH (DeepSeek Harness)**、**Google Antigravity** 以及各类标准 MCP 客户端（Cursor、Claude Code 等），实现从本地便签提取工作数据并自动化生成周报、月报、年报与项目复盘。
 
 ---
 
-## 🌟 整体架构与设计思路
+## 🌟 核心特性
 
-由于不同 AI 平台（Codex、DSH、OpenCode、Antigravity）的上层交互界面各异，但它们**全部统一兼容 Model Context Protocol (MCP) 行业标准协议**：
+- **跨 Agent 标准协议**：严格遵循 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 规范（JSON-RPC 2.0 stdio），不绑定任何单一厂商平台。
+- **便携与可移植性**：无任何硬编码绝对路径，支持 `${workspaceFolder}` 相对工作区变量或安装为全局命令 `desktopnotes-mcp`。
+- **零外部运行时依赖**：基于 Python 3.10+ 标准库构建（内置 `sqlite3`, `json`, `datetime`），免安装任何第三方重量级依赖。
+- **数据并发安全**：采用 `?mode=ro`（SQLite 只读事务 URI）读取 `%LOCALAPPDATA%\DesktopNotes\data\app.db`，与运行中的桌面客户端完全隔离，无锁冲突风险。
+- **多模驱动**：既可作为 MCP 协议后台服务为 AI Agent 提供感知能力，亦可作为 CLI 命令行工具在终端中一键直出 Markdown 报告。
 
+---
+
+## 📦 快速安装 (二选一)
+
+在代码仓库根目录打开终端：
+
+### 选项 A：注册为本地全局命令（推荐，配置最简洁）
+```bash
+pip install -e ./integrations/mcp
 ```
-                    ┌──────────────────────────────┐
-                    │ 电子便签 (DesktopNotes) SQLite │
-                    │   %LOCALAPPDATA%\...\app.db  │
-                    └──────────────┬───────────────┘
-                                   │ (只读安全连接 / 并发事务)
-                    ┌──────────────▼───────────────┐
-                    │  DesktopNotes MCP 服务引擎    │
-                    │  (integrations/mcp/...)      │
-                    └──────────────┬───────────────┘
-                                   │ (标准 JSON-RPC 2.0 stdio)
-        ┌──────────────────┬───────┴──────────┬──────────────────┐
-        ▼                  ▼                  ▼                  ▼
-┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-│ Antigravity   │  │   OpenCode    │  │ OpenAI Codex  │  │      DSH      │
-│ (Skill + MCP) │  │  (MCP Server) │  │  (MCP Client) │  │ (MCP Plugin)  │
-└───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
-        │                  │                  │                  │
-        └──────────────────┼──────────────────┴──────────────────┘
-                           ▼
-            【自动产出高品质 周报 / 月报 / 年报 / 待办复盘】
+> 安装后系统将拥有 `desktopnotes-mcp` 可执行命令，所有 Agent 配置文件中只需填一行 `"command": "desktopnotes-mcp"`，无需关心文件路径。
+
+### 选项 B：免安装直接运行脚本
+无需 pip 安装，直接通过 Python 解释器调用工作区中的相对路径脚本：
+```bash
+python ./integrations/mcp/desktopnotes_mcp.py
 ```
 
-1. **MCP 跨平台服务核心**：`integrations/mcp/desktopnotes_mcp.py`
-   - **零第三方依赖**：纯 Python 标准库编写（内置 `sqlite3`, `json`, `datetime`），免安装任何额外 pip 包，Windows 开箱即用。
-   - **双模运行**：既可作为 MCP stdio 后台服务驱动 AI Agent，又可作为独立 CLI 命令行直接打印或导出报告。
-   - **安全机制**：读取采用 `?mode=ro` 只读连接，即使电子便签桌面客户端正在高频读写，也绝对不会发生文件锁冲突或破坏数据库。
-2. **Antigravity 专属 Skill**：`integrations/antigravity/skills/desktopnotes-reporter/SKILL.md`
-   - 为 Antigravity 注入专属自然语言理解，输入“帮我根据本周便签生成周报”即可自动调用工具并完成职场/研发维度的价值提炼。
-
 ---
 
-## 🚀 各平台接入配置指南
+## 🔌 各 Agent 平台配置指南 (一视同仁)
 
-### 1. Google Antigravity 接入（已完成全局配置）
+各平台均采用标准 MCP 配置格式。你可以根据是否执行了 `pip install -e` 选择对应写法：
 
-Antigravity 原生支持 MCP 与 Skill 体系：
+### 1. OpenCode
 
-1. **MCP 服务器配置**（已写入全局 `~/.gemini/config/mcp_config.json`）：
-   ```json
-   {
-     "mcpServers": {
-       "desktopnotes": {
-         "command": "python",
-         "args": [
-           "d:/个人/GPT-Project/桌面笔记/integrations/mcp/desktopnotes_mcp.py"
-         ]
-       }
-     }
-   }
-   ```
-2. **专属 Skill**（已安装到全局 `~/.gemini/config/skills/desktopnotes-reporter/SKILL.md`）：
-   - 在 Antigravity 对话中直接说：
-     - *“帮我根据便签生成本周周报”*
-     - *“按 OKR 格式总结我上个月在便签里记录的产出”*
-     - *“梳理年度任务生成年报复盘”*
-
----
-
-### 2. OpenCode 接入
-
-在 OpenCode 的配置文件（项目根目录 `opencode.json` 或 `~/.config/opencode/opencode.json`）中添加 MCP 配置：
+在 OpenCode 配置文件中（`opencode.json` 或 `~/.config/opencode/opencode.json`）：
 
 ```json
 {
   "mcpServers": {
     "desktopnotes": {
-      "command": "python",
-      "args": [
-        "d:/个人/GPT-Project/桌面笔记/integrations/mcp/desktopnotes_mcp.py"
-      ]
+      "command": "desktopnotes-mcp"
     }
   }
 }
 ```
+*(若未 pip 安装，则改用 `"command": "python", "args": ["${workspaceFolder}/integrations/mcp/desktopnotes_mcp.py"]`)*
 
-**使用方式**：
-在 OpenCode 对话框中键入：
-> `@desktopnotes 请读取本周完成的所有任务和进行中待办，为我生成一份研发交付周报。`
+**常用提示词**：
+> `@desktopnotes 读取本周已完成的任务与进行中待办，帮我输出一份研发交付周报。`
 
 ---
 
-### 3. OpenAI Codex / Copilot CLI / Claude Desktop / Cursor
+### 2. OpenAI Codex / GitHub Copilot
 
-在对应的 MCP 客户端配置文件中（例如 Cursor `~/.cursor/mcp.json` 或 Claude Desktop `claude_desktop_config.json`）：
+在 Codex / Copilot 的 MCP 配置文件中：
 
 ```json
 {
   "mcpServers": {
     "desktopnotes": {
-      "command": "python",
-      "args": [
-        "d:/个人/GPT-Project/桌面笔记/integrations/mcp/desktopnotes_mcp.py"
-      ]
+      "command": "desktopnotes-mcp"
     }
   }
 }
 ```
+*(若未 pip 安装，则改用 `"command": "python", "args": ["./integrations/mcp/desktopnotes_mcp.py"]`)*
 
-**使用方式**：
-> `使用 desktopnotes 插件工具，帮我统计 11 月份的任务结项情况并输出月度总结。`
+**常用提示词**：
+> `调用 desktopnotes 工具，汇总本月便签中关闭的需求和缺陷，按模块分类生成月报。`
 
 ---
 
-### 4. DSH (DeepSeek Harness) 接入
+### 3. DSH (DeepSeek Harness)
 
-在 DSH 的插件/扩展配置文件（如 `dsh.config.json` 或 `plugins.json`）中接入 MCP 服务：
+在 DSH 的插件/扩展配置文件（如 `dsh.config.json`）中添加 MCP 配置：
 
 ```json
 {
   "plugins": {
     "desktopnotes": {
       "type": "mcp",
-      "command": "python",
-      "args": [
-        "d:/个人/GPT-Project/桌面笔记/integrations/mcp/desktopnotes_mcp.py"
-      ]
+      "command": "desktopnotes-mcp"
+    }
+  }
+}
+```
+*(若未 pip 安装，则改用 `"command": "python", "args": ["${workspaceFolder}/integrations/mcp/desktopnotes_mcp.py"]`)*
+
+**常用提示词**：
+> `利用 desktopnotes 插件梳理 2026 年度的全部便签事项，生成一份技术攻坚年度总结。`
+
+---
+
+### 4. Google Antigravity
+
+在 Antigravity 配置文件（`~/.gemini/config/mcp_config.json`）中添加：
+
+```json
+{
+  "mcpServers": {
+    "desktopnotes": {
+      "command": "desktopnotes-mcp"
+    }
+  }
+}
+```
+*(同时支持将 `./integrations/antigravity/skills/desktopnotes-reporter/` 放置于 skills 目录作为辅助自然语言触发技能)*
+
+**常用提示词**：
+> `帮我根据本周便签生成周报，汇报人填【姓名】。`
+
+---
+
+### 5. 其他 MCP 客户端 (Cursor / Claude Code / Windsurf)
+
+在对应客户端的 `mcp.json`（如 `.cursor/mcp.json` 或 `claude_desktop_config.json`）中：
+
+```json
+{
+  "mcpServers": {
+    "desktopnotes": {
+      "command": "desktopnotes-mcp"
     }
   }
 }
@@ -134,35 +133,38 @@ Antigravity 原生支持 MCP 与 Skill 体系：
 
 ---
 
-## 🛠️ 暴露给 AI 的核心 MCP 工具清单
+## 🛠️ MCP 核心工具能力一览
 
-| 工具名称 | 作用说明 | 关键参数 |
+连接成功后，Agent 会自动获得以下 5 个原子工具：
+
+| 工具名称 | 功能描述 | 核心输入参数 |
 | :--- | :--- | :--- |
-| `desktopnotes_get_summary` | 获取便签总体指标（总任务数、已完成、进行中、优先级分布等） | `period` (`this_week`, `this_month`, `this_year`, `custom`) |
-| `desktopnotes_list_tasks` | 检索任务清单（支持父子多级树形、状态、优先级过滤） | `status`, `priority`, `search_keyword`, `include_tree` |
-| `desktopnotes_get_report_data` | 专门为周报/月报/年报准备的结构化上下文数据 | `report_type` (`weekly`, `monthly`, `yearly`) |
-| `desktopnotes_generate_report` | 直接根据便签数据生成排版好的 Markdown 报告草稿 | `report_type`, `template` (`standard`, `okr`, `engineering`, `executive`) |
-| `desktopnotes_create_record` | 允许 AI 将生成好的周报或下周规划反向存入电子便签 | `title`, `body`, `kind` (`task`/`note`), `priority` |
+| `desktopnotes_get_summary` | 获取便签总体指标（总数、完成数、进行中、优先级分布） | `period`: `today`/`this_week`/`last_week`/`this_month`/`this_year`/`custom` |
+| `desktopnotes_list_tasks` | 检索任务清单（支持父子多级树形还原、状态、优先级过滤） | `status` (`all`/`active`/`completed`), `priority`, `search_keyword` |
+| `desktopnotes_get_report_data` | 专门为写汇报准备的结构化上下文数据（按主线/项目智能聚合） | `report_type`: `weekly`/`monthly`/`yearly` |
+| `desktopnotes_generate_report` | 直接产出排版精美的 Markdown 报告草稿 | `report_type`, `template`: `standard`/`okr`/`engineering`/`executive`, `author` |
+| `desktopnotes_create_record` | 允许 Agent 将生成的报告或下周期计划反向写入便签归档 | `title`, `body`, `kind` (`task`/`note`), `priority` |
 
 ---
 
-## 💻 本地无 Agent 时的直接命令行用法 (CLI)
+## 💻 独立命令行模式 (CLI)
 
-即使不启动任何 AI 工具，你也可以直接在 Windows Terminal / PowerShell 中运行此脚本生成汇报：
+不依赖任何 Agent，亦可直接在终端中运行：
 
-```powershell
-# 1. 快速查看本周效能指标看板
-python integrations/mcp/desktopnotes_mcp.py --summary
+```bash
+# 查看统计概览
+desktopnotes-mcp --summary
 
-# 2. 生成本周周报并打印到终端
-python integrations/mcp/desktopnotes_mcp.py --report weekly
+# 终端输出本周周报
+desktopnotes-mcp --report weekly
 
-# 3. 生成本月月报并以 OKR 格式保存到文件
-python integrations/mcp/desktopnotes_mcp.py --report monthly --template okr --output 11月工作月报.md
+# 导出月报为 Markdown 文件 (OKR 风格)
+desktopnotes-mcp --report monthly --template okr --output 11月月报.md
 
-# 4. 生成年度工作复盘总结
-python integrations/mcp/desktopnotes_mcp.py --report yearly --template engineering --output 2026年度总结.md
+# 导出年度总结复盘 (技术研发工程风格)
+desktopnotes-mcp --report yearly --template engineering --output 2026年终总结.md
 
-# 5. 查询当前所有进行中的待办任务
-python integrations/mcp/desktopnotes_mcp.py --list-tasks --status active
+# 列出当前进行中的待办任务
+desktopnotes-mcp --list-tasks --status active
 ```
+*(若未执行 pip 安装，将命令前缀替换为 `python ./integrations/mcp/desktopnotes_mcp.py` 即可)*
