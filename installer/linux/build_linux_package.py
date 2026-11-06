@@ -31,19 +31,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${SCRIPT_DIR}"
 
 if [ "$(id -u)" -eq 0 ]; then
-    INSTALL_PREFIX="/opt/e-node"
+    INSTALL_PREFIX="/opt/e-note"
     BIN_DIR="/usr/bin"
     APP_DESKTOP_DIR="/usr/share/applications"
     ICON_DIR="/usr/share/icons/hicolor/256x256/apps"
 else
-    INSTALL_PREFIX="${HOME}/.local/share/e-node"
+    INSTALL_PREFIX="${HOME}/.local/share/e-note"
     BIN_DIR="${HOME}/.local/bin"
     APP_DESKTOP_DIR="${HOME}/.local/share/applications"
     ICON_DIR="${HOME}/.local/share/icons/hicolor/256x256/apps"
 fi
 
 echo "=========================================="
-echo " Installing e-node (Desktop Notes)"
+echo " Installing e-note (Desktop Notes)"
 echo " Target directory: ${INSTALL_PREFIX}"
 echo " Binary directory: ${BIN_DIR}"
 echo "=========================================="
@@ -58,32 +58,32 @@ cp -r "${APP_DIR}/bin/"* "${INSTALL_PREFIX}/"
 chmod 755 "${INSTALL_PREFIX}/DesktopNotes.Desktop"
 
 echo "Installing launcher & desktop icon..."
-cp "${APP_DIR}/e-node.png" "${ICON_DIR}/e-node.png"
+cp "${APP_DIR}/e-note.png" "${ICON_DIR}/e-note.png"
 
 # Create standard desktop file
-cat <<EOF > "${APP_DESKTOP_DIR}/e-node.desktop"
+cat <<EOF > "${APP_DESKTOP_DIR}/e-note.desktop"
 [Desktop Entry]
 Type=Application
-Name=e-node
+Name=e-note
 GenericName=Desktop Todo and Notes
 Comment=Lightweight desktop todo list and note manager
 Exec=${INSTALL_PREFIX}/DesktopNotes.Desktop
-Icon=e-node
+Icon=e-note
 Terminal=false
 Categories=Utility;Office;
 StartupNotify=false
 EOF
-chmod 644 "${APP_DESKTOP_DIR}/e-node.desktop"
+chmod 644 "${APP_DESKTOP_DIR}/e-note.desktop"
 
 # Create command runner scripts
-cat <<EOF > "${BIN_DIR}/e-node"
+cat <<EOF > "${BIN_DIR}/e-note"
 #!/bin/sh
 exec "${INSTALL_PREFIX}/DesktopNotes.Desktop" "\\$@"
 EOF
-chmod 755 "${BIN_DIR}/e-node"
+chmod 755 "${BIN_DIR}/e-note"
 
 # Symlink alias desktopnotes for backwards compatibility
-ln -sf "${BIN_DIR}/e-node" "${BIN_DIR}/desktopnotes" 2>/dev/null || true
+ln -sf "${BIN_DIR}/e-note" "${BIN_DIR}/desktopnotes" 2>/dev/null || true
 
 # Refresh desktop database & icon cache
 if command -v update-desktop-database >/dev/null 2>&1; then
@@ -95,8 +95,8 @@ fi
 
 echo "=========================================="
 echo " Installation complete!"
-echo " You can launch 'e-node' from your application menu,"
-echo " or run 'e-node' from the terminal."
+echo " You can launch 'e-note' from your application menu,"
+echo " or run 'e-note' from the terminal."
 echo "=========================================="
 """.encode("utf-8")
 
@@ -104,20 +104,20 @@ echo "=========================================="
 set -e
 
 if [ "$(id -u)" -eq 0 ]; then
-    INSTALL_PREFIX="/opt/e-node"
-    BIN_LINK="/usr/bin/e-node"
+    INSTALL_PREFIX="/opt/e-note"
+    BIN_LINK="/usr/bin/e-note"
     BIN_ALIAS="/usr/bin/desktopnotes"
-    DESKTOP_FILE="/usr/share/applications/e-node.desktop"
-    ICON_FILE="/usr/share/icons/hicolor/256x256/apps/e-node.png"
+    DESKTOP_FILE="/usr/share/applications/e-note.desktop"
+    ICON_FILE="/usr/share/icons/hicolor/256x256/apps/e-note.png"
 else
-    INSTALL_PREFIX="${HOME}/.local/share/e-node"
-    BIN_LINK="${HOME}/.local/bin/e-node"
+    INSTALL_PREFIX="${HOME}/.local/share/e-note"
+    BIN_LINK="${HOME}/.local/bin/e-note"
     BIN_ALIAS="${HOME}/.local/bin/desktopnotes"
-    DESKTOP_FILE="${HOME}/.local/share/applications/e-node.desktop"
-    ICON_FILE="${HOME}/.local/share/icons/hicolor/256x256/apps/e-node.png"
+    DESKTOP_FILE="${HOME}/.local/share/applications/e-note.desktop"
+    ICON_FILE="${HOME}/.local/share/icons/hicolor/256x256/apps/e-note.png"
 fi
 
-echo "Uninstalling e-node..."
+echo "Uninstalling e-note..."
 rm -rf "${INSTALL_PREFIX}"
 rm -f "${BIN_LINK}"
 rm -f "${BIN_ALIAS}"
@@ -131,7 +131,7 @@ fi
 echo "Uninstallation complete!"
 """.encode("utf-8")
 
-    readme_content = """e-node (Desktop Notes) Linux Release
+    readme_content = """e-note (Desktop Notes) Linux Release
 ======================================================
 Requirements: 64-bit Linux distribution (Ubuntu, Debian, Fedora, Arch Linux, openSUSE, etc.)
 
@@ -147,7 +147,7 @@ Uninstallation:
 ======================================================
 """.encode("utf-8")
 
-    prefix = "e-node-v1.0-linux-x64"
+    prefix = "e-note-v1.0-linux-x64"
 
     with tarfile.open(output_tar, "w:gz") as tar:
         ti = tarfile.TarInfo(name=prefix)
@@ -180,7 +180,7 @@ Uninstallation:
 
         with open(desktop_file, "rb") as f:
             dbytes = f.read()
-        ti = tarfile.TarInfo(name=f"{prefix}/e-node.desktop")
+        ti = tarfile.TarInfo(name=f"{prefix}/e-note.desktop")
         ti.size = len(dbytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -189,7 +189,7 @@ Uninstallation:
 
         with open(icon_file, "rb") as f:
             ibytes = f.read()
-        ti = tarfile.TarInfo(name=f"{prefix}/e-node.png")
+        ti = tarfile.TarInfo(name=f"{prefix}/e-note.png")
         ti.size = len(ibytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -245,26 +245,26 @@ def build_deb_package(repo_root: Path, publish_dir: Path, output_deb: Path):
     total_size = sum(f.stat().st_size for f in publish_dir.rglob("*") if f.is_file())
     installed_size_kb = int(total_size / 1024)
 
-    control_content = f"""Package: e-node
+    control_content = f"""Package: e-note
 Version: 1.0.0
 Architecture: amd64
-Maintainer: e-node Team <support@desktopnotes.app>
+Maintainer: e-note Team <support@desktopnotes.app>
 Installed-Size: {installed_size_kb}
 Depends: libc6 (>= 2.27), libgcc-s1 | libgcc1
-Provides: desktopnotes, e-note
+Provides: desktopnotes
 Section: utils
 Priority: optional
 Homepage: https://github.com/desktopnotes/desktopnotes
-Description: e-node - Lightweight desktop todo and note manager
+Description: e-note - Lightweight desktop todo and note manager
  A lightweight, cross-platform desktop sticky note and task management application supporting pinning, subtasks, progress tracking, and recycle bin.
 """.encode("utf-8")
 
     postinst_content = b"""#!/bin/sh
 set -e
 
-chmod 755 /opt/e-node/DesktopNotes.Desktop || true
-chmod 755 /usr/bin/e-node || true
-ln -sf /usr/bin/e-node /usr/bin/desktopnotes 2>/dev/null || true
+chmod 755 /opt/e-note/DesktopNotes.Desktop || true
+chmod 755 /usr/bin/e-note || true
+ln -sf /usr/bin/e-note /usr/bin/desktopnotes 2>/dev/null || true
 
 if [ -x /usr/bin/update-desktop-database ]; then
     /usr/bin/update-desktop-database -q /usr/share/applications || true
@@ -279,9 +279,9 @@ exit 0
 set -e
 
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
-    rm -f /usr/bin/e-node
+    rm -f /usr/bin/e-note
     rm -f /usr/bin/desktopnotes
-    rm -rf /opt/e-node
+    rm -rf /opt/e-note
     if [ -x /usr/bin/update-desktop-database ]; then
         /usr/bin/update-desktop-database -q /usr/share/applications || true
     fi
@@ -321,7 +321,7 @@ exit 0
     with tarfile.open(fileobj=data_buf, mode="w:gz") as tar:
         for dname in [
             "./opt",
-            "./opt/e-node",
+            "./opt/e-note",
             "./usr",
             "./usr/bin",
             "./usr/share",
@@ -339,9 +339,9 @@ exit 0
             tar.addfile(ti)
 
         launcher_content = b"""#!/bin/sh
-exec /opt/e-node/DesktopNotes.Desktop "$@"
+exec /opt/e-note/DesktopNotes.Desktop "$@"
 """
-        ti = tarfile.TarInfo(name="./usr/bin/e-node")
+        ti = tarfile.TarInfo(name="./usr/bin/e-note")
         ti.size = len(launcher_content)
         ti.mode = 0o755
         ti.uname = "root"
@@ -350,7 +350,7 @@ exec /opt/e-node/DesktopNotes.Desktop "$@"
 
         with open(desktop_file, "rb") as f:
             dbytes = f.read()
-        ti = tarfile.TarInfo(name="./usr/share/applications/e-node.desktop")
+        ti = tarfile.TarInfo(name="./usr/share/applications/e-note.desktop")
         ti.size = len(dbytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -359,7 +359,7 @@ exec /opt/e-node/DesktopNotes.Desktop "$@"
 
         with open(icon_file, "rb") as f:
             ibytes = f.read()
-        ti = tarfile.TarInfo(name="./usr/share/icons/hicolor/256x256/apps/e-node.png")
+        ti = tarfile.TarInfo(name="./usr/share/icons/hicolor/256x256/apps/e-note.png")
         ti.size = len(ibytes)
         ti.mode = 0o644
         ti.uname = "root"
@@ -369,7 +369,7 @@ exec /opt/e-node/DesktopNotes.Desktop "$@"
         for root, dirs, files in os.walk(publish_dir):
             rel_root = Path(root).relative_to(publish_dir)
             for d in dirs:
-                dir_arc = f"./opt/e-node/{rel_root / d}".replace("\\", "/")
+                dir_arc = f"./opt/e-note/{rel_root / d}".replace("\\", "/")
                 ti = tarfile.TarInfo(name=dir_arc)
                 ti.type = tarfile.DIRTYPE
                 ti.mode = 0o755
@@ -380,7 +380,7 @@ exec /opt/e-node/DesktopNotes.Desktop "$@"
             for f in files:
                 file_path = Path(root) / f
                 sub_file = rel_root / f if str(rel_root) != "." else Path(f)
-                file_arc = f"./opt/e-node/{sub_file}".replace("\\", "/")
+                file_arc = f"./opt/e-note/{sub_file}".replace("\\", "/")
                 is_exec = (f == "DesktopNotes.Desktop" or f == "createdump" or f.endswith(".so"))
                 
                 with open(file_path, "rb") as fp:
@@ -425,5 +425,5 @@ if __name__ == "__main__":
         print(f"Error: {pub_linux} does not exist.")
         sys.exit(1)
 
-    build_portable_tarball(repo, pub_linux, repo / "e-node-v1.0-linux-x64.tar.gz")
-    build_deb_package(repo, pub_linux, repo / "e-node_1.0.0_amd64.deb")
+    build_portable_tarball(repo, pub_linux, repo / "e-note-v1.0-linux-x64.tar.gz")
+    build_deb_package(repo, pub_linux, repo / "e-note_1.0.0_amd64.deb")

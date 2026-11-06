@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/images/app-icon.png" alt="e-node 应用图标" width="128" height="128" />
+<img src="docs/images/app-icon.png" alt="e-note 应用图标" width="128" height="128" />
 
-# e-node · 电子便签
+# e-note · 电子便签
 
 **桌面上的温暖与秩序 · 跨平台高质感桌面便签、待办管理与 AI Agent 工作台**
 
@@ -24,7 +24,7 @@
 
 ## 📖 项目简介
 
-**e-node (电子便签)** 是一款面向个人创作者、工程师与知识工作者打造的**极轻、治愈、高质感**跨平台桌面便签与待办事项助手。
+**e-note (电子便签)** 是一款面向个人创作者、工程师与知识工作者打造的**极轻、治愈、高质感**跨平台桌面便签与待办事项助手。
 
 它打破了传统待办软件生硬冰冷的表格与表单感，创新性地将**写实便签纸张美学**与**现代高效待办系统**深度融合：
 - 既有泛着微光的暖黄色曲面纸张、立体红色图钉与生机绿植嫩苗 🌱；
@@ -130,16 +130,16 @@
 
 ### 8. 🤖 AI Agent 智能生态接入（MCP）
 
-`e-node` 原生附带 **Model Context Protocol (MCP)** 标准服务端（`integrations/mcp`），这是连接个人桌面与 AI 时代的桥梁：
+`e-note` 原生附带 **Model Context Protocol (MCP)** 标准服务端（`integrations/mcp`），这是连接个人桌面与 AI 时代的桥梁：
 
 ```
                     ┌──────────────────────────────┐
-                    │     e-node (电子便签) 本地库  │
+                    │     e-note (电子便签) 本地库  │
                     │   %LOCALAPPDATA%\...\app.db  │
                     └──────────────┬───────────────┘
                                    │ (只读安全连接 / 并发事务)
                     ┌──────────────▼───────────────┐
-                    │      e-node MCP 服务核心     │
+                    │      e-note MCP 服务核心     │
                     │   (integrations/mcp/...)     │
                     └──────────────┬───────────────┘
                                    │ (标准 JSON-RPC 2.0 stdio)
@@ -166,36 +166,36 @@
 
 | 操作系统 | 安装包文件 | 文件大小 | 适用架构与环境 |
 | :--- | :--- | :--- | :--- |
-| **Windows** | [**e-node-v1.0-Setup.exe**](./e-node-v1.0-Setup.exe) | **37.60 MB** | Windows 10 / 11 (x64)，极速向导安装，生成桌面图标与开始菜单项 |
-| **macOS (Apple Silicon)** | [**e-node-v1.0-macOS-arm64.zip**](./e-node-v1.0-macOS-arm64.zip) | **48.66 MB** | 适配 M1 / M2 / M3 / M4 / M5 芯片 Mac，内含 `e-node.app` |
-| **macOS (Intel)** | [**e-node-v1.0-macOS-x64.zip**](./e-node-v1.0-macOS-x64.zip) | **50.97 MB** | 适配 Intel 架构 64 位 Mac，内含 `e-node.app` |
-| **Linux (Debian/Ubuntu)** | [**e-node_1.0.0_amd64.deb**](./e-node_1.0.0_amd64.deb) | **46.85 MB** | 适配 Ubuntu、Debian、Linux Mint 等，支持双击安装或 `dpkg -i` |
-| **Linux (通用发行版)** | [**e-node-v1.0-linux-x64.tar.gz**](./e-node-v1.0-linux-x64.tar.gz) | **46.85 MB** | 适配 Arch、Fedora、openSUSE，内置一键安装脚本与免安装绿色运行 |
+| **Windows** | [**e-note-v1.0-Setup.exe**](./e-note-v1.0-Setup.exe) | **37.60 MB** | Windows 10 / 11 (x64)，极速向导安装，生成桌面图标与开始菜单项 |
+| **macOS (Apple Silicon)** | [**e-note-v1.0-macOS-arm64.zip**](./e-note-v1.0-macOS-arm64.zip) | **48.66 MB** | 适配 M1 / M2 / M3 / M4 / M5 芯片 Mac，内含 `e-note.app` |
+| **macOS (Intel)** | [**e-note-v1.0-macOS-x64.zip**](./e-note-v1.0-macOS-x64.zip) | **50.97 MB** | 适配 Intel 架构 64 位 Mac，内含 `e-note.app` |
+| **Linux (Debian/Ubuntu)** | [**e-note_1.0.0_amd64.deb**](./e-note_1.0.0_amd64.deb) | **46.85 MB** | 适配 Ubuntu、Debian、Linux Mint 等，支持双击安装或 `dpkg -i` |
+| **Linux (通用发行版)** | [**e-note-v1.0-linux-x64.tar.gz**](./e-note-v1.0-linux-x64.tar.gz) | **46.85 MB** | 适配 Arch、Fedora、openSUSE，内置一键安装脚本与免安装绿色运行 |
 
 ### 各平台快速上手指南
 
 #### 🪟 Windows 系统
-1. 下载 `e-node-v1.0-Setup.exe` 双击运行；
-2. 安装路径默认配置为标准英文路径 `{autopf}\e-node`；
-3. 安装完成后即可从桌面或开始菜单的「**e-node**」直接启动。
+1. 下载 `e-note-v1.0-Setup.exe` 双击运行；
+2. 安装路径默认配置为标准英文路径 `{autopf}\e-note`；
+3. 安装完成后即可从桌面或开始菜单的「**e-note**」直接启动。
 
 #### 🍎 macOS 系统
-1. 下载并双击解压对应的 `.zip` 压缩包，得到 `e-node.app`；
-2. 将 `e-node.app` 拖入 `/Applications`（应用程序）文件夹；
+1. 下载并双击解压对应的 `.zip` 压缩包，得到 `e-note.app`；
+2. 将 `e-note.app` 拖入 `/Applications`（应用程序）文件夹；
 3. 若打开时提示“无法验证开发者”，在终端运行命令移除隔离属性即可：
    ```bash
-   xattr -dr com.apple.quarantine /Applications/e-node.app
+   xattr -dr com.apple.quarantine /Applications/e-note.app
    ```
 
 #### 🐧 Linux 系统
 - **Debian / Ubuntu 系列**：
   ```bash
-  sudo dpkg -i e-node_1.0.0_amd64.deb
+  sudo dpkg -i e-note_1.0.0_amd64.deb
   ```
 - **通用 Tar.gz 绿色 / 便携版**：
   ```bash
-  tar -zxvf e-node-v1.0-linux-x64.tar.gz
-  cd e-node-v1.0-linux-x64
+  tar -zxvf e-note-v1.0-linux-x64.tar.gz
+  cd e-note-v1.0-linux-x64
   # 方式 1：免安装直接启动
   ./bin/DesktopNotes.Desktop
   # 方式 2：一键注册为系统应用

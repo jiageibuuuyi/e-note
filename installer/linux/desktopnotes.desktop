@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=e-node
+Name=e-note
 GenericName=Desktop Todo and Notes
 Comment=Lightweight desktop todo list and note manager
-Exec=/opt/e-node/DesktopNotes.Desktop
-Icon=e-node
+Exec=/opt/e-note/DesktopNotes.Desktop
+Icon=e-note
 Terminal=false
 Categories=Utility;Office;
 StartupNotify=false

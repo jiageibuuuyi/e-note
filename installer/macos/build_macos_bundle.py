@@ -12,9 +12,9 @@ def create_macos_bundle(rid: str, app_version: str = "1.0.0"):
     plist_path = repo_root / "installer" / "macos" / "Info.plist"
     icns_path = repo_root / "installer" / "macos" / "app-icon.icns"
     
-    app_name = "e-node.app"
+    app_name = "e-note.app"
     arch_label = "arm64" if "arm64" in rid else "x64"
-    zip_name = f"e-node-v1.0-macOS-{arch_label}.zip"
+    zip_name = f"e-note-v1.0-macOS-{arch_label}.zip"
     zip_path = repo_root / zip_name
     
     if zip_path.exists():
