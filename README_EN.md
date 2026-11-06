@@ -14,7 +14,7 @@
 [![Storage](https://img.shields.io/badge/Storage-SQLite%203%20(Local%20Only)-003B57?logo=sqlite&logoColor=white)](#)
 [![AI Integration](https://img.shields.io/badge/AI%20Ecosystem-MCP%20Server%20%2B%20Agent%20Skill-FF6F00?logo=anthropic&logoColor=white)](#-ai-agent-integration-mcp)
 [![Release](https://img.shields.io/badge/Release-v1.0-F59E0B)](#-cross-platform-downloads--installation)
-[![License](https://img.shields.io/badge/License-GPL%20v3%20%2F%20Non--Commercial-blue.svg)](#-license)
+[![License](https://img.shields.io/badge/License-GPL%20v3%20%2F%20Commercial-blue.svg)](LICENSE)
 
 <br/>
 
@@ -277,4 +277,4 @@ dotnet publish src/DesktopNotes.Desktop -c Release -r linux-x64 --self-contained
 
 ## 📄 License
 
-This project is released under the **GNU General Public License v3.0 (GPLv3)** / **Non-Commercial License**. Free for personal learning and open-source contributions. Unauthorized commercial repackaging, proprietary re-licensing, or paid distribution without explicit written permission from the author is strictly prohibited. For commercial licensing, please contact the author.
+This project is licensed under a **Dual-Licensing Model (GNU GPL v3.0 / Commercial License)**. Free for personal learning, academic research, and open-source contributions under the copyleft terms of GNU GPLv3. Unauthorized commercial repackaging, proprietary closed-source integration, or paid distribution without explicit written permission from the author is strictly prohibited. For commercial licensing inquiries, please contact the author. See [LICENSE](LICENSE) for details.

@@ -5,9 +5,12 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\Icons\app-icon.ico</ApplicationIcon>
-    <AssemblyTitle>电子便签</AssemblyTitle>
-    <Product>电子便签</Product>
-    <Description>优雅治愈的桌面电子便签与待办事项软件</Description>
+    <AssemblyTitle>e-note</AssemblyTitle>
+    <Product>e-note</Product>
+    <Authors>e-note Authors</Authors>
+    <Company>e-note</Company>
+    <Copyright>Copyright (C) 2026 e-note Authors. All rights reserved.</Copyright>
+    <Description>Cross-platform aesthetic desktop sticky notes and todo management workspace.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

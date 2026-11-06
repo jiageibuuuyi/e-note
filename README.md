@@ -14,7 +14,7 @@
 [![Storage](https://img.shields.io/badge/Storage-SQLite%203%20(Local%20Only)-003B57?logo=sqlite&logoColor=white)](#)
 [![AI Integration](https://img.shields.io/badge/AI%20Ecosystem-MCP%20Server%20%2B%20Agent%20Skill-FF6F00?logo=anthropic&logoColor=white)](#-ai-agent-智能生态接入mcp)
 [![Release](https://img.shields.io/badge/Release-v1.0-F59E0B)](#-全平台下载与安装)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPL%20v3%20%2F%20Commercial-blue.svg)](LICENSE)
 
 <br/>
 
@@ -277,4 +277,4 @@ dotnet publish src/DesktopNotes.Desktop -c Release -r linux-x64 --self-contained
 
 ## 📄 开源许可证
 
-本项目基于 [MIT License](LICENSE) 协议完全开源，无论是个人免费使用还是开源社区二次开发，均受法律保护且享有充分自由。
+本项目基于 **GNU GPL v3.0 / 双重许可 (Dual-Licensing)** 协议发布。面向个人学习、学术研究与开源社区使用完全自由且免费；未经原作者书面授权，严禁任何闭源商业化使用、打包上架应用商店转售或专有衍生分发。商业授权与企业合作请联系原作者。详见 [LICENSE](LICENSE)。
