@@ -113,7 +113,7 @@
             <Panel>
               <!-- 1. MONTH CALENDAR GRID VIEW (Default) -->
               <ScrollViewer IsVisible="{Binding IsMonthGridView}">
-                <StackPanel Spacing="10">
+                <StackPanel Spacing="10" HorizontalAlignment="Center" Width="616" MaxWidth="616">
                   <!-- Weekday Bar (7 Columns: Mon to Sun) -->
                   <Border Background="{DynamicResource BgSubtle}"
                           CornerRadius="6"
@@ -139,6 +139,8 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:CalendarDayCellViewModel">
                         <Button Classes="cal-cell-btn"
+                                Width="80" Height="72"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Classes.other-month="{Binding !IsCurrentMonth}"
                                 Classes.today="{Binding IsToday}"
                                 Classes.selected="{Binding IsSelected}"
