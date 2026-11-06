@@ -5,5 +5,12 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <Deterministic>true</Deterministic>
     <UseSharedCompilation>false</UseSharedCompilation>
+
+    <!-- Legal & Intellectual Property Metadata (Embedded into all compiled binaries) -->
+    <Product>e-note</Product>
+    <Authors>e-note Authors</Authors>
+    <Company>e-note</Company>
+    <Copyright>Copyright (C) 2026 e-note Authors. All rights reserved.</Copyright>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 </Project>

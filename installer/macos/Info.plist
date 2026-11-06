@@ -24,5 +24,7 @@
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (C) 2026 e-note Authors. All rights reserved.</string>
 </dict>
 </plist>

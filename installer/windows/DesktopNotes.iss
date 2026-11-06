@@ -5,7 +5,8 @@
 #define MyAppName "e-note"
 #define MyAppEnglishName "e-note"
 #define MyAppVersion "v1.0"
-#define MyAppPublisher "e-note"
+#define MyAppPublisher "e-note Authors"
+#define MyAppCopyright "Copyright (C) 2026 e-note Authors"
 #define MyAppExeName "DesktopNotes.Desktop.exe"
 #define MyAppId "{9F47E810-3C1A-4D25-9B82-6E40A11D29C0}"
 #define MyAppUserModelId "DesktopNotes.StickyNotes.V1"
@@ -17,6 +18,8 @@ AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+AppCopyright={#MyAppCopyright}
+LicenseFile=..\..\LICENSE
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 PrivilegesRequired=lowest
@@ -40,6 +43,7 @@ Name: "desktopicon"; Description: "创建桌面快捷方式(&D)"; GroupDescripti
 Name: "launchatlogin"; Description: "开机自动启动 e-note (随 Windows 登录启动)(&L)"; GroupDescription: "附加选项:"; Flags: checkedonce
 
 [Files]
+Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\publish\win-x64\*"; DestDir: "{app}"; Excludes: "*.pdb,*.xml,*Tests*,*.dbg"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}"; DestName: "app-icon.ico"; Flags: ignoreversion
 Source: "..\..\src\DesktopNotes.Desktop\Assets\Icons\app-icon.ico"; DestDir: "{app}\Assets\Icons"; Flags: ignoreversion
