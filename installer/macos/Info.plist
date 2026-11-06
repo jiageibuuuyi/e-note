@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>e-note</string>
+    <string>e-node</string>
     <key>CFBundleDisplayName</key>
-    <string>e-note</string>
+    <string>e-node</string>
     <key>CFBundleIdentifier</key>
-    <string>com.desktopnotes.enote</string>
+    <string>com.desktopnotes.enode</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.0</string>
     <key>CFBundleExecutable</key>
     <string>DesktopNotes.Desktop</string>
     <key>CFBundleIconFile</key>

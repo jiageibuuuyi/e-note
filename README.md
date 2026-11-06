@@ -1,18 +1,18 @@
 <div align="center">
 
-<img src="docs/images/app-icon.png" alt="电子便签图标" width="128" height="128" />
+<img src="docs/images/app-icon.png" alt="e-node 应用图标" width="128" height="128" />
 
-# 电子便签 · Sticky Notes
+# e-node · 电子便签
 
-**桌面上的温暖与秩序 · 优雅治愈的拟真便利贴与待办事项助手**
+**桌面上的温暖与秩序 · 跨平台高质感桌面便签、待办管理与 AI Agent 工作台**
 
-[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20(x64)-0078D6?logo=windows&logoColor=white)](#)
-[![Framework](https://img.shields.io/badge/.NET-10.0%20Self--Contained-512BD4?logo=dotnet&logoColor=white)](#)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?logo=windows&logoColor=white)](#-全平台下载与安装)
+[![Framework](https://img.shields.io/badge/.NET-10.0%20Self--Contained-512BD4?logo=dotnet&logoColor=white)](#-技术架构与源码构建)
 [![UI Engine](https://img.shields.io/badge/UI-Avalonia%2012.1.4-8B5CF6)](#)
 [![Storage](https://img.shields.io/badge/Storage-SQLite%203%20(Local%20Only)-003B57?logo=sqlite&logoColor=white)](#)
-[![Tests](https://img.shields.io/badge/Tests-66%20Passed%20(100%25)-10B981)](#)
-[![Release](https://img.shields.io/badge/Release-v1.0-F59E0B)](#)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](#)
+[![AI Integration](https://img.shields.io/badge/AI%20Ecosystem-MCP%20Server%20%2B%20Agent%20Skill-FF6F00?logo=anthropic&logoColor=white)](#-ai-agent-智能生态接入mcp)
+[![Release](https://img.shields.io/badge/Release-v1.0-F59E0B)](#-全平台下载与安装)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 <br/>
 
@@ -24,23 +24,26 @@
 
 ## 📖 项目简介
 
-**电子便签（Sticky Notes）** 是一款专为 Windows 桌面打造的**轻量、治愈、高质感**电子便签与待办事项管理软件。
+**e-node (电子便签)** 是一款面向个人创作者、工程师与知识工作者打造的**极轻、治愈、高质感**跨平台桌面便签与待办事项助手。
 
-它打破了传统待办软件刻板生硬的表格感，创新性地将**写实便签纸张美学**与**现代高效待办系统**深度融合：
-既有泛着微光的暖黄色曲面纸张、立体红色图钉与生机绿植嫩苗，又有清晰的多级子任务树、月历全景追踪、误操作历史撤销与 100% 离线本地数据存储。不论是日常工作清单、头脑风暴备忘，还是长期目标拆解，电子便签都能成为你桌面上最舒心、最得力的高效伙伴。
+它打破了传统待办软件生硬冰冷的表格与表单感，创新性地将**写实便签纸张美学**与**现代高效待办系统**深度融合：
+- 既有泛着微光的暖黄色曲面纸张、立体红色图钉与生机绿植嫩苗 🌱；
+- 又有清晰的多级子任务树、自主任务进度管理、1:1.1 黄金矩形月历全景、误操作一键撤销与受管附件安全存储；
+- 全平台支持 **Windows 10/11**、**macOS (Apple Silicon & Intel)** 以及主流 **Linux** 发行版，所有安装包均为自包含免装运行时设计；
+- 内置标准 **Model Context Protocol (MCP)** 跨平台服务，可直接化身为 AI 编程助手与各类智能体（Claude Code、Cursor、OpenCode、Codex、Antigravity）的数据基座，一键提炼高品质工作周报、月报与年终复盘。
 
 ---
 
 ## ✨ 核心特色功能
 
-### 1. 🎨 写实便利贴与现代极简双风格
+### 1. 🎨 写实拟物便签 vs 现代极简双模式
 
-支持在主窗口菜单或系统托盘中**一键无缝切换**，兼顾视觉治愈感与极致生产力：
+支持在顶部图钉菜单中**一键无缝切换**，兼顾日常伏案的治愈陪伴与专注冲刺的极致生产力：
 
-| 风格模式 | 视觉特征与体验 |
+| 风格模式 | 视觉特征与交互体验 |
 | :--- | :--- |
-| **写实拟物便签 (Realistic)** | 拟真双层微卷纸张边缘、3D 立体红色大图钉、真实阴影凹痕、右下角立体翻折折痕、清新手写体与萌趣待办图标（待完成绿植嫩苗 🌱，已完成浪漫粉花 🌸）。 |
-| **现代极简模式 (Minimalist)** | 极简 Fluent 毛玻璃质感半透明卡片、精致高对比度状态标签、清晰的层级引导折线与紧凑信息排版。 |
+| **写实拟物便签 (Realistic)** | 拟真双层微卷纸张曲面、3D 实体红色大图钉、细腻纸面阴影凹痕、右下角立体折痕、清新手写体与萌趣状态图标（待完成绿植嫩苗 🌱，已完成浪漫粉花 🌸）。 |
+| **现代极简模式 (Minimalist)** | 极简 Fluent 毛玻璃质感半透明卡片、精致状态徽标、清晰的层级折线与紧凑信息排版。 |
 
 <div align="center">
   <table border="0">
@@ -59,28 +62,24 @@
 
 ---
 
-### 2. 🌲 多级树形子任务与拖拽排布
+### 2. 🌲 多级树形子任务与自主进度管理
 
-- **无限层级拆解**：支持主任务下创建多级子任务（父任务 → 子任务 → 孙任务），条理清晰。
-- **状态联动流转**：勾选父任务完成时可级联同步子任务，子任务独立折叠/展开，保持便签清爽整洁。
-- **自由拖拽归属**：支持鼠标直接拖拽任务行调整上下显示顺序，或拖动到指定任务上方自动转为该任务的子任务。
-
----
-
-### 3. ↩️ 误拖拽历史撤销（Undo）防误触机制
-
-在整理任务时如果不小心将某项重要任务误拖入了其他任务成为子任务，无需慌张：
-- 打开「**系统设置 → 撤销最近拖拽操作**」；
-- 系统记录精准的操作堆栈，支持一键将任务层级与原始顺序原路恢复。
+- **无限层级拆解**：主任务支持无限级向下细分（父任务 → 子任务 → 孙任务），长线复杂目标条理清晰。
+- **自定义进度与联动计算**：
+  - 用户可对单项任务自由拖动或设定当前完成进度（`0%`～`100%`）；
+  - 含有子任务的上级任务，自动根据所有子任务的完成度计算并汇总上级进度，任务后方统一实时展示百分比。
+- **划词复制与防误触**：支持文字顺滑选中复制；左键点击展开元信息胶囊，修改详情需右击菜单触发，彻底防止手抖误改。
+- **自由拖拽排布**：按住任务行左侧手柄上下拖动即可调整排序，或拖入其他任务自动转化为子任务。
 
 ---
 
-### 4. 📅 任务月历全景追踪与浮窗预览
+### 3. 📅 1:1.1 黄金矩形任务月历与浮窗速览
 
-不再错过任何重要里程碑与截止日期：
-- **月历视图总览**：直观展示整月任务分布，当日日期高亮凸显。
-- **动态图标标记**：有待办事项的日期标记生机嫩苗 🌱 与任务计数，有完成事项的日期标记粉色小花 🌸。
-- **悬浮速览卡片**：鼠标悬停在任意日期格上，即刻弹出该日期的所有任务详情浮窗，省去频繁点击。
+告别变形走样的日历格子，提供视觉愉悦的整月追踪体验：
+
+- **严格锁定的 1:1.1 黄金方框**：每个日期卡片严格锁定为 `80px × 72px`（高宽比 1:1.11），无论有任务、无任务，全月 42 个格子均呈现严格对称、整齐划一的圆角矩形，绝不塌缩或拉伸。
+- **动态微标聚合**：有待办标记生机嫩苗 `🌱+N`、有完成标记勾选 `✓N`、有到期提醒标记时钟 `⏰N`。
+- **悬停浮窗速览**：鼠标悬停在任意日期格上，即刻弹出该日期的所有任务详情浮窗；点击日期则在下方展开详细抽屉。
 
 <div align="center">
   <img src="docs/images/screenshot-calendar.png" alt="任务日历视图" width="700" />
@@ -88,12 +87,13 @@
 
 ---
 
-### 5. 📝 任务详情备忘与受管附件
+### 4. 📝 任务详情备忘、截止日与受管附件
 
-双击任意任务即可展开详情工作台：
-- **Markdown 笔记编辑**：支持长文本备忘录、加粗、列表、代码段等丰富排版。
-- **受管附件拖拽关联**：直接拖拽任意本地文件（图片、Office 文档、压缩包等）至窗口即可完成归档，文件由应用受管存储，原文件移动或删除均不影响便签查看。
-- **优先级与截止日设置**：四级优先级色彩标识（P0 紧急、P1 高、P2 中、P3 低）与截止日期智能提醒。
+双击任意任务即可进入专属详情工作台：
+
+- **长文本备忘笔记**：支持多行文字备忘录、重点批注与需求说明。
+- **受管附件拖拽归档**：直接拖拽本地文件（图片、Word/PDF 文档、压缩包等）至窗口即可关联，附件由应用安全托管，原文件移动或删除均不影响查看。
+- **四级优先级与截止提醒**：直观区分 P0（最高紧急）、P1（高）、P2（中）、P3（低），临期任务在桌面面板清晰警示。
 
 <div align="center">
   <img src="docs/images/screenshot-detail.png" alt="任务详情与附件" width="700" />
@@ -101,42 +101,120 @@
 
 ---
 
-### 6. 📌 桌面窗口层级管理与开机自启动
+### 5. 📌 桌面窗口三态层级（普通 / 置顶 / 嵌入桌面）
 
-- **多模式层级切换**：
-  - **窗口置顶 (Topmost)**：常驻所有应用最前端，随手记录灵感与待办；
-  - **嵌入桌面底层 (Desktop)**：置于所有常规窗口下方，贴合桌面壁纸，不干扰正常工作；
-  - **位置锁定 (Lock)**：一键锁定窗口屏幕位置与尺寸，防止误触拖动；写实模式下大图钉会真实“钉入”桌面。
-- **开机自动启动**：支持随 Windows 登录自动启动，自动记忆上次关闭时的屏幕坐标、窗口尺寸与图钉锁定状态。
+支持随心定义便签在桌面上的存在形态：
 
----
-
-### 7. 🗑️ 安全回收站与防误删双重确认
-
-- 误删任务自动移入**回收站**，随时可一键撤回恢复。
-- 回收站清空功能配有**二次弹窗确认**，严格防止重要笔记数据意外永久丢失。
+- **标准正常模式 (Normal)**：与常规软件窗口一致，自由重叠与激活；
+- **常驻最顶层 (Topmost)**：悬浮在所有窗口之上，随手随地记录灵感；
+- **嵌入桌面最底层 (Desktop)**：牢牢贴合桌面壁纸，按 `Win + D` 返回桌面依然清晰可见；
+- **图钉位置锁定 (Lock)**：一键锁定屏幕坐标与窗口大小，写实模式下大红图钉真实“钉在桌面”；
+- **随系统登录自启动**：智能记忆上次关闭时的位置、尺寸与展开状态。
 
 ---
 
-### 8. 🔒 100% 纯本地离线与数据隐私
+### 6. ↩️ 误操作历史撤销（Undo）与安全回收站
 
-- **零联网依赖**：所有数据完整保存在本地 `%LOCALAPPDATA%\DesktopNotes\data\app.db`。
-- **工业级 SQLite + WAL 机制**：确保多并发写入时不损坏、不丢失数据。
-- **绿色安全**：不收集任何用户隐私、无广告、无弹窗推广。
+- **撤销误拖拽**：误拖任务改变层级不用慌，进入「设置 → 撤销最近拖拽操作」一键原路恢复。
+- **防误删双保险**：删除任务自动移入「回收站」，可随时还原；清空回收站具备二次确认弹窗，守护数据安全。
 
 ---
 
-## 🛠️ 技术架构
+### 7. 🔒 100% 离线本地与数据隐私
 
-项目基于现代 **.NET 10** 与 **Clean Architecture (领域驱动 / 六角架构)** 构建，分层清晰，解耦彻底：
+- **零云端回传**：数据保存在本地数据库（Windows 保存在 `%LOCALAPPDATA%\DesktopNotes\data\app.db`）。
+- **SQLite 事务安全**：采用 WAL 预写日志机制，高频写入不丢数据、无文件锁冲突。
+- **绿色无干扰**：无任何广告、弹窗推广或联网收集行为。
+
+---
+
+### 8. 🤖 AI Agent 智能生态接入（MCP）
+
+`e-node` 原生附带 **Model Context Protocol (MCP)** 标准服务端（`integrations/mcp`），这是连接个人桌面与 AI 时代的桥梁：
+
+```
+                    ┌──────────────────────────────┐
+                    │     e-node (电子便签) 本地库  │
+                    │   %LOCALAPPDATA%\...\app.db  │
+                    └──────────────┬───────────────┘
+                                   │ (只读安全连接 / 并发事务)
+                    ┌──────────────▼───────────────┐
+                    │      e-node MCP 服务核心     │
+                    │   (integrations/mcp/...)     │
+                    └──────────────┬───────────────┘
+                                   │ (标准 JSON-RPC 2.0 stdio)
+        ┌──────────────────┬───────┴──────────┬──────────────────┐
+        ▼                  ▼                  ▼                  ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│  Claude Code  │  │    Cursor     │  │  Antigravity  │  │ OpenCode/Codex│
+└───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
+        │                  │                  │                  │
+        └──────────────────┴─────────┬────────┴──────────────────┘
+                                     ▼
+                      【自动生成周报 / 月报 / OKR复盘】
+```
+
+- **零依赖运行**：纯 Python 标准库编写，无需安装繁琐的三方依赖。
+- **高品质汇报直出**：AI Agent 可直接调用工具获取近期攻坚交付物、未完事项、逾期预警，自动化生成高规格周报、OKR 报告或研发复盘。
+- **独立 CLI 支持**：不使用 AI 时，亦可在终端直接运行 `desktopnotes-mcp --report weekly` 一秒打印周报。
+
+---
+
+## 📦 全平台下载与安装
+
+所有安装文件均采用独立自包含（Self-Contained）打包，**无需用户预先安装任何 .NET 运行时**：
+
+| 操作系统 | 安装包文件 | 文件大小 | 适用架构与环境 |
+| :--- | :--- | :--- | :--- |
+| **Windows** | [**e-node-v1.0-Setup.exe**](./e-node-v1.0-Setup.exe) | **37.60 MB** | Windows 10 / 11 (x64)，极速向导安装，生成桌面图标与开始菜单项 |
+| **macOS (Apple Silicon)** | [**e-node-v1.0-macOS-arm64.zip**](./e-node-v1.0-macOS-arm64.zip) | **48.66 MB** | 适配 M1 / M2 / M3 / M4 / M5 芯片 Mac，内含 `e-node.app` |
+| **macOS (Intel)** | [**e-node-v1.0-macOS-x64.zip**](./e-node-v1.0-macOS-x64.zip) | **50.97 MB** | 适配 Intel 架构 64 位 Mac，内含 `e-node.app` |
+| **Linux (Debian/Ubuntu)** | [**e-node_1.0.0_amd64.deb**](./e-node_1.0.0_amd64.deb) | **46.85 MB** | 适配 Ubuntu、Debian、Linux Mint 等，支持双击安装或 `dpkg -i` |
+| **Linux (通用发行版)** | [**e-node-v1.0-linux-x64.tar.gz**](./e-node-v1.0-linux-x64.tar.gz) | **46.85 MB** | 适配 Arch、Fedora、openSUSE，内置一键安装脚本与免安装绿色运行 |
+
+### 各平台快速上手指南
+
+#### 🪟 Windows 系统
+1. 下载 `e-node-v1.0-Setup.exe` 双击运行；
+2. 安装路径默认配置为标准英文路径 `{autopf}\e-node`；
+3. 安装完成后即可从桌面或开始菜单的「**e-node**」直接启动。
+
+#### 🍎 macOS 系统
+1. 下载并双击解压对应的 `.zip` 压缩包，得到 `e-node.app`；
+2. 将 `e-node.app` 拖入 `/Applications`（应用程序）文件夹；
+3. 若打开时提示“无法验证开发者”，在终端运行命令移除隔离属性即可：
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/e-node.app
+   ```
+
+#### 🐧 Linux 系统
+- **Debian / Ubuntu 系列**：
+  ```bash
+  sudo dpkg -i e-node_1.0.0_amd64.deb
+  ```
+- **通用 Tar.gz 绿色 / 便携版**：
+  ```bash
+  tar -zxvf e-node-v1.0-linux-x64.tar.gz
+  cd e-node-v1.0-linux-x64
+  # 方式 1：免安装直接启动
+  ./bin/DesktopNotes.Desktop
+  # 方式 2：一键注册为系统应用
+  sudo ./install.sh
+  ```
+
+---
+
+## 🛠️ 技术架构与源码构建
+
+项目采用现代 **.NET 10** 与 **Clean Architecture (领域驱动 / 六角分层架构)** 构建：
 
 ```mermaid
 graph TD
-    UI["DesktopNotes.Desktop (Avalonia 12 XAML / ViewModels)"]
-    APP["DesktopNotes.Application (用例服务 / 端口定义 / 数据契约)"]
-    DOM["DesktopNotes.Domain (核心规则 / 状态机 / 纯净实体)"]
-    INFRA["DesktopNotes.Infrastructure (SQLite Store / 迁移管理 / 文件附件存储)"]
-    PLAT["DesktopNotes.Platforms (Windows Win32 API / 桌面嵌入 / 自启注册表)"]
+    UI["DesktopNotes.Desktop (Avalonia 12 XAML / ViewModels / MVVM)"]
+    APP["DesktopNotes.Application (用例服务 / 端口抽象 / 数据契约)"]
+    DOM["DesktopNotes.Domain (核心实体 / 进度计算 / 状态流转 / 搜索算法)"]
+    INFRA["DesktopNotes.Infrastructure (SQLite 存储 / 迁移脚本 / 受管附件)"]
+    PLAT["DesktopNotes.Platforms (Win32 / macOS Cocoa / Linux X11-Wayland 适配层)"]
 
     UI --> APP
     UI --> PLAT
@@ -145,68 +223,56 @@ graph TD
     PLAT --> APP
 ```
 
-- **全覆盖自动化测试**：工程内包含 **66 个自动化测试**，包括 15 个纯领域业务规则测试与 51 个跨层/UI/数据库集成测试，确保长期演进零退化。
+### 💻 本地源码构建步骤
 
----
+#### 1. 准备环境
+- 安装 [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) 或更高版本；
+- 支持 Windows、macOS 或 Linux 作为编译宿主。
 
-## 🚀 下载与安装
-
-### 方式一：直接安装（推荐 Windows 用户）
-
-1. 下载项目根目录下的独立安装程序：[`电子便签-v1.0-Setup.exe`](./电子便签-v1.0-Setup.exe)；
-2. 双击打开安装向导：
-   - 支持**自由选择安装目标路径**（如 `D:\Program Files\电子便签`）；
-   - 支持勾选「**开机自动启动电子便签**」；
-   - 自动在桌面与开始菜单生成高清可爱的便签图钉专属图标；
-3. 安装完成后即可立即体验。
-
-### 方式二：从源码构建运行
-
-#### 准备环境
-- 安装 [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) 或更高版本
-- Windows 10 / 11 操作系统（推荐）
-
-#### 获取源码与运行
+#### 2. 克隆与运行
 ```bash
-# 1. 克隆代码仓库
-git clone https://github.com/your-repo/DesktopNotes.git
+# 克隆仓库
+git clone https://github.com/your-username/DesktopNotes.git
 cd DesktopNotes
 
-# 2. 编译并运行
+# 编译并运行桌面端
 dotnet run --project src/DesktopNotes.Desktop
 
-# 3. 运行全量单元与集成测试
+# 执行自动化测试套件
 dotnet test
 ```
 
-#### 打包自包含安装包
+#### 3. 跨平台自包含打包命令
 ```bash
-# 发布 Win-x64 自包含免安装包
-dotnet publish src/DesktopNotes.Desktop -c Release -r win-x64 --self-contained true -o ./publish/win-x64
+# Windows x64 自包含发布
+dotnet publish src/DesktopNotes.Desktop -c Release -r win-x64 --self-contained true -p:DebugType=none -p:DebugSymbols=false -o ./publish/win-x64
 
-# 使用 Inno Setup 编译器生成单文件安装包
-iscc installer/windows/DesktopNotes.iss
+# macOS ARM64 发布
+dotnet publish src/DesktopNotes.Desktop -c Release -r osx-arm64 --self-contained true -p:DebugType=none -p:DebugSymbols=false -o ./publish/osx-arm64
+
+# Linux x64 发布
+dotnet publish src/DesktopNotes.Desktop -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:DebugSymbols=false -o ./publish/linux-x64
 ```
 
 ---
 
-## ⌨️ 常用快捷操作
+## ⌨️ 常用交互与快捷方式
 
-| 操作场景 | 快捷操作方式 |
+| 操作场景 | 交互说明 |
 | :--- | :--- |
-| **新建待办** | 在底部输入框输入内容后按 `Enter` 回车快速添加 |
-| **完成 / 取消完成** | 单击任务行左侧的萌趣小嫩苗 🌱 或圆圈勾选框 |
-| **查看与编辑详情** | 双击任意任务行进入详情窗口 |
-| **删除任务** | 单击任务行，点击右侧出现的垃圾桶图标即可移入回收站 |
-| **拖拽排序 / 转为子任务** | 按住任务行左侧拖拽把手上下拖动（拖至其他任务行内即变为子任务） |
-| **展开 / 折叠子任务** | 点击父任务左侧的三角展开箭头 `▶` / `▼` |
-| **右键快捷菜单** | 右键单击顶部图钉栏唤醒「应用全局设置」；右键单击具体任务唤醒「任务专项菜单」 |
-| **撤销误拖拽** | 进入「设置 → 撤销最近拖拽」一键还原 |
-| **中英文切换** | 顶部图钉右键菜单 → 语言设置 → 切换「中文 / English」 |
-| **风格切换** | 顶部图钉右键菜单 → 视觉风格 → 切换「拟真便签 / 极简模式」 |
+| **快速添加** | 便签底部输入框输入任务内容，敲击 `Enter` 回车秒级创建 |
+| **完成状态切换** | 点击任务前面的萌趣小嫩苗 🌱 或圆圈勾选框完成/撤销完成 |
+| **复制任务文本** | 鼠标直接在任务文字上划词选中即可复制，无闪烁光标，防误触 |
+| **查看与编辑元信息** | 单击任务行展开下方的胶囊栏（截止日期、负责人、子任务、详情编辑按钮） |
+| **调整进度** | 点击或拖动任务进度条，上级任务自动根据子任务综合完成度联动更新 |
+| **修改任务内容** | 右键单击具体任务行，在右键上下文菜单中选择「修改内容」 |
+| **拖拽排序/转子任务** | 按住任务左侧手柄上下拖动即可调序；拖动到指定任务上自动嵌套为子任务 |
+| **打开任务日历** | 点击便签右上角日历小图标或通过菜单进入全景月历视图 |
+| **打开详情工作台** | 双击任意任务行进入多行 Markdown 笔记与附件管理窗口 |
+| **风格与语言切换** | 右击顶部图钉唤出设置菜单，自由切换「写实/极简」或「中文/English」 |
 
 ---
 
 ## 📄 开源许可证
 
-本项目基于 [MIT License](LICENSE) 协议开源，供个人与商业用户免费使用与学习交流。
+本项目基于 [MIT License](LICENSE) 协议完全开源，无论是个人免费使用还是开源社区二次开发，均受法律保护且享有充分自由。
