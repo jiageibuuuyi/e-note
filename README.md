@@ -50,11 +50,11 @@
     <tr>
       <td align="center" width="50%">
         <b>写实便签风格 (Realistic Note)</b><br/><br/>
-        <img src="docs/images/realistic-sticky-note.png" alt="写实便签界面" width="360" />
+        <img src="docs/images/screenshot-realistic.png" alt="写实便签界面" width="360" />
       </td>
       <td align="center" width="50%">
         <b>现代极简风格 (Minimalist Fluent)</b><br/><br/>
-        <img src="docs/images/screenshot-minimalist.png" alt="极简待办界面" width="400" />
+        <img src="docs/images/screenshot-minimalist.png" alt="极简待办界面" width="360" />
       </td>
     </tr>
   </table>
