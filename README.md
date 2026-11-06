@@ -6,6 +6,8 @@
 
 **桌面上的温暖与秩序 · 跨平台高质感桌面便签、待办管理与 AI Agent 工作台**
 
+[English](README_EN.md) | [简体中文](README.md)
+
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?logo=windows&logoColor=white)](#-全平台下载与安装)
 [![Framework](https://img.shields.io/badge/.NET-10.0%20Self--Contained-512BD4?logo=dotnet&logoColor=white)](#-技术架构与源码构建)
 [![UI Engine](https://img.shields.io/badge/UI-Avalonia%2012.1.4-8B5CF6)](#)
