@@ -143,13 +143,14 @@ python ./integrations/mcp/desktopnotes_mcp.py
 
 ---
 
-## 🛠️ MCP 暴露的核心工具清单 (7 大工具)
+## 🛠️ MCP 暴露的核心工具清单 (8 大工具)
 
 | 方向 | 工具名称 | 功能描述 | 核心参数 |
 | :---: | :--- | :--- | :--- |
 | **📥 导入** | `desktopnotes_import_plan` | **批量导入结构化章节学习计划/多级项目拆解/系列笔记**（支持自动按天排期并同步日历） | `items` (支持多级 `children`), `import_as` (`task_tree`/`note_series`/`note_single`), `root_title`, `auto_schedule_start_date`, `days_per_item` |
 | **📥 导入** | `desktopnotes_import_markdown` | **将 Markdown 目录大纲直接解析并导入电子便签**（自动识别 `#` 标题层级与 `-` 列表层级） | `markdown_text`, `import_as` (`task_tree`/`note_series`/`note_single`), `auto_schedule_start_date`, `days_per_item` |
 | **📥 导入** | `desktopnotes_create_record` | 创建单条待办任务或纯文本笔记便签 | `title`, `body`, `kind` (`task`/`note`), `priority` (`0-3`), `start_date`, `due_date`, `parent_id` |
+| **🗑️ 删除** | `desktopnotes_delete_records` | **删除指定的待办任务（自动级联子任务）或笔记便签**（默认移入回收站，支持彻底删除与清空回收站） | `record_ids`, `exact_title`, `search_keyword`, `kind` (`task`/`note`/`all`), `permanent` (`false`/`true`), `empty_trash` |
 | **📤 导出** | `desktopnotes_get_summary` | 获取便签总体统计指标（完成数、进行中、优先级分布） | `period` (`today`/`this_week`/`this_month`/`this_year`/`custom`) |
 | **📤 导出** | `desktopnotes_list_tasks` | 查询任务或笔记清单（支持父子多级树形还原与关键词检索） | `kind` (`task`/`note`/`all`), `status`, `priority`, `search_keyword`, `include_tree` |
 | **📤 导出** | `desktopnotes_get_report_data` | 提取专为周报/月报/年报聚类的结构化上下文数据 | `report_type` (`weekly`/`monthly`/`yearly`), `start_date`, `end_date` |
@@ -189,5 +190,12 @@ desktopnotes-mcp --report weekly --author 徐礼佳
 # 5. 导出 OKR 风格月报 / 研发风格年报
 desktopnotes-mcp --report monthly --template okr --output 11月月报.md
 desktopnotes-mcp --report yearly --template engineering --output 2026年度总结.md
+
+# 6. 删除指定标题的任务或笔记（默认安全移入回收站，加 --permanent 则彻底删除）
+desktopnotes-mcp --delete-title "《深入理解计算机系统》章节学习计划" --kind task
+desktopnotes-mcp --delete-keyword "测试" --kind note --permanent
+
+# 7. 清空电子便签回收站
+desktopnotes-mcp --empty-trash
 ```
 *(若未执行 pip 安装，将 `desktopnotes-mcp` 替换为 `python ./integrations/mcp/desktopnotes_mcp.py` 即可)*

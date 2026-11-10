@@ -1083,6 +1083,152 @@ class DesktopNotesDB:
             days_per_item=days_per_item
         )
 
+    def delete_records(
+        self,
+        record_ids: Optional[List[str]] = None,
+        exact_title: Optional[str] = None,
+        search_keyword: Optional[str] = None,
+        kind: str = "all",
+        permanent: bool = False,
+        empty_trash: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Delete tasks or notes (along with any descendant subtasks).
+        - By default (`permanent=False`), moves records safely into the Recycle Bin (回收站) so they can be restored if needed.
+        - When `permanent=True`, permanently deletes the records from SQLite in post-order (children before parents).
+        - When `empty_trash=True`, permanently purges all items currently in the Recycle Bin.
+        """
+        now_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+
+        with get_readwrite_connection(self.db_path) as conn:
+            proj_zone = self._get_projection_zone(conn)
+            seed_ids: List[str] = []
+
+            if empty_trash:
+                rows = conn.execute("SELECT id FROM records WHERE deleted_utc_ms IS NOT NULL").fetchall()
+                seed_ids.extend(r["id"] for r in rows)
+                permanent = True
+            else:
+                if record_ids:
+                    for rid in record_ids:
+                        if rid and str(rid).strip():
+                            seed_ids.append(str(rid).strip())
+
+                if exact_title or search_keyword:
+                    query = "SELECT id FROM records WHERE 1=1"
+                    params: List[Any] = []
+                    if not permanent:
+                        query += " AND deleted_utc_ms IS NULL"
+                    if kind == "task":
+                        query += " AND kind = 0"
+                    elif kind == "note":
+                        query += " AND kind = 1"
+
+                    if exact_title:
+                        query += " AND title = ?"
+                        params.append(exact_title.strip())
+                    if search_keyword:
+                        query += " AND (title LIKE ? OR body LIKE ?)"
+                        params.extend([f"%{search_keyword.strip()}%", f"%{search_keyword.strip()}%"])
+
+                    matched_rows = conn.execute(query, params).fetchall()
+                    for r in matched_rows:
+                        seed_ids.append(r["id"])
+
+                if not seed_ids:
+                    return {
+                        "status": "no_match",
+                        "deleted_count": 0,
+                        "mode": "permanent" if permanent else "trash",
+                        "deleted_records": [],
+                        "message": "未找到匹配的便签或任务（请提供有效的 record_ids、exact_title 或 search_keyword）。"
+                    }
+
+            # Post-order DFS traversal: ensures all children/descendants appear BEFORE their parents
+            ordered_ids: List[str] = []
+            seen: set[str] = set()
+
+            def collect_postorder(rec_id: str) -> None:
+                if rec_id in seen:
+                    return
+                seen.add(rec_id)
+                children = conn.execute("SELECT id FROM records WHERE parent_id = ?", (rec_id,)).fetchall()
+                for ch in children:
+                    collect_postorder(ch["id"])
+                ordered_ids.append(rec_id)
+
+            for sid in seed_ids:
+                exists = conn.execute("SELECT id FROM records WHERE id = ?", (sid,)).fetchone()
+                if exists:
+                    collect_postorder(sid)
+
+            if not ordered_ids:
+                return {
+                    "status": "no_match",
+                    "deleted_count": 0,
+                    "mode": "permanent" if permanent else "trash",
+                    "deleted_records": [],
+                    "message": "未找到可删除的便签或任务记录。"
+                }
+
+            deleted_info: List[Dict[str, Any]] = []
+            batch_id = str(uuid.uuid4())
+
+            for rid in ordered_ids:
+                row = conn.execute(
+                    "SELECT id, parent_id, kind, title, status, version, deleted_utc_ms FROM records WHERE id = ?",
+                    (rid,)
+                ).fetchone()
+                if not row:
+                    continue
+
+                rec_summary = {
+                    "id": row["id"],
+                    "parent_id": row["parent_id"],
+                    "kind": "task" if row["kind"] == 0 else "note",
+                    "title": row["title"]
+                }
+
+                if permanent:
+                    # Clean up attachment jobs and attachments referencing this record
+                    conn.execute("""
+                        DELETE FROM attachment_job_items
+                        WHERE job_id IN (SELECT id FROM attachment_jobs WHERE record_id = ?)
+                    """, (rid,))
+                    conn.execute("DELETE FROM attachment_jobs WHERE record_id = ?", (rid,))
+                    conn.execute("DELETE FROM attachments WHERE record_id = ?", (rid,))
+                    conn.execute("DELETE FROM records WHERE id = ?", (rid,))
+                    deleted_info.append(rec_summary)
+                else:
+                    # Soft delete (move to Recycle Bin) if not already trashed
+                    if row["deleted_utc_ms"] is None:
+                        next_ver = int(row["version"]) + 1
+                        conn.execute("""
+                            UPDATE records
+                            SET deleted_utc_ms = ?, deletion_batch_id = ?, updated_utc_ms = ?, version = ?
+                            WHERE id = ?
+                        """, (now_ms, batch_id, now_ms, next_ver, rid))
+                        conn.execute("""
+                            UPDATE effective_records
+                            SET record_version = ?, projection_zone = ?
+                            WHERE record_id = ?
+                        """, (next_ver, proj_zone, rid))
+                        conn.execute("""
+                            DELETE FROM reminder_deliveries
+                            WHERE record_id = ? AND delivery_state = 'claimed'
+                        """, (rid,))
+                        deleted_info.append(rec_summary)
+
+            conn.commit()
+            mode_label = "永久彻底删除 (permanent)" if permanent else "移入回收站 (trash)"
+            return {
+                "status": "success",
+                "mode": "permanent" if permanent else "trash",
+                "deleted_count": len(deleted_info),
+                "deleted_records": deleted_info,
+                "message": f"已成功执行{mode_label}，共处理 {len(deleted_info)} 条记录（含关联子任务）。"
+            }
+
 
 # ---------------------------------------------------------------------------
 # MCP Protocol Handlers (JSON-RPC 2.0 over stdio)
@@ -1345,6 +1491,41 @@ def mcp_get_tools_spec() -> List[Dict[str, Any]]:
                 },
                 "required": ["markdown_text"]
             }
+        },
+        {
+            "name": "desktopnotes_delete_records",
+            "description": "删除桌面便签(DesktopNotes)中的任务或笔记(若删除父任务则自动级联处理其所有子任务)。默认移入回收站(软删除，可随时恢复)，也可指定 permanent=true 永久彻底删除，或指定 empty_trash=true 清空回收站。",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "record_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "要删除的任务或便签 ID 列表 (可选)"
+                    },
+                    "exact_title": {
+                        "type": "string",
+                        "description": "按精确标题匹配删除 (可选，例如：'《Rust 核心编程实战》学习目录')"
+                    },
+                    "search_keyword": {
+                        "type": "string",
+                        "description": "按标题或内容包含的关键词匹配删除 (可选)"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": ["all", "task", "note"],
+                        "description": "按类型过滤要删除的记录：task(仅删任务), note(仅删笔记), all(全部，默认)"
+                    },
+                    "permanent": {
+                        "type": "boolean",
+                        "description": "是否永久彻底删除：false(默认推荐，移入回收站可恢复), true(从数据库彻底物理删除)"
+                    },
+                    "empty_trash": {
+                        "type": "boolean",
+                        "description": "是否清空回收站中所有已删除的记录，默认 false"
+                    }
+                }
+            }
         }
     ]
 
@@ -1420,6 +1601,15 @@ def handle_mcp_call(db: DesktopNotesDB, tool_name: str, args: Dict[str, Any]) ->
             parent_id=args.get("parent_id"),
             auto_schedule_start_date=args.get("auto_schedule_start_date"),
             days_per_item=args.get("days_per_item")
+        )
+    elif tool_name == "desktopnotes_delete_records":
+        return db.delete_records(
+            record_ids=args.get("record_ids"),
+            exact_title=args.get("exact_title"),
+            search_keyword=args.get("search_keyword"),
+            kind=args.get("kind", "all"),
+            permanent=bool(args.get("permanent", False)),
+            empty_trash=bool(args.get("empty_trash", False))
         )
     else:
         raise ValueError(f"未知的工具名称: {tool_name}")
@@ -1570,6 +1760,12 @@ def run_cli():
     parser.add_argument("--root-title", help="导入时指定的顶层总标题 (可选)")
     parser.add_argument("--start-date", help="导入学习计划时的自动排期起始日期 YYYY-MM-DD (可选)")
     parser.add_argument("--days-per-item", type=int, help="自动排期时每个一级章节分配的天数 (可选)")
+    parser.add_argument("--delete-id", action="append", help="按记录 ID 删除任务或笔记 (可多次指定)")
+    parser.add_argument("--delete-title", help="按精确标题删除任务或笔记 (包含其所有子任务)")
+    parser.add_argument("--delete-keyword", help="按关键词匹配删除任务或笔记 (包含其所有子任务)")
+    parser.add_argument("--kind", choices=["all", "task", "note"], default="all", help="配合删除或查询过滤类型：task(任务), note(笔记), all(全部)")
+    parser.add_argument("--permanent", action="store_true", help="永久彻底删除记录 (默认不加此参数则安全移入回收站)")
+    parser.add_argument("--empty-trash", action="store_true", help="清空回收站中所有已删除的记录")
     parser.add_argument("--db", help="指定 SQLite 数据库路径 (可选)")
 
     args = parser.parse_args()
@@ -1579,6 +1775,18 @@ def run_cli():
         return
 
     db = DesktopNotesDB(args.db)
+
+    if args.delete_id or args.delete_title or args.delete_keyword or args.empty_trash:
+        res = db.delete_records(
+            record_ids=args.delete_id,
+            exact_title=args.delete_title,
+            search_keyword=args.delete_keyword,
+            kind=args.kind,
+            permanent=args.permanent,
+            empty_trash=args.empty_trash
+        )
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
 
     if args.summary:
         summary = db.get_summary()
