@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-DesktopNotes MCP Server & Report Generator
+DesktopNotes MCP Server & Report/Import Engine
 Connects '电子便签 (DesktopNotes)' SQLite database to AI Coding Agents:
-  - Google Antigravity
   - OpenCode
   - OpenAI Codex / GitHub Copilot
   - DSH (DeepSeek Harness)
+  - Google Antigravity
+  - Cursor / Claude Code / Windsurf
 
 Supports:
   1. MCP (Model Context Protocol) JSON-RPC 2.0 stdio transport
-  2. Standalone CLI report generation (Weekly, Monthly, Yearly)
+  2. Bi-directional capabilities:
+     - Read & Aggregate: Weekly/Monthly/Yearly reports, task trees, summaries
+     - Write & Import: Multi-level study plans, chapter syllabi, project task trees, Markdown outlines, and sticky notes
+  3. Standalone CLI mode for direct terminal execution
 """
 
 import sys
 import os
+import re
 import json
 import sqlite3
 import datetime
 import uuid
 import argparse
-from typing import Dict, Any, List, Optional, Tuple
+import contextlib
+from typing import Dict, Any, List, Optional, Tuple, Iterator
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
@@ -55,24 +61,25 @@ KIND_MAP = {
     1: "便签 (Note)"
 }
 
+
 def log(msg: str) -> None:
     """Log to stderr to avoid breaking stdio JSON-RPC stream."""
     sys.stderr.write(f"[DesktopNotes-MCP] {msg}\n")
     sys.stderr.flush()
+
 
 def get_db_path() -> str:
     """Resolve DesktopNotes SQLite database path."""
     env_path = os.environ.get("DESKTOP_NOTES_DB")
     if env_path and os.path.isfile(env_path):
         return env_path
-    
+
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
         default_path = os.path.join(local_app_data, "DesktopNotes", "data", "app.db")
         if os.path.isfile(default_path):
             return default_path
-            
-    # Fallback to local project directory
+
     candidates = [
         os.path.join(os.path.dirname(__file__), "..", "..", "publish", "data", "app.db"),
         os.path.join(os.getcwd(), "publish", "data", "app.db"),
@@ -81,30 +88,40 @@ def get_db_path() -> str:
     for c in candidates:
         if os.path.isfile(c):
             return os.path.abspath(c)
-            
-    # Default path even if it doesn't exist yet
+
     if local_app_data:
         return os.path.join(local_app_data, "DesktopNotes", "data", "app.db")
     return "app.db"
 
-def get_readonly_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
-    """Create read-only connection to avoid SQLite database locks."""
+
+@contextlib.contextmanager
+def get_readonly_connection(db_path: Optional[str] = None) -> Iterator[sqlite3.Connection]:
+    """Create read-only connection to avoid SQLite database locks and guarantee close on exit."""
     path = db_path or get_db_path()
     if not os.path.isfile(path):
         raise FileNotFoundError(f"DesktopNotes 数据库不存在: {path}")
     conn = sqlite3.connect(f"file:{os.path.abspath(path)}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
 
-def get_readwrite_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
-    """Create read-write connection for inserting records."""
+
+@contextlib.contextmanager
+def get_readwrite_connection(db_path: Optional[str] = None) -> Iterator[sqlite3.Connection]:
+    """Create read-write connection for inserting records and guarantee close on exit."""
     path = db_path or get_db_path()
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    conn = sqlite3.connect(path, timeout=5000)
+    conn = sqlite3.connect(path, timeout=5.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA busy_timeout = 5000;")
     conn.execute("PRAGMA foreign_keys = ON;")
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
+
 
 def ms_to_datetime_str(ms: Optional[int]) -> Optional[str]:
     """Convert UTC epoch milliseconds to local formatted string."""
@@ -116,11 +133,49 @@ def ms_to_datetime_str(ms: Optional[int]) -> Optional[str]:
     except Exception:
         return None
 
+
+def normalize_date_str(date_str: Optional[str]) -> Optional[str]:
+    """Validate and normalize date string to YYYY-MM-DD."""
+    if not date_str or not str(date_str).strip():
+        return None
+    raw = str(date_str).strip()[:10]
+    dt = datetime.datetime.strptime(raw, "%Y-%m-%d").date()
+    return dt.strftime("%Y-%m-%d")
+
+
+def calc_due_boundary_ms(due_date_str: Optional[str]) -> Optional[int]:
+    """
+    Calculate due_boundary_utc_ms matching C# DeadlineRules.ResolveLocalMidnightUtc(date.AddDays(1), displayZone).
+    """
+    norm = normalize_date_str(due_date_str)
+    if not norm:
+        return None
+    dt_due = datetime.datetime.strptime(norm, "%Y-%m-%d").date()
+    next_day = dt_due + datetime.timedelta(days=1)
+    tz = datetime.datetime.now().astimezone().tzinfo
+    dt_midnight = datetime.datetime.combine(next_day, datetime.time.min).replace(tzinfo=tz)
+    return int(dt_midnight.astimezone(datetime.timezone.utc).timestamp() * 1000)
+
+
+def calc_start_ms(start_date_str: Optional[str], due_boundary_ms: Optional[int] = None) -> Optional[int]:
+    """Calculate start_utc_ms for a given YYYY-MM-DD start date, ensuring start < due_boundary."""
+    norm = normalize_date_str(start_date_str)
+    if not norm:
+        return None
+    dt_start = datetime.datetime.strptime(norm, "%Y-%m-%d").date()
+    tz = datetime.datetime.now().astimezone().tzinfo
+    dt_midnight = datetime.datetime.combine(dt_start, datetime.time.min).replace(tzinfo=tz)
+    start_ms = int(dt_midnight.astimezone(datetime.timezone.utc).timestamp() * 1000)
+    if due_boundary_ms is not None and start_ms >= due_boundary_ms:
+        start_ms = due_boundary_ms - 86400000
+    return start_ms
+
+
 def resolve_date_range(period: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[datetime.date, datetime.date, str]:
     """Resolve start and end dates based on period name."""
     now = datetime.datetime.now()
     today = now.date()
-    
+
     if period == "today":
         return today, today, f"{today}"
     elif period == "this_week":
@@ -150,13 +205,12 @@ def resolve_date_range(period: str, start_date: Optional[str] = None, end_date: 
         d2 = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
         return d1, d2, f"自定义时段 ({d1} 至 {d2})"
     elif period == "all":
-        # All time
         return datetime.date(2000, 1, 1), datetime.date(2099, 12, 31), "全部时段"
     else:
-        # Default to this week
         monday = today - datetime.timedelta(days=today.weekday())
         sunday = monday + datetime.timedelta(days=6)
         return monday, sunday, f"本周 ({monday} 至 {sunday})"
+
 
 def date_range_to_ms(d_start: datetime.date, d_end: datetime.date) -> Tuple[int, int]:
     """Convert date range to start and end millisecond timestamps."""
@@ -167,29 +221,283 @@ def date_range_to_ms(d_start: datetime.date, d_end: datetime.date) -> Tuple[int,
     end_ms = int(dt_end.astimezone(datetime.timezone.utc).timestamp() * 1000)
     return start_ms, end_ms
 
+
+def parse_markdown_to_tree(markdown_text: str, default_priority: int = 2) -> Tuple[Optional[str], Optional[str], List[Dict[str, Any]]]:
+    """
+    Parse a Markdown document (with #/##/### headings and - / * / 1. list items)
+    into (root_title, root_body, items_tree).
+    Supports inline priority tags like [P0], [P1], [P2], [P3] and due dates like @due(2026-11-20) or (截止: 2026-11-20).
+    """
+    lines = markdown_text.splitlines()
+    root_title: Optional[str] = None
+    root_body_lines: List[str] = []
+
+    items: List[Dict[str, Any]] = []
+    # Stack of (level, node_dict)
+    # Heading levels: H1=1, H2=2, H3=3, H4=4; Bullet list levels start at 10 + indent
+    stack: List[Tuple[int, Dict[str, Any]]] = []
+
+    prio_pattern = re.compile(r"\[(P[0-3])\]", re.IGNORECASE)
+    due_pattern = re.compile(r"(?:@due\(|[\(（]截止[:：]\s*)(\d{4}-\d{2}-\d{2})[\)）]")
+    start_pattern = re.compile(r"(?:@start\(|[\(（]开始[:：]\s*)(\d{4}-\d{2}-\d{2})[\)）]")
+
+    def extract_meta(text: str) -> Tuple[str, int, Optional[str], Optional[str]]:
+        prio = default_priority
+        m_prio = prio_pattern.search(text)
+        if m_prio:
+            p_str = m_prio.group(1).upper()
+            prio = int(p_str[1])
+            text = prio_pattern.sub("", text)
+
+        due_dt = None
+        m_due = due_pattern.search(text)
+        if m_due:
+            due_dt = m_due.group(1)
+            text = due_pattern.sub("", text)
+
+        start_dt = None
+        m_start = start_pattern.search(text)
+        if m_start:
+            start_dt = m_start.group(1)
+            text = start_pattern.sub("", text)
+
+        # Strip checkbox markers like [ ] or [x]
+        text = re.sub(r"^\[[ xX]\]\s*", "", text.strip())
+        return text.strip(), prio, start_dt, due_dt
+
+    in_code_block = False
+    for raw_line in lines:
+        stripped = raw_line.strip()
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            if stack:
+                stack[-1][1]["body"] = (stack[-1][1].get("body", "") + "\n" + raw_line).strip()
+            elif root_title:
+                root_body_lines.append(raw_line)
+            continue
+
+        if in_code_block:
+            if stack:
+                stack[-1][1]["body"] = (stack[-1][1].get("body", "") + "\n" + raw_line).strip()
+            elif root_title:
+                root_body_lines.append(raw_line)
+            continue
+
+        # Check Heading
+        m_heading = re.match(r"^(#{1,6})\s+(.+)$", stripped)
+        if m_heading:
+            h_level = len(m_heading.group(1))
+            h_text = m_heading.group(2).strip()
+            clean_title, prio, start_dt, due_dt = extract_meta(h_text)
+            if not clean_title:
+                continue
+
+            if h_level == 1 and root_title is None and not items:
+                root_title = clean_title
+                continue
+
+            node: Dict[str, Any] = {
+                "title": clean_title,
+                "body": "",
+                "priority": prio,
+                "start_date": start_dt,
+                "due_date": due_dt,
+                "children": []
+            }
+            while stack and stack[-1][0] >= h_level:
+                stack.pop()
+            if stack:
+                stack[-1][1]["children"].append(node)
+            else:
+                items.append(node)
+            stack.append((h_level, node))
+            continue
+
+        # Check Bullet or Numbered List Item
+        m_list = re.match(r"^(\s*)(?:[-*+]|\d+\.)\s+(.+)$", raw_line)
+        if m_list:
+            indent = len(m_list.group(1).expandtabs(2))
+            item_text = m_list.group(2).strip()
+            clean_title, prio, start_dt, due_dt = extract_meta(item_text)
+            if not clean_title:
+                continue
+
+            list_level = 10 + indent
+            node = {
+                "title": clean_title,
+                "body": "",
+                "priority": prio,
+                "start_date": start_dt,
+                "due_date": due_dt,
+                "children": []
+            }
+            while stack and stack[-1][0] >= list_level:
+                stack.pop()
+            if stack:
+                stack[-1][1]["children"].append(node)
+            else:
+                items.append(node)
+            stack.append((list_level, node))
+            continue
+
+        # Regular paragraph / blockquote line -> append to current node's body or root_body
+        if stripped:
+            clean_line = re.sub(r"^>\s?", "", stripped)
+            if stack:
+                cur_body = stack[-1][1].get("body", "")
+                stack[-1][1]["body"] = f"{cur_body}\n{clean_line}".strip() if cur_body else clean_line
+            elif root_title is not None:
+                root_body_lines.append(clean_line)
+
+    root_body = "\n".join(root_body_lines).strip() if root_body_lines else None
+    return root_title, root_body, items
+
+
+def format_children_as_markdown(children: List[Dict[str, Any]], depth: int = 0) -> str:
+    """Format nested children items into clean Markdown for Note body."""
+    md_lines: List[str] = []
+    indent = "  " * depth
+    for idx, child in enumerate(children, 1):
+        title = child.get("title", "").strip()
+        due = child.get("due_date")
+        start = child.get("start_date")
+        body = child.get("body", "").strip()
+        sub = child.get("children") or []
+
+        date_tag = ""
+        if start and due:
+            date_tag = f" *(计划: {start} ~ {due})*"
+        elif due:
+            date_tag = f" *(截止: {due})*"
+        elif start:
+            date_tag = f" *(开始: {start})*"
+
+        if depth == 0:
+            md_lines.append(f"### {idx}. {title}{date_tag}")
+        else:
+            md_lines.append(f"{indent}- [ ] **{title}**{date_tag}")
+
+        if body:
+            for b_line in body.splitlines():
+                md_lines.append(f"{indent}  > {b_line}")
+
+        if sub:
+            md_lines.append(format_children_as_markdown(sub, depth + 1))
+
+        if depth == 0:
+            md_lines.append("")
+    return "\n".join(md_lines).strip()
+
+
 class DesktopNotesDB:
     """Encapsulates all database operations."""
 
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or get_db_path()
 
+    def _get_projection_zone(self, conn: sqlite3.Connection) -> str:
+        """Query existing projection_zone from effective_records to stay consistent with DesktopNotes."""
+        try:
+            row = conn.execute("SELECT projection_zone FROM effective_records LIMIT 1").fetchone()
+            if row and row[0]:
+                return str(row[0])
+        except Exception:
+            pass
+        return "China Standard Time"
+
+    def _insert_record_internal(
+        self,
+        conn: sqlite3.Connection,
+        title: str,
+        body: str,
+        kind_int: int,
+        priority: int,
+        start_date: Optional[str],
+        due_date: Optional[str],
+        parent_id: Optional[str],
+        now_ms: int,
+        projection_zone: str,
+        publisher: str = "AI Agent"
+    ) -> Dict[str, Any]:
+        """Low-level transactional record + effective_record insertion respecting all SQLite triggers & checks."""
+        record_id = str(uuid.uuid4())
+        clean_title = (title or "").strip()
+        clean_body = (body or "").strip()
+        if not clean_title and not clean_body:
+            raise ValueError("任务或便签的标题与内容不能同时为空。")
+
+        # Enforce SQLite constraint: parent_id IS NULL OR (kind = 0 AND parent_id <> id)
+        if parent_id is not None:
+            kind_int = 0
+
+        prio = max(0, min(3, int(priority if priority is not None else 2)))
+        norm_due = normalize_date_str(due_date) if kind_int == 0 else None
+        due_kind = 1 if norm_due else 0
+        due_boundary = calc_due_boundary_ms(norm_due) if norm_due else None
+        start_ms = calc_start_ms(start_date, due_boundary) if (kind_int == 0 and start_date) else None
+
+        conn.execute("""
+            INSERT INTO records (
+                id, parent_id, kind, title, body, status,
+                publisher, assignee, priority, start_utc_ms,
+                due_kind, due_date, due_utc_ms, due_zone,
+                attachment_root_id, inherit_mask,
+                created_utc_ms, updated_utc_ms, version
+            ) VALUES (
+                ?, ?, ?, ?, ?, 0,
+                ?, NULL, ?, ?,
+                ?, ?, NULL, NULL,
+                NULL, 0,
+                ?, ?, 1
+            )
+        """, (
+            record_id, parent_id, kind_int, clean_title, clean_body,
+            publisher, prio, start_ms,
+            due_kind, norm_due,
+            now_ms, now_ms
+        ))
+
+        conn.execute("""
+            INSERT INTO effective_records (
+                record_id, publisher, assignee, priority, start_utc_ms,
+                due_kind, due_date, due_utc_ms, due_zone, attachment_root_id,
+                due_boundary_utc_ms, projection_zone, record_version
+            ) VALUES (
+                ?, ?, NULL, ?, ?,
+                ?, ?, NULL, NULL, NULL,
+                ?, ?, 1
+            )
+        """, (
+            record_id, publisher, prio, start_ms,
+            due_kind, norm_due,
+            due_boundary, projection_zone
+        ))
+
+        return {
+            "id": record_id,
+            "parent_id": parent_id,
+            "title": clean_title,
+            "kind": "task" if kind_int == 0 else "note",
+            "priority": PRIORITY_MAP.get(prio, f"P{prio}"),
+            "start_date": normalize_date_str(start_date) if start_ms else None,
+            "due_date": norm_due
+        }
+
     def get_summary(self, period: str = "this_week", start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
         """Get high level statistics for tasks and notes."""
         d_start, d_end, period_label = resolve_date_range(period, start_date, end_date)
         start_ms, end_ms = date_range_to_ms(d_start, d_end)
-        
+
         with get_readonly_connection(self.db_path) as conn:
             c = conn.cursor()
-            
-            # Completed in period
+
             c.execute("""
                 SELECT count(*) FROM records 
                 WHERE deleted_utc_ms IS NULL AND kind = 0 AND status = 1
                   AND closed_utc_ms >= ? AND closed_utc_ms <= ?
             """, (start_ms, end_ms))
             completed_in_period = c.fetchone()[0]
-            
-            # Created in period
+
             c.execute("""
                 SELECT count(*) FROM records 
                 WHERE deleted_utc_ms IS NULL AND kind = 0
@@ -197,15 +505,12 @@ class DesktopNotesDB:
             """, (start_ms, end_ms))
             created_in_period = c.fetchone()[0]
 
-            # Current active tasks
             c.execute("SELECT count(*) FROM records WHERE deleted_utc_ms IS NULL AND kind = 0 AND status = 0")
             current_active = c.fetchone()[0]
 
-            # Total notes
             c.execute("SELECT count(*) FROM records WHERE deleted_utc_ms IS NULL AND kind = 1")
             total_notes = c.fetchone()[0]
 
-            # Priority breakdown for completed tasks in period
             c.execute("""
                 SELECT priority, count(*) FROM records
                 WHERE deleted_utc_ms IS NULL AND kind = 0 AND status = 1
@@ -228,9 +533,9 @@ class DesktopNotesDB:
 
     def query_records(
         self,
-        kind: str = "all",       # "all", "task", "note"
-        status: str = "all",     # "all", "active", "completed"
-        period: str = "all",     # "all", "today", "this_week", "last_week", "this_month", "last_month", "this_year", "custom"
+        kind: str = "all",
+        status: str = "all",
+        period: str = "all",
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         priority: Optional[int] = None,
@@ -277,9 +582,9 @@ class DesktopNotesDB:
                     query += " AND ((r.created_utc_ms >= ? AND r.created_utc_ms <= ?) OR (r.closed_utc_ms >= ? AND r.closed_utc_ms <= ?))"
                     params.extend([start_ms, end_ms, start_ms, end_ms])
 
-            query += " ORDER BY r.status ASC, r.priority ASC, r.created_utc_ms DESC"
+            query += " ORDER BY r.status ASC, r.priority ASC, r.created_utc_ms ASC"
             c.execute(query, params)
-            
+
             records = []
             for row in c.fetchall():
                 records.append({
@@ -301,7 +606,6 @@ class DesktopNotesDB:
             if not include_tree:
                 return records
 
-            # Build tree structure if requested
             id_to_record = {r["id"]: dict(r, children=[]) for r in records}
             tree = []
             for r in id_to_record.values():
@@ -331,7 +635,6 @@ class DesktopNotesDB:
         with get_readonly_connection(self.db_path) as conn:
             c = conn.cursor()
 
-            # Completed tasks in period
             c.execute("""
                 SELECT r.id, r.parent_id, r.title, r.body, r.priority, r.created_utc_ms,
                        r.closed_utc_ms, r.due_date, p.title AS parent_title
@@ -356,7 +659,6 @@ class DesktopNotesDB:
                     "due_date": r["due_date"]
                 })
 
-            # Active / In-progress tasks
             c.execute("""
                 SELECT r.id, r.parent_id, r.title, r.body, r.priority, r.created_utc_ms,
                        r.due_date, p.title AS parent_title
@@ -384,7 +686,6 @@ class DesktopNotesDB:
                     "created_at": ms_to_datetime_str(r["created_utc_ms"])
                 })
 
-            # Notes / Memos in period
             c.execute("""
                 SELECT title, body, created_utc_ms FROM records
                 WHERE deleted_utc_ms IS NULL AND kind = 1
@@ -400,7 +701,6 @@ class DesktopNotesDB:
                 for r in c.fetchall()
             ]
 
-            # Categorize completed tasks by Parent (Project/Theme)
             grouped_completed: Dict[str, List[Dict[str, Any]]] = {}
             for t in completed_tasks:
                 group_name = t["parent_title"] if t["parent_title"] else "常规事项 / 独立任务"
@@ -453,14 +753,14 @@ class DesktopNotesDB:
         lines.append(f"> **汇报人**：{author}  |  **统计周期**：{period}  |  **数据源**：电子便签 (DesktopNotes)\n")
         lines.append("---")
         lines.append("## 📊 一、效能与交付数据概览\n")
-        lines.append(f"| 指标项 | 统计值 | 状态与说明 |")
-        lines.append(f"| :--- | :--- | :--- |")
+        lines.append("| 指标项 | 统计值 | 状态与说明 |")
+        lines.append("| :--- | :--- | :--- |")
         lines.append(f"| **本期已结项交付** | **{metrics['completed_count']}** 项 | ✅ 均已完成验收结项 |")
         lines.append(f"| **进行中攻坚任务** | **{metrics['active_count']}** 项 | ⏳ 正在推进中 |")
         if metrics['overdue_active_count'] > 0:
-            lines.append(f"| **逾期风险预警** | <font color='red'>**{metrics['overdue_active_count']}**</font> 项 | ⚠️ 需重点关注排期 |")
+            lines.append(f"| **逾期风险预警** | **{metrics['overdue_active_count']}** 项 | ⚠️ 需重点关注排期 |")
         else:
-            lines.append(f"| **逾期风险预警** | 0 项 | 🟢 进度正常，无逾期风险 |")
+            lines.append("| **逾期风险预警** | 0 项 | 🟢 进度正常，无逾期风险 |")
         lines.append(f"| **随手记/备忘灵感** | **{metrics['notes_count']}** 条 | 💡 已归档沉淀 |\n")
 
         lines.append("---")
@@ -528,59 +828,261 @@ class DesktopNotesDB:
         body: str = "",
         kind: str = "task",
         priority: int = 2,
+        start_date: Optional[str] = None,
         due_date: Optional[str] = None,
         parent_id: Optional[str] = None
-    ) -> str:
-        """Create a new task or note directly in DesktopNotes."""
-        record_id = str(uuid.uuid4())
+    ) -> Dict[str, Any]:
+        """Create a single task or note directly in DesktopNotes."""
         kind_int = 0 if kind == "task" else 1
         now_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-        due_kind = 1 if due_date else 0
 
         with get_readwrite_connection(self.db_path) as conn:
-            # Insert into records table
-            conn.execute("""
-                INSERT INTO records (
-                    id, parent_id, kind, title, body, status,
-                    publisher, assignee, priority, start_utc_ms,
-                    due_kind, due_date, due_utc_ms, due_zone,
-                    attachment_root_id, inherit_mask,
-                    created_utc_ms, updated_utc_ms, version
-                ) VALUES (
-                    ?, ?, ?, ?, ?, 0,
-                    'AI Agent', NULL, ?, NULL,
-                    ?, ?, NULL, NULL,
-                    NULL, 0,
-                    ?, ?, 1
-                )
-            """, (
-                record_id, parent_id, kind_int, title, body,
-                priority, due_kind, due_date, now_ms, now_ms
-            ))
-
-            # Insert into effective_records table
-            due_boundary = None
-            if due_date:
-                # end of due date in local time
-                dt_due = datetime.datetime.strptime(due_date, "%Y-%m-%d")
-                dt_due_end = datetime.datetime.combine(dt_due.date(), datetime.time.max)
-                due_boundary = int(dt_due_end.astimezone(datetime.timezone.utc).timestamp() * 1000)
-
-            conn.execute("""
-                INSERT INTO effective_records (
-                    record_id, publisher, assignee, priority, start_utc_ms,
-                    due_kind, due_date, due_utc_ms, due_zone, attachment_root_id,
-                    due_boundary_utc_ms, projection_zone, record_version
-                ) VALUES (
-                    ?, 'AI Agent', NULL, ?, NULL,
-                    ?, ?, NULL, NULL, NULL,
-                    ?, 'Local', 1
-                )
-            """, (
-                record_id, priority, due_kind, due_date, due_boundary
-            ))
+            proj_zone = self._get_projection_zone(conn)
+            created = self._insert_record_internal(
+                conn=conn,
+                title=title,
+                body=body,
+                kind_int=kind_int,
+                priority=priority,
+                start_date=start_date,
+                due_date=due_date,
+                parent_id=parent_id,
+                now_ms=now_ms,
+                projection_zone=proj_zone
+            )
             conn.commit()
-            return record_id
+            return created
+
+    def import_plan(
+        self,
+        items: List[Dict[str, Any]],
+        import_as: str = "task_tree",
+        root_title: Optional[str] = None,
+        root_body: Optional[str] = None,
+        root_priority: int = 1,
+        root_due_date: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        auto_schedule_start_date: Optional[str] = None,
+        days_per_item: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Batch-import a study syllabus, chapter learning plan, project breakdown, or note collection.
+        Modes (`import_as`):
+          - 'task_tree': Import as multi-level hierarchical Tasks (Parent -> Chapter -> Section) with deadlines & calendar sync.
+          - 'note_series': Import each top-level chapter/item as a standalone sticky Note (kind=1) with children formatted as Markdown body.
+          - 'note_single': Merge the entire plan/catalog into one comprehensive Markdown sticky Note (kind=1).
+        """
+        if not items and not root_title:
+            raise ValueError("导入内容不能为空，请至少提供 items 列表或 root_title。")
+
+        # Optional automatic chapter scheduling
+        if auto_schedule_start_date and days_per_item and days_per_item > 0 and items:
+            cur_date = datetime.datetime.strptime(normalize_date_str(auto_schedule_start_date), "%Y-%m-%d").date()
+            for item in items:
+                item_days = int(item.get("duration_days") or days_per_item)
+                item_start = cur_date
+                item_end = cur_date + datetime.timedelta(days=max(1, item_days) - 1)
+                if not item.get("start_date"):
+                    item["start_date"] = item_start.strftime("%Y-%m-%d")
+                if not item.get("due_date"):
+                    item["due_date"] = item_end.strftime("%Y-%m-%d")
+
+                # Also distribute dates across immediate sub-sections if they don't have due_date
+                children = item.get("children") or []
+                if children:
+                    sub_count = len(children)
+                    for idx, child in enumerate(children):
+                        if not child.get("due_date"):
+                            offset = int(((idx + 1) * max(1, item_days)) / sub_count) - 1
+                            offset = max(0, min(max(1, item_days) - 1, offset))
+                            sub_due = item_start + datetime.timedelta(days=offset)
+                            child["due_date"] = sub_due.strftime("%Y-%m-%d")
+                cur_date = item_end + datetime.timedelta(days=1)
+
+            if not root_due_date and items:
+                last_due = items[-1].get("due_date")
+                if last_due:
+                    root_due_date = last_due
+
+        base_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+        seq = 0
+        created_records: List[Dict[str, Any]] = []
+
+        with get_readwrite_connection(self.db_path) as conn:
+            proj_zone = self._get_projection_zone(conn)
+
+            # Mode 1: Merge everything into a single comprehensive Markdown Note (kind=1)
+            if import_as == "note_single":
+                note_title = root_title or (items[0].get("title", "学习与工作计划") if len(items) == 1 else "导入的学习计划与目录大纲")
+                md_parts: List[str] = []
+                if root_body:
+                    md_parts.append(root_body.strip())
+                    md_parts.append("")
+                if items:
+                    md_parts.append(format_children_as_markdown(items, depth=0))
+                full_body = "\n".join(md_parts).strip()
+
+                rec = self._insert_record_internal(
+                    conn=conn,
+                    title=note_title,
+                    body=full_body,
+                    kind_int=1,
+                    priority=root_priority,
+                    start_date=None,
+                    due_date=None,
+                    parent_id=None,
+                    now_ms=base_ms,
+                    projection_zone=proj_zone
+                )
+                created_records.append(rec)
+                conn.commit()
+                return {
+                    "status": "success",
+                    "import_as": "note_single",
+                    "total_imported": len(created_records),
+                    "root_record_id": rec["id"],
+                    "records": created_records
+                }
+
+            # Mode 2: Import each top-level chapter/item as a standalone Note (kind=1)
+            if import_as == "note_series":
+                prefix = f"【{root_title}】" if root_title else ""
+                if root_title and root_body:
+                    overview_rec = self._insert_record_internal(
+                        conn=conn,
+                        title=f"{prefix}总览与说明",
+                        body=root_body,
+                        kind_int=1,
+                        priority=root_priority,
+                        start_date=None,
+                        due_date=None,
+                        parent_id=None,
+                        now_ms=base_ms + seq,
+                        projection_zone=proj_zone
+                    )
+                    seq += 1
+                    created_records.append(overview_rec)
+
+                for item in items:
+                    item_title = f"{prefix}{item.get('title', '未命名章节').strip()}"
+                    body_parts: List[str] = []
+                    if item.get("start_date") or item.get("due_date"):
+                        s_str = item.get("start_date") or "即日起"
+                        d_str = item.get("due_date") or "待定"
+                        body_parts.append(f"> 📅 **计划周期**：{s_str} 至 {d_str}")
+                    if item.get("body"):
+                        body_parts.append(str(item["body"]).strip())
+                    children = item.get("children") or []
+                    if children:
+                        body_parts.append("\n" + format_children_as_markdown(children, depth=1))
+
+                    rec = self._insert_record_internal(
+                        conn=conn,
+                        title=item_title,
+                        body="\n\n".join(body_parts).strip(),
+                        kind_int=1,
+                        priority=int(item.get("priority", root_priority)),
+                        start_date=None,
+                        due_date=None,
+                        parent_id=None,
+                        now_ms=base_ms + seq,
+                        projection_zone=proj_zone
+                    )
+                    seq += 1
+                    created_records.append(rec)
+
+                conn.commit()
+                return {
+                    "status": "success",
+                    "import_as": "note_series",
+                    "total_imported": len(created_records),
+                    "records": created_records
+                }
+
+            # Mode 3 (Default): Import as multi-level hierarchical Task Tree (kind=0)
+            active_root_id = parent_id
+            if root_title:
+                root_rec = self._insert_record_internal(
+                    conn=conn,
+                    title=root_title,
+                    body=root_body or "",
+                    kind_int=0,
+                    priority=root_priority,
+                    start_date=auto_schedule_start_date,
+                    due_date=root_due_date,
+                    parent_id=parent_id,
+                    now_ms=base_ms + seq,
+                    projection_zone=proj_zone
+                )
+                seq += 1
+                active_root_id = root_rec["id"]
+                created_records.append(root_rec)
+
+            def insert_tree_recursive(nodes: List[Dict[str, Any]], cur_parent_id: Optional[str]) -> None:
+                nonlocal seq
+                for node in nodes:
+                    children = node.get("children") or []
+                    req_kind = str(node.get("kind", "task")).lower()
+                    # If it has a parent or has children, it MUST be a task (kind=0) in DesktopNotes
+                    if cur_parent_id is not None or children:
+                        k_int = 0
+                    else:
+                        k_int = 1 if req_kind == "note" else 0
+
+                    rec = self._insert_record_internal(
+                        conn=conn,
+                        title=node.get("title", "未命名条目"),
+                        body=node.get("body", ""),
+                        kind_int=k_int,
+                        priority=int(node.get("priority", 2)),
+                        start_date=node.get("start_date"),
+                        due_date=node.get("due_date"),
+                        parent_id=cur_parent_id if k_int == 0 else None,
+                        now_ms=base_ms + seq,
+                        projection_zone=proj_zone
+                    )
+                    seq += 1
+                    created_records.append(rec)
+                    if children:
+                        insert_tree_recursive(children, rec["id"])
+
+            insert_tree_recursive(items, active_root_id)
+            conn.commit()
+
+            return {
+                "status": "success",
+                "import_as": "task_tree",
+                "total_imported": len(created_records),
+                "root_record_id": active_root_id,
+                "records": created_records
+            }
+
+    def import_markdown(
+        self,
+        markdown_text: str,
+        import_as: str = "task_tree",
+        root_title: Optional[str] = None,
+        root_priority: int = 1,
+        root_due_date: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        auto_schedule_start_date: Optional[str] = None,
+        days_per_item: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Parse a Markdown outline/syllabus and import into DesktopNotes."""
+        parsed_title, parsed_body, parsed_items = parse_markdown_to_tree(markdown_text, default_priority=root_priority)
+        final_root_title = root_title or parsed_title
+        return self.import_plan(
+            items=parsed_items,
+            import_as=import_as,
+            root_title=final_root_title,
+            root_body=parsed_body,
+            root_priority=root_priority,
+            root_due_date=root_due_date,
+            parent_id=parent_id,
+            auto_schedule_start_date=auto_schedule_start_date,
+            days_per_item=days_per_item
+        )
+
 
 # ---------------------------------------------------------------------------
 # MCP Protocol Handlers (JSON-RPC 2.0 over stdio)
@@ -613,10 +1115,15 @@ def mcp_get_tools_spec() -> List[Dict[str, Any]]:
         },
         {
             "name": "desktopnotes_list_tasks",
-            "description": "查询桌面便签中的任务清单，支持按完成状态、时间周期、优先级、关键字过滤及层级树形展示。",
+            "description": "查询桌面便签中的任务或笔记清单，支持按完成状态、时间周期、优先级、关键字过滤及层级树形展示。",
             "inputSchema": {
                 "type": "object",
                 "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": ["all", "task", "note"],
+                        "description": "类型过滤：task(待办任务), note(纯笔记便签), all(全部)，默认 task"
+                    },
                     "status": {
                         "type": "string",
                         "enum": ["all", "active", "completed"],
@@ -634,7 +1141,7 @@ def mcp_get_tools_spec() -> List[Dict[str, Any]]:
                     },
                     "search_keyword": {
                         "type": "string",
-                        "description": "在任务标题和备忘详情中模糊检索的关键词"
+                        "description": "在标题和详情中模糊检索的关键词"
                     },
                     "include_tree": {
                         "type": "boolean",
@@ -700,7 +1207,7 @@ def mcp_get_tools_spec() -> List[Dict[str, Any]]:
         },
         {
             "name": "desktopnotes_create_record",
-            "description": "向桌面便签(DesktopNotes)反向写入一条新任务或便签(例如归档生成的周报，或创建下周计划)。",
+            "description": "向桌面便签(DesktopNotes)写入单条新待办任务或笔记便签。",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -710,21 +1217,25 @@ def mcp_get_tools_spec() -> List[Dict[str, Any]]:
                     },
                     "body": {
                         "type": "string",
-                        "description": "详细内容(支持 Markdown 长文本)"
+                        "description": "详细内容(支持 Markdown 格式)"
                     },
                     "kind": {
                         "type": "string",
                         "enum": ["task", "note"],
-                        "description": "类型：task(待办任务), note(纯文本便签/备忘)"
+                        "description": "类型：task(可勾选待办任务), note(纯文本笔记便签)"
                     },
                     "priority": {
                         "type": "integer",
                         "enum": [0, 1, 2, 3],
                         "description": "优先级：0(P0紧急), 1(P1高), 2(P2普通), 3(P3低)，默认为 2"
                     },
+                    "start_date": {
+                        "type": "string",
+                        "description": "计划开始日期 YYYY-MM-DD (可选)"
+                    },
                     "due_date": {
                         "type": "string",
-                        "description": "截止日期 YYYY-MM-DD (可选)"
+                        "description": "计划截止日期 YYYY-MM-DD (可选，设置后将自动同步到电子便签月历视图)"
                     },
                     "parent_id": {
                         "type": "string",
@@ -733,8 +1244,110 @@ def mcp_get_tools_spec() -> List[Dict[str, Any]]:
                 },
                 "required": ["title"]
             }
+        },
+        {
+            "name": "desktopnotes_import_plan",
+            "description": "批量导入结构化的章节学习计划、课程目录、多级项目拆解或系列读书笔记到桌面便签(DesktopNotes)。支持多级父子任务树(task_tree)、系列独立笔记(note_series)或单篇汇总大纲笔记(note_single)，并支持按天自动排期。",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "import_as": {
+                        "type": "string",
+                        "enum": ["task_tree", "note_series", "note_single"],
+                        "description": "导入模式：task_tree(作为多级可勾选待办任务树导入，支持截止日与月历追踪，默认推荐), note_series(按章节拆分为多张独立笔记便签), note_single(合并为单篇完整 Markdown 笔记便签)"
+                    },
+                    "root_title": {
+                        "type": "string",
+                        "description": "顶层总标题(例如：《深入理解计算机系统》章节学习计划)"
+                    },
+                    "root_body": {
+                        "type": "string",
+                        "description": "顶层总说明或学习目标概述(支持 Markdown)"
+                    },
+                    "root_priority": {
+                        "type": "integer",
+                        "enum": [0, 1, 2, 3],
+                        "description": "顶层优先级：0(P0紧急), 1(P1高), 2(P2普通), 3(P3低)，默认 1"
+                    },
+                    "root_due_date": {
+                        "type": "string",
+                        "description": "顶层总截止日期 YYYY-MM-DD (可选)"
+                    },
+                    "auto_schedule_start_date": {
+                        "type": "string",
+                        "description": "自动排期起始日期 YYYY-MM-DD (可选：配合 days_per_item 自动为每个章节推算开始与截止日期)"
+                    },
+                    "days_per_item": {
+                        "type": "integer",
+                        "description": "自动排期时每个一级章节默认分配的天数 (例如 3 表示每3天学完一章)"
+                    },
+                    "parent_id": {
+                        "type": "string",
+                        "description": "可选：挂载到已存在的某个父任务 ID 下"
+                    },
+                    "items": {
+                        "type": "array",
+                        "description": "章节或任务条目列表，每个条目可递归包含 children 子条目",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {"type": "string", "description": "章节或小节标题"},
+                                "body": {"type": "string", "description": "学习重点、课后练习或笔记详情 (Markdown)"},
+                                "priority": {"type": "integer", "enum": [0, 1, 2, 3], "description": "优先级 0-3"},
+                                "start_date": {"type": "string", "description": "开始日期 YYYY-MM-DD"},
+                                "due_date": {"type": "string", "description": "截止日期 YYYY-MM-DD"},
+                                "duration_days": {"type": "integer", "description": "可选：开启自动排期时单独指定本章耗时天数"},
+                                "children": {
+                                    "type": "array",
+                                    "description": "子小节或子任务列表 (结构与父条目相同，支持多级嵌套)",
+                                    "items": {"type": "object"}
+                                }
+                            },
+                            "required": ["title"]
+                        }
+                    }
+                },
+                "required": ["items"]
+            }
+        },
+        {
+            "name": "desktopnotes_import_markdown",
+            "description": "将 Markdown 格式的目录大纲、章节学习计划或任务清单直接解析并导入到桌面便签(DesktopNotes)中。支持自动识别 #/##/### 标题层级与 - 列表层级。",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "markdown_text": {
+                        "type": "string",
+                        "description": "包含章节目录或学习计划的 Markdown 文本(支持 # 标题层级、- 列表层级、[P0]-[P3] 优先级标记、@due(YYYY-MM-DD) 截止日标记)"
+                    },
+                    "import_as": {
+                        "type": "string",
+                        "enum": ["task_tree", "note_series", "note_single"],
+                        "description": "导入模式：task_tree(多级待办任务树，默认), note_series(按章节拆分为多条独立笔记), note_single(单条完整笔记)"
+                    },
+                    "root_title": {
+                        "type": "string",
+                        "description": "可选：指定顶层总标题(若不指定则自动提取 Markdown 中的一级标题 #)"
+                    },
+                    "root_priority": {
+                        "type": "integer",
+                        "enum": [0, 1, 2, 3],
+                        "description": "默认优先级 0-3，默认 1"
+                    },
+                    "auto_schedule_start_date": {
+                        "type": "string",
+                        "description": "可选：自动排期开始日期 YYYY-MM-DD"
+                    },
+                    "days_per_item": {
+                        "type": "integer",
+                        "description": "可选：自动排期时每个一级章节分配的天数"
+                    }
+                },
+                "required": ["markdown_text"]
+            }
         }
     ]
+
 
 def handle_mcp_call(db: DesktopNotesDB, tool_name: str, args: Dict[str, Any]) -> Any:
     """Execute tool and return JSON-serializable result."""
@@ -746,7 +1359,7 @@ def handle_mcp_call(db: DesktopNotesDB, tool_name: str, args: Dict[str, Any]) ->
         )
     elif tool_name == "desktopnotes_list_tasks":
         return db.query_records(
-            kind="task",
+            kind=args.get("kind", "task"),
             status=args.get("status", "all"),
             period=args.get("period", "all"),
             start_date=args.get("start_date"),
@@ -771,29 +1384,52 @@ def handle_mcp_call(db: DesktopNotesDB, tool_name: str, args: Dict[str, Any]) ->
         )
         return {"report_markdown": md}
     elif tool_name == "desktopnotes_create_record":
-        rid = db.create_record(
+        created = db.create_record(
             title=args["title"],
             body=args.get("body", ""),
             kind=args.get("kind", "task"),
             priority=args.get("priority", 2),
+            start_date=args.get("start_date"),
             due_date=args.get("due_date"),
             parent_id=args.get("parent_id")
         )
-        return {"status": "success", "id": rid, "message": f"成功写入桌面便签: {args['title']}"}
+        return {
+            "status": "success",
+            "record": created,
+            "message": f"成功写入桌面便签: {created['title']}"
+        }
+    elif tool_name == "desktopnotes_import_plan":
+        return db.import_plan(
+            items=args.get("items", []),
+            import_as=args.get("import_as", "task_tree"),
+            root_title=args.get("root_title"),
+            root_body=args.get("root_body"),
+            root_priority=args.get("root_priority", 1),
+            root_due_date=args.get("root_due_date"),
+            parent_id=args.get("parent_id"),
+            auto_schedule_start_date=args.get("auto_schedule_start_date"),
+            days_per_item=args.get("days_per_item")
+        )
+    elif tool_name == "desktopnotes_import_markdown":
+        return db.import_markdown(
+            markdown_text=args["markdown_text"],
+            import_as=args.get("import_as", "task_tree"),
+            root_title=args.get("root_title"),
+            root_priority=args.get("root_priority", 1),
+            root_due_date=args.get("root_due_date"),
+            parent_id=args.get("parent_id"),
+            auto_schedule_start_date=args.get("auto_schedule_start_date"),
+            days_per_item=args.get("days_per_item")
+        )
     else:
         raise ValueError(f"未知的工具名称: {tool_name}")
+
 
 def run_mcp_server():
     """Run JSON-RPC 2.0 stdio server loop."""
     log("DesktopNotes MCP Server starting over stdio...")
     db = DesktopNotesDB()
     log(f"Connected to database: {db.db_path}")
-
-    # Set up UTF-8 for stdio
-    if sys.platform == "win32":
-        import io
-        sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
     while True:
         try:
@@ -814,12 +1450,10 @@ def run_mcp_server():
             method = request.get("method")
             params = request.get("params", {})
 
-            # Notification check
             if method == "notifications/initialized":
                 log("MCP Client initialized successfully.")
                 continue
 
-            # Standard methods
             if method == "initialize":
                 response = {
                     "jsonrpc": "2.0",
@@ -831,7 +1465,7 @@ def run_mcp_server():
                         },
                         "serverInfo": {
                             "name": "desktopnotes-mcp",
-                            "version": "1.0.0"
+                            "version": "1.1.0"
                         }
                     }
                 }
@@ -894,6 +1528,7 @@ def run_mcp_server():
             log(f"Fatal error in server loop: {ex}")
             break
 
+
 # ---------------------------------------------------------------------------
 # CLI Command Line Interface
 # ---------------------------------------------------------------------------
@@ -901,24 +1536,24 @@ def run_mcp_server():
 def run_cli():
     """Command-line interface when invoked directly by the user."""
     parser = argparse.ArgumentParser(
-        description="DesktopNotes 电子便签 - AI MCP 服务与报告生成工具",
+        description="DesktopNotes 电子便签 - AI MCP 服务与双向数据导入/报告工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  # 作为 MCP 协议服务端运行 (供 Antigravity / OpenCode / Codex / DSH 接入):
-  python desktopnotes_mcp.py
+  # 1. 作为 MCP 协议服务端运行 (供 OpenCode / Codex / DSH / Antigravity 接入):
+  desktopnotes-mcp
 
-  # 命令行直接生成本周周报并打印到终端:
-  python desktopnotes_mcp.py --report weekly
+  # 2. 命令行生成本周周报:
+  desktopnotes-mcp --report weekly --author 徐礼佳
 
-  # 生成月报并保存到文件:
-  python desktopnotes_mcp.py --report monthly --template okr --output 月报.md
+  # 3. 将 Markdown 学习目录/章节计划导入为多级便签待办树 (并自动按每章3天排期):
+  desktopnotes-mcp --import-md study_plan.md --import-as task_tree --start-date 2026-11-11 --days-per-item 3
 
-  # 查询当前进行中的任务:
-  python desktopnotes_mcp.py --list-tasks --status active
+  # 4. 将 Markdown 目录拆分为系列独立笔记便签导入:
+  desktopnotes-mcp --import-md study_plan.md --import-as note_series
 
-  # 查看总体统计指标:
-  python desktopnotes_mcp.py --summary
+  # 5. 将 JSON 结构化计划导入电子便签:
+  desktopnotes-mcp --import-json plan.json
         """
     )
     parser.add_argument("--stdio", action="store_true", help="显式以 MCP stdio 模式启动服务端")
@@ -929,11 +1564,16 @@ def run_cli():
     parser.add_argument("--status", choices=["all", "active", "completed"], default="all", help="配合 --list-tasks 过滤状态")
     parser.add_argument("--output", help="输出报告的目标文件路径 (例如 report.md)")
     parser.add_argument("--author", default="开发者", help="汇报人署名")
+    parser.add_argument("--import-md", help="从 Markdown 文件导入学习目录/章节计划到电子便签")
+    parser.add_argument("--import-json", help="从 JSON 文件导入多级计划或笔记列表到电子便签")
+    parser.add_argument("--import-as", choices=["task_tree", "note_series", "note_single"], default="task_tree", help="导入模式：task_tree(多级待办树), note_series(系列笔记), note_single(单篇汇总笔记)")
+    parser.add_argument("--root-title", help="导入时指定的顶层总标题 (可选)")
+    parser.add_argument("--start-date", help="导入学习计划时的自动排期起始日期 YYYY-MM-DD (可选)")
+    parser.add_argument("--days-per-item", type=int, help="自动排期时每个一级章节分配的天数 (可选)")
     parser.add_argument("--db", help="指定 SQLite 数据库路径 (可选)")
 
     args = parser.parse_args()
 
-    # If no arguments provided or --stdio specified, run MCP server
     if args.stdio or (len(sys.argv) == 1):
         run_mcp_server()
         return
@@ -949,7 +1589,46 @@ def run_cli():
         tasks = db.query_records(kind="task", status=args.status, include_tree=False)
         print(f"共检索到 {len(tasks)} 条任务:")
         for t in tasks:
-            print(f"- [{t['status']}] [{t['priority']}] {t['title']} (创建: {t['created_at']}, 结项: {t['closed_at']})")
+            print(f"- [{t['status']}] [{t['priority']}] {t['title']} (创建: {t['created_at']}, 截止: {t['due_date']}, 结项: {t['closed_at']})")
+        return
+
+    if args.import_md:
+        with open(args.import_md, "r", encoding="utf-8") as f:
+            md_content = f.read()
+        res = db.import_markdown(
+            markdown_text=md_content,
+            import_as=args.import_as,
+            root_title=args.root_title,
+            auto_schedule_start_date=args.start_date,
+            days_per_item=args.days_per_item
+        )
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
+
+    if args.import_json:
+        with open(args.import_json, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        if isinstance(payload, list):
+            res = db.import_plan(
+                items=payload,
+                import_as=args.import_as,
+                root_title=args.root_title,
+                auto_schedule_start_date=args.start_date,
+                days_per_item=args.days_per_item
+            )
+        else:
+            res = db.import_plan(
+                items=payload.get("items", []),
+                import_as=payload.get("import_as", args.import_as),
+                root_title=payload.get("root_title", args.root_title),
+                root_body=payload.get("root_body"),
+                root_priority=payload.get("root_priority", 1),
+                root_due_date=payload.get("root_due_date"),
+                parent_id=payload.get("parent_id"),
+                auto_schedule_start_date=payload.get("auto_schedule_start_date", args.start_date),
+                days_per_item=payload.get("days_per_item", args.days_per_item)
+            )
+        print(json.dumps(res, ensure_ascii=False, indent=2))
         return
 
     if args.report:
@@ -965,6 +1644,7 @@ def run_cli():
         else:
             print(md)
         return
+
 
 if __name__ == "__main__":
     run_cli()
